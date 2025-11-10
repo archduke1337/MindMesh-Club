@@ -21,7 +21,7 @@ export default function AdminLayout({
       }
 
       // 🧠 Simple Admin Check — customize this
-      const adminEmails = ["sahilmanecode@gmail.com", "mane50205@gmail.com"];
+      const adminEmails = ["sahilmanecode@gmail.com", "mane50205@gmail.com", "gauravramyadav@gmail.com"];
       const userIsAdmin = adminEmails.includes(user.email);
 
       if (!userIsAdmin) {
