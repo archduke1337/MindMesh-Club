@@ -9,6 +9,7 @@ import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Chip } from "@heroui/chip";
 import { Avatar } from "@heroui/avatar";
+import { Spinner } from "@heroui/spinner";
 import { title, subtitle } from "@/components/primitives";
 import { blogService, Blog, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
@@ -28,6 +29,7 @@ export default function BlogPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [filteredBlogs, setFilteredBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
@@ -41,11 +43,30 @@ export default function BlogPage() {
 
   const loadBlogs = async () => {
     try {
-      const publishedBlogs = await blogService.getPublishedBlogs();
-      setBlogs(publishedBlogs);
-      setFilteredBlogs(publishedBlogs);
-    } catch (error) {
-      console.error("Error loading blogs:", error);
+      setLoading(true);
+      setError(null);
+      // Use API instead of direct service call
+      const response = await fetch("/api/blog");
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch blogs");
+      }
+      
+      const result = await response.json();
+      setBlogs(result.data || []);
+      setFilteredBlogs(result.data || []);
+    } catch (err) {
+      console.error("Error loading blogs:", err);
+      setError("Failed to load blogs. Please try again later.");
+      // Fallback to direct service call if API fails
+      try {
+        const publishedBlogs = await blogService.getPublishedBlogs();
+        setBlogs(publishedBlogs);
+        setFilteredBlogs(publishedBlogs);
+        setError(null);
+      } catch (error) {
+        console.error("Fallback error:", error);
+      }
     } finally {
       setLoading(false);
     }
@@ -85,10 +106,26 @@ export default function BlogPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-          <p className="mt-4 text-default-500">Loading blogs...</p>
-        </div>
+        <Spinner label="Loading blogs..." size="lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="border-none bg-red-50 dark:bg-red-950/30">
+          <CardBody className="p-8 text-center">
+            <p className="text-lg text-red-600 dark:text-red-400">{error}</p>
+            <Button
+              className="mt-4"
+              color="primary"
+              onPress={() => loadBlogs()}
+            >
+              Try Again
+            </Button>
+          </CardBody>
+        </Card>
       </div>
     );
   }
