@@ -9,7 +9,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { isUserAdmin } from "@/lib/adminAuth";
+import { isUserAdminByEmail } from "@/lib/adminConfig";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { AlertCircle, ArrowLeft } from "lucide-react";
@@ -39,8 +39,8 @@ export default function AdminPageWrapper({
         return;
       }
 
-      // Check admin status
-      if (!isUserAdmin(user)) {
+      // Check admin status using email
+      if (!isUserAdminByEmail(user.email)) {
         setError("You do not have permission to access this page.");
         setTimeout(() => router.push("/"), 3000);
         return;

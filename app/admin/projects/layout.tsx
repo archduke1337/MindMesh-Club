@@ -2,6 +2,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { isUserAdminByEmail, ADMIN_EMAILS } from "@/lib/adminConfig";
 
 export default function AdminLayout({
   children,
@@ -20,12 +21,11 @@ export default function AdminLayout({
         return;
       }
 
-      // 🧠 Simple Admin Check — customize this
-      const adminEmails = ["sahilmanecode@gmail.com", "mane50205@gmail.com", "gauravramyadav@gmail.com"];
-      const userIsAdmin = adminEmails.includes(user.email);
+      // Check admin status using centralized config
+      const userIsAdmin = isUserAdminByEmail(user.email);
 
       if (!userIsAdmin) {
-        router.push("/unauthorized"); // Create a simple unauthorized page
+        router.push("/unauthorized");
         return;
       }
 
