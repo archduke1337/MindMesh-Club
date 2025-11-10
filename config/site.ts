@@ -26,7 +26,7 @@ export const siteConfig = {
     },
     {
       label: "Blog",
-      href: "/blog",
+      href: "/Blog",
     },
     {
       label: "Gallery",
