@@ -137,7 +137,31 @@ export default function WriteBlogPage() {
   }
 
   if (!user) {
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="border-none shadow-lg max-w-md">
+          <CardBody className="p-8 text-center space-y-4">
+            <h2 className="text-xl font-bold">Login Required</h2>
+            <p className="text-default-600">
+              You need to be logged in to write a blog.
+            </p>
+            <Button
+              color="primary"
+              size="lg"
+              onPress={() => router.push("/login")}
+            >
+              Go to Login
+            </Button>
+            <Button
+              variant="light"
+              onPress={() => router.push("/blog")}
+            >
+              Back to Blog
+            </Button>
+          </CardBody>
+        </Card>
+      </div>
+    );
   }
 
   return (
