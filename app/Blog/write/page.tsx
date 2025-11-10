@@ -8,6 +8,7 @@ import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
+import { Spinner } from "@heroui/spinner";
 import { blogService, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/lib/errorHandler";
@@ -15,7 +16,7 @@ import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
 
 export default function WriteBlogPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -29,11 +30,12 @@ export default function WriteBlogPage() {
   });
 
   useEffect(() => {
-    if (!user) {
+    // Wait for auth to finish loading before checking
+    if (!loading && !user) {
       alert("Please login to write a blog");
       router.push("/login");
     }
-  }, [user, router]);
+  }, [user, loading, router]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -124,6 +126,15 @@ export default function WriteBlogPage() {
       setSubmitting(false);
     }
   };
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner label="Loading..." size="lg" />
+      </div>
+    );
+  }
 
   if (!user) {
     return null;
