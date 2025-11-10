@@ -88,6 +88,7 @@ export default function WriteBlogPage() {
     setSubmitting(true);
 
     try {
+      // Build payload
       const slug = blogService.generateSlug(formData.title);
       const readTime = blogService.calculateReadTime(formData.content);
       const tags = formData.tags
@@ -95,9 +96,8 @@ export default function WriteBlogPage() {
         .map((tag) => tag.trim())
         .filter((tag) => tag);
 
-      await blogService.createBlog({
+      const payload = {
         title: formData.title,
-        slug,
         excerpt: formData.excerpt || formData.content.substring(0, 150),
         content: formData.content,
         coverImage: formData.coverImage,
@@ -107,16 +107,24 @@ export default function WriteBlogPage() {
         authorName: user.name,
         authorEmail: user.email,
         authorAvatar: user.prefs?.avatar,
-        status: "pending",
-        views: 0,
-        likes: 0,
-        featured: false,
+        slug,
         readTime,
+      };
+
+      // Use server API to create blog to avoid client-side Appwrite permission issues
+      const res = await fetch("/api/blog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
-      alert(
-        "Blog submitted successfully! It will be reviewed by our team before publishing."
-      );
+      const result = await res.json();
+      if (!res.ok) {
+        const errMsg = result?.error || "Failed to submit blog";
+        throw new Error(errMsg);
+      }
+
+      alert(result.message || "Blog submitted successfully! It will be reviewed by our team before publishing.");
       router.push("/blog");
     } catch (error) {
       const message = getErrorMessage(error);
