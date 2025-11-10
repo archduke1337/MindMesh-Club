@@ -191,11 +191,11 @@ export default function ProjectsPage() {
                       {/* Status Badge */}
                       <div className="absolute bottom-4 right-4">
                         <Chip
-                          color={getStatusColor(project.status) as any}
+                          color={getStatusColor(project.status || "planning") as any}
                           variant="solid"
                           size="sm"
                         >
-                          {project.status.replace("-", " ")}
+                          {(project.status || "planning").replace("-", " ")}
                         </Chip>
                       </div>
                     </div>
