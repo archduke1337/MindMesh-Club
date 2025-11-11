@@ -729,55 +729,58 @@ export default function TicketsPageContent() {
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <Button
-          variant="light"
-          startContent={<ArrowLeftIcon className="w-4 h-4" />}
-          onPress={() => router.back()}
-          className="mb-4"
-          size="sm"
-        >
-          Back
-        </Button>
-        <h1 className={title({ size: "lg" })}>
-          My <span className={title({ color: "violet", size: "lg" })}>Tickets</span>
-        </h1>
-        <p className={subtitle({ class: "mt-2 text-sm md:text-base" })}>
-          View and manage your registered event tickets
-        </p>
-      </div>
+    <div className="w-full min-h-screen bg-gradient-to-b from-default-50 to-default-100">
+      {/* Main Container with responsive max-width */}
+      <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6 sm:mb-8">
+          <Button
+            variant="light"
+            startContent={<ArrowLeftIcon className="w-4 h-4" />}
+            onPress={() => router.back()}
+            className="mb-3 sm:mb-4"
+            size="sm"
+          >
+            Back
+          </Button>
+          <h1 className={title({ size: "lg" })}>
+            My <span className={title({ color: "violet", size: "lg" })}>Tickets</span>
+          </h1>
+          <p className={subtitle({ class: "mt-2 text-xs sm:text-sm md:text-base" })}>
+            View and manage your registered event tickets
+          </p>
+        </div>
 
-      {/* Empty State */}
-      {tickets.length === 0 ? (
-        <div className="space-y-4 md:space-y-6">
-          <Card className="border-none shadow-lg">
-            <CardBody className="py-12 md:py-16 text-center px-4 md:px-8">
-              <TicketIcon className="w-16 h-16 mx-auto text-default-300 mb-4" />
-              <h2 className="text-xl md:text-2xl font-semibold mb-2">
-                No Tickets Yet
-              </h2>
-              <p className="text-default-500 mb-6 text-sm md:text-base">
-                You haven't registered for any events yet. Browse and register
-                for events to get started!
-              </p>
-              <Button
-                color="primary"
-                size="lg"
-                onPress={() => router.push("/events")}
-              >
-                Browse Events
-              </Button>
-            </CardBody>
-          </Card>
+        {/* Empty State */}
+        {tickets.length === 0 ? (
+          <div className="space-y-3 sm:space-y-4 md:space-y-6">
+            <Card className="border-none shadow-lg">
+              <CardBody className="py-8 sm:py-12 md:py-16 text-center px-3 sm:px-4 md:px-8">
+                <TicketIcon className="w-12 sm:w-14 md:w-16 h-12 sm:h-14 md:h-16 mx-auto text-default-300 mb-3 sm:mb-4" />
+                <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2">
+                  No Tickets Yet
+                </h2>
+                <p className="text-default-500 mb-4 sm:mb-6 text-xs sm:text-sm md:text-base px-2">
+                  You haven't registered for any events yet. Browse and register
+                  for events to get started!
+                </p>
+                <Button
+                  color="primary"
+                  size="lg"
+                  onPress={() => router.push("/events")}
+                  className="w-full sm:w-auto"
+                >
+                  Browse Events
+                </Button>
+              </CardBody>
+            </Card>
 
-          {/* Debug Information Card */}
-          <Card className="border-default-300 bg-default/50">
-            <CardHeader className="bg-default/60 px-4 sm:px-6 md:px-8 pt-4 pb-2">
-              <h3 className="text-small font-semibold">🔍 Troubleshooting</h3>
-            </CardHeader>
-            <CardBody className="text-xs md:text-small space-y-4 px-4 sm:px-6 md:px-8">
+            {/* Debug Information Card */}
+            <Card className="border-default-300 bg-default/50">
+              <CardHeader className="bg-default/60 px-3 sm:px-4 md:px-6 lg:px-8 pt-3 sm:pt-4 pb-2">
+                <h3 className="text-xs sm:text-small md:text-base font-semibold">🔍 Troubleshooting</h3>
+              </CardHeader>
+              <CardBody className="text-xs sm:text-small space-y-2 sm:space-y-3 md:space-y-4 px-3 sm:px-4 md:px-6 lg:px-8">
               <div>
                 <p>
                   <strong>How to get tickets:</strong>
@@ -849,19 +852,19 @@ export default function TicketsPageContent() {
                   {/* Card Top Accent */}
                   <div className="h-1 bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700" />
 
-                  <div className="p-4 md:p-6 gap-4">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                  <div className="p-3 sm:p-4 md:p-5 lg:p-6 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                       {/* Ticket Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-3">
-                          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex-shrink-0 mt-1">
-                            <TicketIcon className="w-5 h-5 text-white" />
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <div className="flex items-center justify-center w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex-shrink-0 mt-0.5 sm:mt-1">
+                            <TicketIcon className="w-4 sm:w-5 h-4 sm:h-5 text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-base md:text-lg font-bold line-clamp-2 text-gray-900">
+                            <h3 className="text-sm sm:text-base md:text-lg font-bold line-clamp-2 text-gray-900">
                               {ticket.eventTitle}
                             </h3>
-                            <p className="text-xs md:text-small text-gray-500 mt-1 font-mono">
+                            <p className="text-xs text-gray-500 mt-0.5 sm:mt-1 font-mono truncate">
                               ID:{" "}
                               <span className="font-semibold text-purple-600">
                                 {ticket.ticketId?.substring(0, 8)}...
@@ -871,10 +874,10 @@ export default function TicketsPageContent() {
                         </div>
 
                         {/* Event Details Grid */}
-                        <div className="mt-4 space-y-2 ml-8">
-                          <div className="flex items-center gap-2 text-xs md:text-small text-gray-600">
-                            <CalendarIcon className="w-4 h-4 flex-shrink-0 text-purple-500" />
-                            <span className="font-medium">
+                        <div className="mt-3 sm:mt-4 space-y-1.5 sm:space-y-2 ml-6 sm:ml-8">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                            <CalendarIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0 text-purple-500" />
+                            <span className="font-medium truncate">
                               {new Date(ticket.date).toLocaleDateString(
                                 "en-US",
                                 {
@@ -885,12 +888,12 @@ export default function TicketsPageContent() {
                               )}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs md:text-small text-gray-600">
-                            <ClockIcon className="w-4 h-4 flex-shrink-0 text-purple-500" />
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                            <ClockIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0 text-purple-500" />
                             <span className="font-medium">{ticket.time}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs md:text-small text-gray-600">
-                            <MapPinIcon className="w-4 h-4 flex-shrink-0 text-purple-500" />
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                            <MapPinIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0 text-purple-500" />
                             <span className="line-clamp-1 font-medium">
                               {ticket.location}
                             </span>
@@ -899,21 +902,21 @@ export default function TicketsPageContent() {
                       </div>
 
                       {/* Status Badge & Registration Date */}
-                      <div className="flex flex-col gap-2 md:items-end md:justify-start md:ml-4">
+                      <div className="flex flex-col gap-2 sm:items-end sm:justify-start sm:ml-3">
                         <Chip
-                          startContent={<CheckCircle className="w-4 h-4" />}
+                          startContent={<CheckCircle className="w-3.5 h-3.5" />}
                           color="success"
                           variant="flat"
                           size="sm"
-                          className="font-semibold"
+                          className="font-semibold text-xs sm:text-sm w-fit"
                         >
                           Confirmed
                         </Chip>
                         <div className="text-right">
-                          <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">
+                          <p className="text-xs text-gray-500 font-semibold uppercase tracking-tight">
                             Registered
                           </p>
-                          <p className="text-sm font-bold text-gray-700 mt-0.5">
+                          <p className="text-xs sm:text-sm font-bold text-gray-700 mt-0.5">
                             {new Date(ticket.registeredAt).toLocaleDateString(
                               "en-US",
                               {
@@ -927,14 +930,14 @@ export default function TicketsPageContent() {
                     </div>
 
                     {/* Action Buttons */}
-                    <Divider className="my-3" />
-                    <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                    <Divider className="my-2 sm:my-3" />
+                    <div className="flex flex-col xs:flex-row gap-1.5 sm:gap-2 pt-1 sm:pt-2">
                       <Button
                         size="sm"
                         variant="flat"
-                        startContent={<DownloadIcon className="w-4 h-4" />}
+                        startContent={<DownloadIcon className="w-3.5 h-3.5" />}
                         onPress={() => handleDownloadTicket(ticket)}
-                        className="flex-1 font-semibold transition-all hover:bg-purple-100"
+                        className="flex-1 font-semibold text-xs sm:text-sm transition-all hover:bg-purple-100 active:scale-95"
                         color="primary"
                       >
                         Download
@@ -1154,6 +1157,7 @@ export default function TicketsPageContent() {
           </Card>
         </div>
       )}
+      </div>
     </div>
   );
 }
