@@ -9,6 +9,8 @@ import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { title, subtitle } from "@/components/primitives";
 import { useAuth } from "@/context/AuthContext";
+import { eventService } from "@/lib/database";
+import { getErrorMessage } from "@/lib/errorHandler";
 import {
   TicketIcon,
   CalendarIcon,
@@ -23,7 +25,7 @@ import {
 } from "lucide-react";
 
 interface Ticket {
-  ticketId: string;
+  ticketId: string | undefined;
   eventId: string;
   eventTitle: string;
   userName: string;
@@ -33,6 +35,8 @@ interface Ticket {
   venue: string;
   location: string;
   registeredAt: string;
+  price?: number;
+  discountPrice?: number | null;
 }
 
 export default function TicketsPage() {
@@ -53,9 +57,37 @@ export default function TicketsPage() {
     }
   }, [user, loading, router]);
 
-  const loadTickets = () => {
+  const loadTickets = async () => {
     try {
       setTicketsLoading(true);
+      
+      if (!user) {
+        console.error("❌ No user found");
+        setTickets([]);
+        return;
+      }
+
+      console.log("🔄 Loading tickets from database for user:", user.$id);
+      
+      // Try to load from database first
+      try {
+        const databaseTickets = await eventService.getUserTickets(user.$id);
+        console.log("✅ Tickets loaded from database:", databaseTickets.length);
+        
+        if (databaseTickets && databaseTickets.length > 0) {
+          // Sort by registered date (newest first)
+          databaseTickets.sort((a, b) => 
+            new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime()
+          );
+          setTickets(databaseTickets);
+          return;
+        }
+      } catch (dbError) {
+        console.warn("⚠️ Database error, falling back to localStorage:", getErrorMessage(dbError));
+      }
+
+      // Fallback to localStorage if database is empty or fails
+      console.log("📱 Falling back to localStorage...");
       const registered = localStorage.getItem("registeredEvents");
       const registeredEvents = registered ? JSON.parse(registered) : [];
       
@@ -71,7 +103,7 @@ export default function TicketsPage() {
         }
       });
 
-      console.log("✅ All tickets loaded:", allTickets);
+      console.log("✅ All tickets loaded from localStorage:", allTickets);
 
       // Sort by registered date (newest first)
       allTickets.sort((a, b) => 
@@ -80,7 +112,8 @@ export default function TicketsPage() {
 
       setTickets(allTickets);
     } catch (error) {
-      console.error("Error loading tickets:", error);
+      console.error("❌ Error loading tickets:", getErrorMessage(error));
+      setTickets([]);
     } finally {
       setTicketsLoading(false);
     }

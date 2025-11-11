@@ -352,6 +352,86 @@ export const eventService = {
       console.error("Error checking registration:", error);
       return false;
     }
+  },
+
+  // Get user tickets (convert registrations to ticket format with event details)
+  async getUserTickets(userId: string) {
+    try {
+      const registrations = await this.getUserRegistrations(userId);
+      
+      // Convert registrations to ticket format with event details
+      const ticketsWithDetails = await Promise.all(
+        registrations.map(async (registration) => {
+          try {
+            const event = await this.getEventById(registration.eventId);
+            return {
+              ticketId: registration.$id,
+              eventId: registration.eventId,
+              eventTitle: event.title,
+              userName: registration.userName,
+              userEmail: registration.userEmail,
+              date: event.date,
+              time: event.time,
+              venue: event.venue,
+              location: event.location,
+              registeredAt: registration.registeredAt,
+              price: event.price,
+              discountPrice: event.discountPrice,
+            };
+          } catch (error) {
+            console.error(`Error fetching event details for ${registration.eventId}:`, error);
+            // Return basic ticket info without event details
+            return {
+              ticketId: registration.$id,
+              eventId: registration.eventId,
+              eventTitle: `Event ${registration.eventId}`,
+              userName: registration.userName,
+              userEmail: registration.userEmail,
+              date: "",
+              time: "",
+              venue: "",
+              location: "",
+              registeredAt: registration.registeredAt,
+            };
+          }
+        })
+      );
+
+      return ticketsWithDetails;
+    } catch (error) {
+      console.error("Error fetching user tickets:", error);
+      throw error;
+    }
+  },
+
+  // Get single ticket with details
+  async getTicketById(ticketId: string) {
+    try {
+      const registration = await databases.getDocument(
+        DATABASE_ID,
+        REGISTRATIONS_COLLECTION_ID,
+        ticketId
+      );
+
+      const event = await this.getEventById((registration as any).eventId);
+      return {
+        ticketId: registration.$id,
+        eventId: (registration as any).eventId,
+        eventTitle: event.title,
+        userName: (registration as any).userName,
+        userEmail: (registration as any).userEmail,
+        date: event.date,
+        time: event.time,
+        venue: event.venue,
+        location: event.location,
+        registeredAt: (registration as any).registeredAt,
+        price: event.price,
+        discountPrice: event.discountPrice,
+      };
+    } catch (error) {
+      console.error("Error fetching ticket:", error);
+      throw error;
+    }
   }
 };
 
