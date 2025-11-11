@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
@@ -44,6 +44,9 @@ interface Ticket {
 export default function TicketsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const eventIdParam = searchParams.get("eventId");
+  
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -82,6 +85,15 @@ export default function TicketsPage() {
             new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime()
           );
           setTickets(databaseTickets);
+          
+          // Auto-select ticket if eventId is in query params
+          if (eventIdParam) {
+            const selectedTicketForEvent = databaseTickets.find(t => t.eventId === eventIdParam);
+            if (selectedTicketForEvent) {
+              setSelectedTicket(selectedTicketForEvent);
+              console.log("✅ Auto-selected ticket for event:", eventIdParam);
+            }
+          }
           return;
         }
       } catch (dbError) {
@@ -113,6 +125,15 @@ export default function TicketsPage() {
       );
 
       setTickets(allTickets);
+      
+      // Auto-select ticket if eventId is in query params
+      if (eventIdParam) {
+        const selectedTicketForEvent = allTickets.find(t => t.eventId === eventIdParam);
+        if (selectedTicketForEvent) {
+          setSelectedTicket(selectedTicketForEvent);
+          console.log("✅ Auto-selected ticket for event:", eventIdParam);
+        }
+      }
     } catch (error) {
       console.error("❌ Error loading tickets:", getErrorMessage(error));
       setTickets([]);

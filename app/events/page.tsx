@@ -487,28 +487,30 @@ export default function EventsPage() {
                   </div>
 
                   <div className="flex gap-2 w-full">
-                    <Button
-                      color={registeredEvents.includes(event.$id!) ? "default" : "primary"}
-                      variant={registeredEvents.includes(event.$id!) ? "flat" : "solid"}
-                      size="md"
-                      isLoading={registering === event.$id}
-                      onPress={(e) => toggleRegisterEvent(e as any, event.$id!)}
-                      endContent={
-                        !registeredEvents.includes(event.$id!) && <TicketIcon className="w-4 h-4" />
-                      }
-                      className="flex-1"
-                    >
-                      {registeredEvents.includes(event.$id!) ? "Registered" : "Register"}
-                    </Button>
-                    {registeredEvents.includes(event.$id!) && (
+                    {registeredEvents.includes(event.$id!) ? (
+                      // User is already registered - show "Get Ticket" button
                       <Button
-                        color="secondary"
-                        variant="flat"
+                        color="success"
+                        variant="solid"
                         size="md"
                         startContent={<TicketIcon className="w-4 h-4" />}
-                        onPress={() => router.push("/tickets")}
+                        onPress={() => router.push(`/tickets?eventId=${event.$id}`)}
+                        className="flex-1"
                       >
-                        View Ticket
+                        Get Ticket
+                      </Button>
+                    ) : (
+                      // User is not registered - show "Register" button
+                      <Button
+                        color="primary"
+                        variant="solid"
+                        size="md"
+                        isLoading={registering === event.$id}
+                        onPress={(e) => toggleRegisterEvent(e as any, event.$id!)}
+                        endContent={<TicketIcon className="w-4 h-4" />}
+                        className="flex-1"
+                      >
+                        Register
                       </Button>
                     )}
                   </div>
