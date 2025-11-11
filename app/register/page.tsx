@@ -63,13 +63,13 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4 sm:px-6 lg:px-8 py-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-col gap-1 items-start px-6 sm:px-8 pt-6 sm:pt-8">
-          <h1 className="text-xl sm:text-2xl font-bold">Create Account</h1>
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+      <Card className="w-full max-w-sm md:max-w-md">
+        <CardHeader className="flex flex-col gap-1 items-start px-4 sm:px-6 md:px-8 pt-6 sm:pt-8 pb-0">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Create Account</h1>
           <p className="text-xs sm:text-small text-default-500">Sign up for Mind Mesh</p>
         </CardHeader>
-        <CardBody className="p-6 sm:p-8 gap-4">
+        <CardBody className="p-4 sm:p-6 md:p-8 gap-3 md:gap-4">
           <form onSubmit={handleSubmit} className="flex flex-col gap-3 md:gap-4">
             <Input
               label="Name"
@@ -80,6 +80,10 @@ export default function RegisterPage() {
               required
               isDisabled={loading}
               size="lg"
+              classNames={{
+                input: "text-sm md:text-base",
+                label: "text-xs md:text-small"
+              }}
             />
             <Input
               label="Email"
@@ -90,6 +94,10 @@ export default function RegisterPage() {
               required
               isDisabled={loading}
               size="lg"
+              classNames={{
+                input: "text-sm md:text-base",
+                label: "text-xs md:text-small"
+              }}
             />
             <Input
               label="Password"
@@ -100,6 +108,10 @@ export default function RegisterPage() {
               required
               isDisabled={loading}
               size="lg"
+              classNames={{
+                input: "text-sm md:text-base",
+                label: "text-xs md:text-small"
+              }}
             />
             <Input
               label="Confirm Password"
@@ -110,9 +122,13 @@ export default function RegisterPage() {
               required
               isDisabled={loading}
               size="lg"
+              classNames={{
+                input: "text-sm md:text-base",
+                label: "text-xs md:text-small"
+              }}
             />
             {error && (
-              <div className="text-danger text-xs sm:text-small">{error}</div>
+              <div className="text-danger text-xs sm:text-small bg-danger/10 p-2 md:p-3 rounded">{error}</div>
             )}
             <Button
               type="submit"
@@ -174,8 +190,8 @@ export default function RegisterPage() {
           </Button>
           */}
         </CardBody>
-        <CardFooter className="flex flex-col gap-2">
-          <div className="text-small text-center">
+        <CardFooter className="flex flex-col gap-2 px-4 sm:px-6 md:px-8 pb-6 sm:pb-8">
+          <div className="text-xs sm:text-small text-center w-full">
             Already have an account?{" "}
             <Link as={NextLink} href="/login" size="sm">
               Login
