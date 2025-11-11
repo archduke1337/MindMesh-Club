@@ -403,11 +403,17 @@ export const projectService = {
   // Create project (Admin only)
   async createProject(projectData: Omit<Project, '$id' | '$createdAt' | '$updatedAt'>) {
     try {
+      // Ensure status has a default value
+      const dataWithStatus = {
+        ...projectData,
+        status: projectData.status || "planning",
+      };
+      
       const response = await databases.createDocument(
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
         ID.unique(),
-        projectData
+        dataWithStatus
       );
       return response as unknown as Project;
     } catch (error) {
@@ -419,11 +425,17 @@ export const projectService = {
   // Update project (Admin only)
   async updateProject(projectId: string, projectData: Partial<Project>) {
     try {
+      // Ensure status has a default value if provided
+      const dataWithStatus = {
+        ...projectData,
+        status: projectData.status || "planning",
+      };
+      
       const response = await databases.updateDocument(
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
         projectId,
-        projectData
+        dataWithStatus
       );
       return response as unknown as Project;
     } catch (error) {
@@ -542,11 +554,18 @@ export const galleryService = {
   // Create gallery image (user/admin)
   async createImage(imageData: Omit<GalleryImage, '$id' | '$createdAt' | '$updatedAt'>) {
     try {
+      // Ensure approval and featured have defaults
+      const dataWithDefaults = {
+        ...imageData,
+        isApproved: imageData.isApproved !== undefined ? imageData.isApproved : false,
+        isFeatured: imageData.isFeatured !== undefined ? imageData.isFeatured : false,
+      };
+      
       const response = await databases.createDocument(
         DATABASE_ID,
         GALLERY_COLLECTION_ID,
         ID.unique(),
-        imageData
+        dataWithDefaults
       );
       return response as unknown as GalleryImage;
     } catch (error) {
