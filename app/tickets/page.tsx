@@ -120,25 +120,53 @@ export default function TicketsPage() {
   };
 
   const handleDownloadTicket = (ticket: Ticket) => {
-    // Create a simple text representation of the ticket
-    const ticketText = `
-MIND MESH EVENT TICKET
-=======================
+    // Create a formatted text representation of the ticket
+    const dateStr = new Date(ticket.date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const registeredStr = new Date(ticket.registeredAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    
+    const ticketText = `╔════════════════════════════════════════════════════════════════╗
+║                    🎫 EVENT TICKET                            ║
+║                    MIND MESH COMMUNITY                        ║
+╚════════════════════════════════════════════════════════════════╝
 
-Ticket ID: ${ticket.ticketId}
-Event: ${ticket.eventTitle}
-Date: ${new Date(ticket.date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
-Time: ${ticket.time}
-Venue: ${ticket.venue}
-Location: ${ticket.location}
+┌────────────────────────────────────────────────────────────────┐
+│ TICKET INFORMATION                                             │
+└────────────────────────────────────────────────────────────────┘
 
-Attendee: ${ticket.userName}
-Email: ${ticket.userEmail}
+Ticket ID:    ${ticket.ticketId}
+Status:       ✓ CONFIRMED
 
-Registered: ${new Date(ticket.registeredAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+┌────────────────────────────────────────────────────────────────┐
+│ EVENT DETAILS                                                  │
+└────────────────────────────────────────────────────────────────┘
 
-Please present this ticket at the event entrance.
-    `;
+Event:        ${ticket.eventTitle}
+Date:         ${dateStr}
+Time:         ${ticket.time}
+Venue:        ${ticket.venue}
+Location:     ${ticket.location}
+
+┌────────────────────────────────────────────────────────────────┐
+│ ATTENDEE INFORMATION                                           │
+└────────────────────────────────────────────────────────────────┘
+
+Name:         ${ticket.userName}
+Email:        ${ticket.userEmail}
+Registered:   ${registeredStr}
+
+┌────────────────────────────────────────────────────────────────┐
+│ INSTRUCTIONS                                                   │
+└────────────────────────────────────────────────────────────────┘
+
+• Please arrive 15 minutes before the event starts
+• Bring this ticket or show it on your mobile device
+• Present your ticket at the event entrance
+• Keep this ticket safe for future reference
+
+Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+Mind Mesh Event Management System
+╚════════════════════════════════════════════════════════════════╝
+    `.trim();
 
     // Create blob and download
     const element = document.createElement("a");
@@ -151,85 +179,334 @@ Please present this ticket at the event entrance.
   };
 
   const handlePrintTicket = (ticket: Ticket) => {
+    const dateStr = new Date(ticket.date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const timeStr = ticket.time;
+    const registeredStr = new Date(ticket.registeredAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    
     const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(`
+        <!DOCTYPE html>
         <html>
           <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Event Ticket - ${ticket.eventTitle}</title>
             <style>
-              body { font-family: Arial, sans-serif; padding: 40px; }
-              .ticket { 
-                border: 2px solid #8b5cf6; 
-                padding: 30px; 
-                border-radius: 10px;
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              
+              body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: #f5f5f5;
+                padding: 20px;
+                color: #333;
+              }
+              
+              .container {
                 max-width: 600px;
                 margin: 0 auto;
+                background: white;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
               }
-              .header { text-align: center; margin-bottom: 30px; }
-              .title { font-size: 24px; font-weight: bold; color: #8b5cf6; }
-              .subtitle { font-size: 14px; color: #666; margin-top: 5px; }
-              .section { margin: 20px 0; }
-              .label { font-weight: bold; color: #333; }
-              .value { color: #666; margin-top: 5px; }
-              .divider { border-top: 1px solid #ddd; margin: 20px 0; }
-              .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #999; }
+              
+              .ticket-header {
+                background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+                color: white;
+                padding: 40px 30px;
+                text-align: center;
+              }
+              
+              .ticket-icon {
+                font-size: 48px;
+                margin-bottom: 15px;
+              }
+              
+              .ticket-title {
+                font-size: 28px;
+                font-weight: 700;
+                margin-bottom: 8px;
+                letter-spacing: 1px;
+              }
+              
+              .ticket-brand {
+                font-size: 14px;
+                opacity: 0.9;
+                font-weight: 500;
+                letter-spacing: 2px;
+              }
+              
+              .ticket-body {
+                padding: 40px 30px;
+              }
+              
+              .ticket-id-section {
+                background: linear-gradient(135deg, #f0e7ff 0%, #ede9fe 100%);
+                border: 2px solid #8b5cf6;
+                border-radius: 10px;
+                padding: 20px;
+                margin-bottom: 30px;
+                text-align: center;
+              }
+              
+              .label-small {
+                font-size: 11px;
+                color: #666;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-bottom: 8px;
+                font-weight: 600;
+              }
+              
+              .ticket-id {
+                font-family: 'Courier New', monospace;
+                font-size: 20px;
+                font-weight: 700;
+                color: #8b5cf6;
+                word-break: break-all;
+              }
+              
+              .section {
+                margin-bottom: 28px;
+              }
+              
+              .section-title {
+                font-size: 13px;
+                color: #666;
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+                font-weight: 700;
+                margin-bottom: 16px;
+                padding-bottom: 10px;
+                border-bottom: 2px solid #e5e7eb;
+              }
+              
+              .info-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 12px;
+              }
+              
+              .info-label {
+                font-size: 12px;
+                color: #999;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                font-weight: 600;
+                min-width: 120px;
+              }
+              
+              .info-value {
+                font-size: 15px;
+                color: #333;
+                font-weight: 500;
+                text-align: right;
+                flex: 1;
+              }
+              
+              .highlight-section {
+                background: #f9f5ff;
+                border-left: 4px solid #8b5cf6;
+                padding: 20px;
+                border-radius: 6px;
+                margin-bottom: 28px;
+              }
+              
+              .highlight-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+              }
+              
+              .highlight-row:last-child {
+                margin-bottom: 0;
+              }
+              
+              .highlight-label {
+                font-size: 12px;
+                color: #666;
+                font-weight: 600;
+              }
+              
+              .highlight-value {
+                font-size: 18px;
+                color: #8b5cf6;
+                font-weight: 700;
+              }
+              
+              .divider {
+                height: 1px;
+                background: #e5e7eb;
+                margin: 24px 0;
+              }
+              
+              .instructions {
+                background: #f0fdf4;
+                border-left: 4px solid #16a34a;
+                padding: 20px;
+                border-radius: 6px;
+                margin-bottom: 24px;
+              }
+              
+              .instructions-title {
+                font-size: 12px;
+                color: #16a34a;
+                text-transform: uppercase;
+                font-weight: 700;
+                margin-bottom: 12px;
+                letter-spacing: 1px;
+              }
+              
+              .instructions-list {
+                font-size: 13px;
+                color: #334155;
+                line-height: 1.8;
+              }
+              
+              .instructions-list li {
+                margin-bottom: 8px;
+                margin-left: 20px;
+              }
+              
+              .ticket-footer {
+                border-top: 2px dashed #e5e7eb;
+                padding-top: 24px;
+                text-align: center;
+              }
+              
+              .footer-text {
+                font-size: 11px;
+                color: #999;
+                margin-bottom: 4px;
+              }
+              
+              .footer-brand {
+                font-size: 12px;
+                color: #8b5cf6;
+                font-weight: 700;
+                letter-spacing: 1px;
+              }
+              
+              .qr-note {
+                font-size: 11px;
+                color: #999;
+                margin-top: 12px;
+                font-style: italic;
+              }
+              
+              .status-badge {
+                display: inline-block;
+                background: #16a34a;
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-top: 8px;
+              }
+              
+              @media print {
+                body {
+                  background: white;
+                  padding: 0;
+                }
+                .container {
+                  box-shadow: none;
+                  max-width: 100%;
+                }
+              }
             </style>
           </head>
           <body>
-            <div class="ticket">
-              <div class="header">
-                <div class="title">🎫 EVENT TICKET</div>
-                <div class="subtitle">Mind Mesh</div>
+            <div class="container">
+              <!-- Header -->
+              <div class="ticket-header">
+                <div class="ticket-icon">🎫</div>
+                <div class="ticket-title">EVENT TICKET</div>
+                <div class="ticket-brand">MIND MESH COMMUNITY</div>
               </div>
-
-              <div class="section">
-                <div class="label">Ticket ID</div>
-                <div class="value">${ticket.ticketId}</div>
-              </div>
-
-              <div class="section">
-                <div class="label">Event</div>
-                <div class="value">${ticket.eventTitle}</div>
-              </div>
-
-              <div class="divider"></div>
-
-              <div class="section">
-                <div class="label">Date</div>
-                <div class="value">${new Date(ticket.date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>
-              </div>
-
-              <div class="section">
-                <div class="label">Time</div>
-                <div class="value">${ticket.time}</div>
-              </div>
-
-              <div class="section">
-                <div class="label">Venue</div>
-                <div class="value">${ticket.venue}</div>
-              </div>
-
-              <div class="section">
-                <div class="label">Location</div>
-                <div class="value">${ticket.location}</div>
-              </div>
-
-              <div class="divider"></div>
-
-              <div class="section">
-                <div class="label">Attendee</div>
-                <div class="value">${ticket.userName}</div>
-              </div>
-
-              <div class="section">
-                <div class="label">Email</div>
-                <div class="value">${ticket.userEmail}</div>
-              </div>
-
-              <div class="footer">
-                <p>Please present this ticket at the event entrance.</p>
-                <p>Registered: ${new Date(ticket.registeredAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+              
+              <!-- Body -->
+              <div class="ticket-body">
+                <!-- Ticket ID Section -->
+                <div class="ticket-id-section">
+                  <div class="label-small">Ticket ID</div>
+                  <div class="ticket-id">${ticket.ticketId}</div>
+                  <div class="status-badge">✓ CONFIRMED</div>
+                </div>
+                
+                <!-- Event Information -->
+                <div class="section">
+                  <div class="section-title">📅 Event Information</div>
+                  <div class="info-row">
+                    <div class="info-label">Event</div>
+                    <div class="info-value">${ticket.eventTitle}</div>
+                  </div>
+                  <div class="info-row">
+                    <div class="info-label">Date</div>
+                    <div class="info-value">${dateStr}</div>
+                  </div>
+                  <div class="info-row">
+                    <div class="info-label">Time</div>
+                    <div class="info-value">${timeStr}</div>
+                  </div>
+                </div>
+                
+                <!-- Venue & Location -->
+                <div class="highlight-section">
+                  <div class="highlight-row">
+                    <div class="highlight-label">📍 VENUE</div>
+                    <div class="highlight-value" style="text-align: right; font-size: 14px; color: #333; font-weight: 600;">${ticket.venue}</div>
+                  </div>
+                  <div class="highlight-row">
+                    <div class="highlight-label">📍 LOCATION</div>
+                    <div class="highlight-value" style="text-align: right; font-size: 14px; color: #333; font-weight: 600;">${ticket.location}</div>
+                  </div>
+                </div>
+                
+                <!-- Attendee Information -->
+                <div class="section">
+                  <div class="section-title">👤 Attendee Information</div>
+                  <div class="info-row">
+                    <div class="info-label">Name</div>
+                    <div class="info-value">${ticket.userName}</div>
+                  </div>
+                  <div class="info-row">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">${ticket.userEmail}</div>
+                  </div>
+                  <div class="info-row">
+                    <div class="info-label">Registered</div>
+                    <div class="info-value">${registeredStr}</div>
+                  </div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <!-- Instructions -->
+                <div class="instructions">
+                  <div class="instructions-title">✓ Instructions</div>
+                  <ul class="instructions-list">
+                    <li>Please arrive 15 minutes before the event starts</li>
+                    <li>Bring this ticket or show it on your mobile device</li>
+                    <li>Present your ticket at the event entrance</li>
+                    <li>Keep this ticket safe for future reference</li>
+                  </ul>
+                </div>
+                
+                <!-- Footer -->
+                <div class="ticket-footer">
+                  <div class="footer-text">Generated on ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+                  <div class="footer-brand">MIND MESH EVENT MANAGEMENT</div>
+                  <div class="qr-note">Please bring valid ID to the event</div>
+                </div>
               </div>
             </div>
           </body>
@@ -400,99 +677,112 @@ Please present this ticket at the event entrance.
             {tickets.map((ticket) => (
               <Card
                 key={ticket.ticketId}
-                className="border-none shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
                 isPressable
                 onPress={() => setSelectedTicket(ticket)}
               >
-                <CardBody className="p-4 md:p-6 gap-4">
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    {/* Ticket Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-3">
-                        <TicketIcon className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base md:text-lg font-semibold line-clamp-2">
-                            {ticket.eventTitle}
-                          </h3>
-                          <p className="text-xs md:text-small text-default-500 mt-1">
-                            ID: {ticket.ticketId}
-                          </p>
+                <CardBody className="p-0 overflow-hidden">
+                  {/* Card Top Accent */}
+                  <div className="h-1 bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700" />
+                  
+                  <div className="p-4 md:p-6 gap-4">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                      {/* Ticket Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start gap-3">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex-shrink-0 mt-1">
+                            <TicketIcon className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-base md:text-lg font-bold line-clamp-2 text-gray-900">
+                              {ticket.eventTitle}
+                            </h3>
+                            <p className="text-xs md:text-small text-gray-500 mt-1 font-mono">
+                              ID: <span className="font-semibold text-purple-600">{ticket.ticketId?.substring(0, 8)}...</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Event Details Grid */}
+                        <div className="mt-4 space-y-2 ml-8">
+                          <div className="flex items-center gap-2 text-xs md:text-small text-gray-600">
+                            <CalendarIcon className="w-4 h-4 flex-shrink-0 text-purple-500" />
+                            <span className="font-medium">
+                              {new Date(ticket.date).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs md:text-small text-gray-600">
+                            <ClockIcon className="w-4 h-4 flex-shrink-0 text-purple-500" />
+                            <span className="font-medium">{ticket.time}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs md:text-small text-gray-600">
+                            <MapPinIcon className="w-4 h-4 flex-shrink-0 text-purple-500" />
+                            <span className="line-clamp-1 font-medium">{ticket.location}</span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Event Details */}
-                      <div className="mt-4 space-y-2 ml-8">
-                        <div className="flex items-center gap-2 text-xs md:text-small text-default-600">
-                          <CalendarIcon className="w-4 h-4 flex-shrink-0" />
-                          <span>
-                            {new Date(ticket.date).toLocaleDateString("en-US", {
-                              year: "numeric",
+                      {/* Status Badge & Registration Date */}
+                      <div className="flex flex-col gap-2 md:items-end md:justify-start md:ml-4">
+                        <Chip
+                          startContent={<CheckCircle className="w-4 h-4" />}
+                          color="success"
+                          variant="flat"
+                          size="sm"
+                          className="font-semibold"
+                        >
+                          Confirmed
+                        </Chip>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Registered</p>
+                          <p className="text-sm font-bold text-gray-700 mt-0.5">
+                            {new Date(ticket.registeredAt).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                             })}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs md:text-small text-default-600">
-                          <ClockIcon className="w-4 h-4 flex-shrink-0" />
-                          <span>{ticket.time}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs md:text-small text-default-600">
-                          <MapPinIcon className="w-4 h-4 flex-shrink-0" />
-                          <span className="line-clamp-1">{ticket.location}</span>
+                          </p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Status Badge */}
-                    <div className="flex flex-col gap-2 md:items-end md:justify-start">
-                      <Chip
-                        startContent={<CheckCircle className="w-4 h-4" />}
-                        color="success"
-                        variant="flat"
+                    {/* Action Buttons */}
+                    <Divider className="my-3" />
+                    <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                      <Button
                         size="sm"
+                        variant="flat"
+                        startContent={<DownloadIcon className="w-4 h-4" />}
+                        onPress={() => handleDownloadTicket(ticket)}
+                        className="flex-1 font-semibold transition-all hover:bg-purple-100"
+                        color="primary"
                       >
-                        Registered
-                      </Chip>
-                      <p className="text-xs text-default-500 text-right">
-                        Registered:{" "}
-                        {new Date(ticket.registeredAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </p>
+                        Download
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        startContent={<PrinterIcon className="w-4 h-4" />}
+                        onPress={() => handlePrintTicket(ticket)}
+                        className="flex-1 font-semibold transition-all hover:bg-purple-100"
+                        color="primary"
+                      >
+                        Print
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        startContent={<ShareIcon className="w-4 h-4" />}
+                        onPress={() => handleShareTicket(ticket)}
+                        className="flex-1 font-semibold transition-all hover:bg-purple-100"
+                        color="primary"
+                      >
+                        Share
+                      </Button>
                     </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <Divider className="my-2" />
-                  <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      startContent={<DownloadIcon className="w-4 h-4" />}
-                      onPress={() => handleDownloadTicket(ticket)}
-                      className="flex-1"
-                    >
-                      Download
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      startContent={<PrinterIcon className="w-4 h-4" />}
-                      onPress={() => handlePrintTicket(ticket)}
-                      className="flex-1"
-                    >
-                      Print
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      startContent={<ShareIcon className="w-4 h-4" />}
-                      onPress={() => handleShareTicket(ticket)}
-                      className="flex-1"
-                    >
-                      Share
-                    </Button>
                   </div>
                 </CardBody>
               </Card>
