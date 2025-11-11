@@ -146,15 +146,17 @@ export const eventService = {
   // Create event - Remove status if it doesn't exist in collection
   async createEvent(eventData: Omit<Event, '$id' | '$createdAt' | '$updatedAt'>) {
     try {
-      // Create a copy without status if your collection doesn't have it
-      const { status, ...dataWithoutStatus } = eventData;
+      // Ensure status has a default value
+      const dataWithStatus = {
+        ...eventData,
+        status: eventData.status || "upcoming",
+      };
       
       const response = await databases.createDocument(
         DATABASE_ID,
         EVENTS_COLLECTION_ID,
         ID.unique(),
-        dataWithoutStatus // Use this if status field doesn't exist
-        // eventData // Use this if status field exists
+        dataWithStatus
       );
       return response as unknown as Event;
     } catch (error) {
@@ -166,15 +168,17 @@ export const eventService = {
   // Update event
   async updateEvent(eventId: string, eventData: Partial<Event>) {
     try {
-      // Remove status from update if it doesn't exist in collection
-      const { status, ...dataWithoutStatus } = eventData;
+      // Ensure status has a default value if provided
+      const dataWithStatus = {
+        ...eventData,
+        status: eventData.status || "upcoming",
+      };
       
       const response = await databases.updateDocument(
         DATABASE_ID,
         EVENTS_COLLECTION_ID,
         eventId,
-        dataWithoutStatus // Use this if status field doesn't exist
-        // eventData // Use this if status field exists
+        dataWithStatus
       );
       return response as unknown as Event;
     } catch (error) {
