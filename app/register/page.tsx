@@ -120,6 +120,7 @@ export default function RegisterPage() {
             </Button>
           </form>
 
+          {/* OAuth buttons commented out
           <div className="relative flex py-5 items-center">
             <div className="flex-grow border-t border-divider"></div>
             <span className="flex-shrink mx-4 text-default-400 text-small">OR</span>
@@ -166,6 +167,7 @@ export default function RegisterPage() {
           >
             Continue with GitHub
           </Button>
+          */}
         </CardBody>
         <CardFooter className="flex flex-col gap-2">
           <div className="text-small text-center">
