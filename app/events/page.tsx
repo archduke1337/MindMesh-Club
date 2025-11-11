@@ -141,8 +141,11 @@ export default function EventsPage() {
       const event = events.find(e => e.$id === eventId);
       if (!event) throw new Error("Event not found");
 
+      console.log("🔄 Registering for event:", eventId);
+      
       // Register for event in database
-      await eventService.registerForEvent(eventId, user.$id, user.name, user.email);
+      const registration = await eventService.registerForEvent(eventId, user.$id, user.name, user.email);
+      console.log("✅ Database registration successful:", registration);
       
       // Try to send email with e-ticket
       const emailResult = await sendRegistrationEmail(
