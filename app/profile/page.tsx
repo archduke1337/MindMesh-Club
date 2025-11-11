@@ -188,13 +188,13 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-8 flex items-center justify-center min-h-[calc(100vh-200px)]">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="flex flex-col gap-4 items-center pt-6 sm:pt-8 px-6 sm:px-8">
+    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-10 lg:py-12 flex items-center justify-center min-h-[calc(100vh-200px)]">
+      <Card className="w-full max-w-2xl md:max-w-3xl">
+        <CardHeader className="flex flex-col gap-3 sm:gap-4 items-center pt-6 sm:pt-8 md:pt-10 px-4 sm:px-6 md:px-8">
           <div className="relative">
             <Avatar
               src={profilePicture}
-              className="w-32 h-32"
+              className="w-24 sm:w-28 md:w-32 h-24 sm:h-28 md:h-32"
               isBordered
               color="primary"
               showFallback
@@ -209,7 +209,7 @@ export default function ProfilePage() {
               isLoading={uploadingPhoto}
             >
               {!uploadingPhoto && (
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 sm:w-3.5 md:w-4 h-3 sm:h-3.5 md:h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
                 </svg>
@@ -225,27 +225,27 @@ export default function ProfilePage() {
               placeholder="Select an image"
             />
           </div>
-          <div className="flex flex-col items-center gap-1">
-            <h1 className="text-2xl font-bold">{user.name}</h1>
-            <p className="text-default-500">{user.email}</p>
+          <div className="flex flex-col items-center gap-0.5 sm:gap-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center">{user.name}</h1>
+            <p className="text-xs sm:text-small md:text-base text-default-500 text-center break-all">{user.email}</p>
             {user.phone && (
-              <p className="text-default-500 text-sm">{user.phone}</p>
+              <p className="text-[10px] sm:text-xs md:text-small text-default-500 text-center">{user.phone}</p>
             )}
-            <Chip color="success" variant="flat" size="sm" className="mt-2">
+            <Chip color="success" variant="flat" size="sm" className="mt-2 text-[10px] sm:text-xs md:text-small">
               Active Account
             </Chip>
           </div>
         </CardHeader>
 
-        <CardBody className="gap-6 px-4 md:px-8 pb-8">
+        <CardBody className="gap-5 sm:gap-6 md:gap-8 px-4 sm:px-6 md:px-8 pb-6 sm:pb-8 md:pb-10">
           {/* Quick Actions */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
             <Button
               as={NextLink}
               href="/tickets"
               variant="flat"
               color="primary"
-              className="text-xs md:text-small"
+              className="text-[10px] sm:text-xs md:text-small"
               size="lg"
             >
               📋 My Tickets
@@ -254,7 +254,7 @@ export default function ProfilePage() {
               as={NextLink}
               href="/events"
               variant="flat"
-              className="text-xs md:text-small"
+              className="text-[10px] sm:text-xs md:text-small"
               size="lg"
             >
               🎫 Browse Events
@@ -263,7 +263,7 @@ export default function ProfilePage() {
               as={NextLink}
               href="/settings"
               variant="flat"
-              className="text-xs md:text-small"
+              className="text-[10px] sm:text-xs md:text-small"
               size="lg"
             >
               ⚙️ Settings
@@ -272,55 +272,57 @@ export default function ProfilePage() {
 
           {/* Show upload status */}
           {updateError && (
-            <div className={`p-3 md:p-4 rounded-lg text-xs md:text-small font-medium ${
+            <div className={`p-2 sm:p-3 md:p-4 rounded-lg text-[10px] sm:text-xs md:text-small font-medium ${
               updateSuccess ? "bg-success/10 text-success-700 dark:text-success-200" : "bg-danger/10 text-danger-700 dark:text-danger-200"
             }`}>
               {updateError}
             </div>
           )}
 
-          <div className="border-t border-divider pt-6">
-            <h2 className="text-base md:text-lg font-semibold mb-5">Account Information</h2>
+          <div className="border-t border-divider pt-6 sm:pt-7 md:pt-8">
+            <h2 className="text-sm sm:text-base md:text-lg font-semibold mb-4 sm:mb-5 md:mb-6">Account Information</h2>
             
-            <div className="space-y-3 md:space-y-4">
-              <div className="flex flex-col gap-2">
-                <label className="text-xs sm:text-small text-default-500">User ID</label>
-                <p className="text-xs md:text-sm font-mono bg-default-100 p-2 md:p-3 rounded-lg break-all">
+            <div className="space-y-3 sm:space-y-4 md:space-y-5">
+              <div className="flex flex-col gap-1.5 sm:gap-2">
+                <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">User ID</label>
+                <p className="text-[10px] sm:text-xs md:text-small font-mono bg-default-100 p-2 md:p-3 rounded-lg break-all">
                   {user.$id}
                 </p>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-xs sm:text-small text-default-500">Email</label>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <p className="text-xs sm:text-small p-2 break-all">{user.email}</p>
+              <div className="flex flex-col gap-1.5 sm:gap-2">
+                <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Email</label>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2">
+                  <p className="text-[10px] sm:text-xs md:text-small p-2 break-all">{user.email}</p>
                   <Chip 
                     color={user.emailVerification ? "success" : "warning"} 
                     variant="flat" 
                     size="sm"
+                    className="text-[10px] sm:text-xs md:text-small w-fit"
                   >
                     {user.emailVerification ? "Verified" : "Not Verified"}
                   </Chip>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-xs sm:text-small text-default-500">Phone Number</label>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <p className="text-xs sm:text-small p-2">{user.phone || "Not added"}</p>
+              <div className="flex flex-col gap-1.5 sm:gap-2">
+                <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Phone Number</label>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2">
+                  <p className="text-[10px] sm:text-xs md:text-small p-2">{user.phone || "Not added"}</p>
                   <Chip 
                     color={user.phoneVerification ? "success" : "warning"} 
                     variant="flat" 
                     size="sm"
+                    className="text-[10px] sm:text-xs md:text-small w-fit"
                   >
                     {user.phoneVerification ? "Verified" : "Not Verified"}
                   </Chip>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-xs sm:text-small text-default-500">Account Created</label>
-                <p className="text-xs sm:text-small p-2">
+              <div className="flex flex-col gap-1.5 sm:gap-2">
+                <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Account Created</label>
+                <p className="text-[10px] sm:text-xs md:text-small p-2">
                   {new Date(user.$createdAt).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "long",
@@ -331,15 +333,16 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="border-t border-divider pt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
-              <h2 className="text-base md:text-lg font-semibold">Profile Details</h2>
+          <div className="border-t border-divider pt-6 sm:pt-7 md:pt-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-5 md:mb-6">
+              <h2 className="text-sm sm:text-base md:text-lg font-semibold">Profile Details</h2>
               {!isEditing && (
                 <Button
                   size="lg"
                   color="primary"
                   variant="flat"
                   onPress={() => setIsEditing(true)}
+                  className="text-[10px] sm:text-xs md:text-small"
                 >
                   Edit Profile
                 </Button>
@@ -347,7 +350,7 @@ export default function ProfilePage() {
             </div>
 
             {isEditing ? (
-              <form onSubmit={handleUpdateProfile} className="space-y-4 md:space-y-5">
+              <form onSubmit={handleUpdateProfile} className="space-y-3 sm:space-y-4 md:space-y-5">
                 <Input
                   label="Name"
                   value={name}
@@ -357,18 +360,18 @@ export default function ProfilePage() {
                   isDisabled={updateLoading}
                   size="lg"
                   classNames={{
-                    input: "text-sm md:text-base",
-                    label: "text-xs md:text-small font-semibold"
+                    input: "text-xs sm:text-small md:text-base",
+                    label: "text-[10px] sm:text-xs md:text-small font-semibold"
                   }}
                 />
 
-                <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4">
                   <Button
                     type="submit"
                     color="primary"
                     isLoading={updateLoading}
                     size="lg"
-                    className="flex-1"
+                    className="flex-1 text-[10px] sm:text-xs md:text-small"
                   >
                     Save Changes
                   </Button>
@@ -382,17 +385,17 @@ export default function ProfilePage() {
                     }}
                     isDisabled={updateLoading}
                     size="lg"
-                    className="flex-1"
+                    className="flex-1 text-[10px] sm:text-xs md:text-small"
                   >
                     Cancel
                   </Button>
                 </div>
               </form>
             ) : (
-              <div className="space-y-3 md:space-y-4">
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs sm:text-small text-default-500">Name</label>
-                  <p className="text-xs sm:text-small p-2">{user.name}</p>
+              <div className="space-y-2 sm:space-y-3 md:space-y-4">
+                <div className="flex flex-col gap-1.5 sm:gap-2">
+                  <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Name</label>
+                  <p className="text-[10px] sm:text-xs md:text-small p-2">{user.name}</p>
                 </div>
               </div>
             )}
