@@ -59,14 +59,19 @@ export default function TicketsPage() {
       const registered = localStorage.getItem("registeredEvents");
       const registeredEvents = registered ? JSON.parse(registered) : [];
       
+      console.log("📋 Registered Events from localStorage:", registeredEvents);
+      
       const allTickets: Ticket[] = [];
       
       registeredEvents.forEach((eventId: string) => {
         const ticketData = localStorage.getItem(`ticket_${eventId}`);
+        console.log(`🎫 Ticket data for event ${eventId}:`, ticketData);
         if (ticketData) {
           allTickets.push(JSON.parse(ticketData));
         }
       });
+
+      console.log("✅ All tickets loaded:", allTickets);
 
       // Sort by registered date (newest first)
       allTickets.sort((a, b) => 
@@ -222,6 +227,36 @@ Please present this ticket at the event entrance.
     }
   };
 
+  const createTestTicket = () => {
+    const testEventId = `test-event-${Date.now()}`;
+    const testTicket: Ticket = {
+      ticketId: `TKT-${Date.now()}-TEST`,
+      eventId: testEventId,
+      eventTitle: "Test Event - Mind Mesh Community Meetup",
+      userName: user?.name || "Test User",
+      userEmail: user?.email || "test@example.com",
+      date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+      time: "6:00 PM",
+      venue: "Community Center - Main Hall",
+      location: "San Francisco, CA",
+      registeredAt: new Date().toISOString(),
+    };
+
+    // Store ticket and registered event
+    localStorage.setItem(`ticket_${testEventId}`, JSON.stringify(testTicket));
+    
+    const registered = localStorage.getItem("registeredEvents");
+    const registeredEvents = registered ? JSON.parse(registered) : [];
+    if (!registeredEvents.includes(testEventId)) {
+      registeredEvents.push(testEventId);
+      localStorage.setItem("registeredEvents", JSON.stringify(registeredEvents));
+    }
+
+    // Reload tickets
+    loadTickets();
+    alert("✅ Test ticket created! Refresh the page to see it.");
+  };
+
   if (loading || ticketsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -260,22 +295,58 @@ Please present this ticket at the event entrance.
 
       {/* Empty State */}
       {tickets.length === 0 ? (
-        <Card className="border-none shadow-lg">
-          <CardBody className="py-12 md:py-16 text-center px-4 md:px-8">
-            <TicketIcon className="w-16 h-16 mx-auto text-default-300 mb-4" />
-            <h2 className="text-xl md:text-2xl font-semibold mb-2">No Tickets Yet</h2>
-            <p className="text-default-500 mb-6 text-sm md:text-base">
-              You haven't registered for any events yet. Browse and register for events to get started!
-            </p>
-            <Button
-              color="primary"
-              size="lg"
-              onPress={() => router.push("/events")}
-            >
-              Browse Events
-            </Button>
-          </CardBody>
-        </Card>
+        <div className="space-y-4 md:space-y-6">
+          <Card className="border-none shadow-lg">
+            <CardBody className="py-12 md:py-16 text-center px-4 md:px-8">
+              <TicketIcon className="w-16 h-16 mx-auto text-default-300 mb-4" />
+              <h2 className="text-xl md:text-2xl font-semibold mb-2">No Tickets Yet</h2>
+              <p className="text-default-500 mb-6 text-sm md:text-base">
+                You haven't registered for any events yet. Browse and register for events to get started!
+              </p>
+              <Button
+                color="primary"
+                size="lg"
+                onPress={() => router.push("/events")}
+              >
+                Browse Events
+              </Button>
+            </CardBody>
+          </Card>
+
+          {/* Debug Information Card */}
+          <Card className="border-default-300 bg-default/50">
+            <CardHeader className="bg-default/60 px-4 sm:px-6 md:px-8 pt-4 pb-2">
+              <h3 className="text-small font-semibold">🔍 Troubleshooting</h3>
+            </CardHeader>
+            <CardBody className="text-xs md:text-small space-y-4 px-4 sm:px-6 md:px-8">
+              <div>
+                <p>
+                  <strong>How to get tickets:</strong>
+                </p>
+                <ol className="list-decimal list-inside space-y-1 text-default-600 mt-2">
+                  <li>Go to <Button variant="light" size="sm" className="h-auto p-0 text-xs" onPress={() => router.push("/events")}>Events page</Button></li>
+                  <li>Find an event you're interested in</li>
+                  <li>Click the ticket/register button</li>
+                  <li>Complete the registration</li>
+                  <li>You'll receive a confirmation and ticket ID</li>
+                  <li>Your ticket will appear here automatically</li>
+                </ol>
+              </div>
+              <p className="text-default-500">
+                💡 <strong>Tip:</strong> Tickets are stored in your browser's local storage and persist across sessions.
+              </p>
+              <Button
+                size="sm"
+                variant="flat"
+                color="secondary"
+                onPress={createTestTicket}
+                className="w-full"
+              >
+                🧪 Create Test Ticket (For Demo)
+              </Button>
+            </CardBody>
+          </Card>
+        </div>
       ) : (
         <div className="space-y-4 md:space-y-6">
           {/* Summary Card */}
