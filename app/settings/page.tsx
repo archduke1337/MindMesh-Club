@@ -211,8 +211,8 @@ export default function SettingsPage() {
         <CardBody className="gap-6">
           {/* Change Password */}
           <div>
-            <h3 className="text-lg font-medium mb-4">Change Password</h3>
-            <form onSubmit={handlePasswordChange} className="space-y-3 md:space-y-4">
+            <h3 className="text-base md:text-lg font-semibold mb-4">Change Password</h3>
+            <form onSubmit={handlePasswordChange} className="space-y-4 md:space-y-5">
               <Input
                 label="Current Password"
                 type="password"
@@ -222,6 +222,10 @@ export default function SettingsPage() {
                 required
                 isDisabled={passwordLoading}
                 size="lg"
+                classNames={{
+                  input: "text-sm md:text-base",
+                  label: "text-xs md:text-small font-semibold"
+                }}
               />
               <Input
                 label="New Password"
@@ -232,6 +236,10 @@ export default function SettingsPage() {
                 required
                 isDisabled={passwordLoading}
                 size="lg"
+                classNames={{
+                  input: "text-sm md:text-base",
+                  label: "text-xs md:text-small font-semibold"
+                }}
               />
               <Input
                 label="Confirm New Password"
@@ -242,14 +250,18 @@ export default function SettingsPage() {
                 required
                 isDisabled={passwordLoading}
                 size="lg"
+                classNames={{
+                  input: "text-sm md:text-base",
+                  label: "text-xs md:text-small font-semibold"
+                }}
               />
 
               {passwordError && (
-                <div className="text-danger text-sm">{passwordError}</div>
+                <div className="text-danger text-xs md:text-small bg-danger/10 p-2 md:p-3 rounded">{passwordError}</div>
               )}
 
               {passwordSuccess && (
-                <div className="text-success text-sm">
+                <div className="text-success text-xs md:text-small bg-success/10 p-2 md:p-3 rounded">
                   Password changed successfully!
                 </div>
               )}
@@ -268,14 +280,14 @@ export default function SettingsPage() {
 
           {/* Email Verification */}
           <div>
-            <h3 className="text-lg font-medium mb-4">Email Verification</h3>
-            <div className="flex items-center justify-between">
+            <h3 className="text-base md:text-lg font-semibold mb-4">Email Verification</h3>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <p className="text-sm text-default-500">
+                <p className="text-xs md:text-small text-default-500">
                   Status: {user.emailVerification ? (
-                    <span className="text-success">Verified ✓</span>
+                    <span className="text-success font-semibold">Verified ✓</span>
                   ) : (
-                    <span className="text-warning">Not Verified</span>
+                    <span className="text-warning font-semibold">Not Verified</span>
                   )}
                 </p>
                 <p className="text-sm text-default-500 mt-1">
@@ -421,10 +433,10 @@ export default function SettingsPage() {
       <Modal isOpen={isPhoneModalOpen} onClose={onPhoneModalClose}>
         <ModalContent>
           <form onSubmit={handleAddPhone}>
-            <ModalHeader>
+            <ModalHeader className="text-lg md:text-xl font-bold">
               {user.phone ? "Update" : "Add"} Phone Number
             </ModalHeader>
-            <ModalBody>
+            <ModalBody className="space-y-4">
               <Input
                 label="Phone Number"
                 placeholder="+911234567890"
@@ -433,6 +445,11 @@ export default function SettingsPage() {
                 description="Include country code (e.g., +91 for India)"
                 required
                 isDisabled={phoneLoading}
+                size="lg"
+                classNames={{
+                  input: "text-sm md:text-base",
+                  label: "text-xs md:text-small font-semibold"
+                }}
               />
               <Input
                 label="Password"
@@ -443,6 +460,11 @@ export default function SettingsPage() {
                 description="Confirm with your account password"
                 required
                 isDisabled={phoneLoading}
+                size="lg"
+                classNames={{
+                  input: "text-sm md:text-base",
+                  label: "text-xs md:text-small font-semibold"
+                }}
               />
               {phoneError && (
                 <div className="text-danger text-sm">{phoneError}</div>
@@ -464,11 +486,11 @@ export default function SettingsPage() {
       <Modal isOpen={isVerifyModalOpen} onClose={onVerifyModalClose}>
         <ModalContent>
           <form onSubmit={handleVerifyPhone}>
-            <ModalHeader>
+            <ModalHeader className="text-lg md:text-xl font-bold">
               Verify Phone Number
             </ModalHeader>
-            <ModalBody>
-              <p className="text-sm text-default-500 mb-4">
+            <ModalBody className="space-y-4">
+              <p className="text-xs md:text-small text-default-500">
                 Enter the verification code sent to your phone number
               </p>
               <Input
@@ -479,18 +501,23 @@ export default function SettingsPage() {
                 required
                 maxLength={6}
                 isDisabled={phoneVerifyLoading}
+                size="lg"
+                classNames={{
+                  input: "text-sm md:text-base",
+                  label: "text-xs md:text-small font-semibold"
+                }}
               />
               {phoneVerifyError && (
-                <div className="text-danger text-sm">{phoneVerifyError}</div>
+                <div className="text-danger text-xs md:text-small bg-danger/10 p-2 md:p-3 rounded">{phoneVerifyError}</div>
               )}
               {phoneVerifySuccess && (
-                <div className="text-success text-sm">
+                <div className="text-success text-xs md:text-small bg-success/10 p-2 md:p-3 rounded">
                   Phone verified successfully!
                 </div>
               )}
               <Button
                 variant="flat"
-                size="sm"
+                size="lg"
                 onPress={handleSendPhoneVerification}
                 isLoading={phoneVerifyLoading}
                 className="mt-2"
