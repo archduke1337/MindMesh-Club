@@ -84,14 +84,14 @@ export default function ProjectsPage() {
   };
 
   return (
-    <div className="space-y-12 pb-20">
+    <div className="space-y-8 md:space-y-12 pb-12 md:pb-20 px-4 sm:px-6 lg:px-8">
       {/* Hero Section */}
-      <div className="text-center space-y-6 relative py-12">
+      <div className="text-center space-y-4 md:space-y-6 relative py-8 md:py-12">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute top-20 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 mb-6">
-          <RocketIcon className="w-5 h-5 text-purple-500" />
-          <span className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+        <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 mb-4 md:mb-6">
+          <RocketIcon className="w-4 sm:w-5 h-4 sm:h-5 text-purple-500" />
+          <span className="text-xs sm:text-small font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             Innovative Projects
           </span>
         </div>
@@ -102,31 +102,34 @@ export default function ProjectsPage() {
               Amazing Projects
             </span>
           </h1>
-          <p className={subtitle({ class: "mt-6 max-w-3xl mx-auto text-xl" })}>
+          <p className={subtitle({ class: "mt-4 md:mt-6 max-w-3xl mx-auto text-base md:text-lg" })}>
             Discover cutting-edge projects built by our community. From AI to blockchain, explore the future of technology.
           </p>
         </div>
       </div>
 
       {/* Category Filters */}
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex flex-wrap gap-3 justify-center">
-          {categories.map((category) => (
-            <Chip
-              key={category.key}
-              variant={selectedCategory === category.key ? "solid" : "flat"}
-              color={selectedCategory === category.key ? "secondary" : "default"}
-              className={`cursor-pointer transition-all ${
-                selectedCategory === category.key 
-                  ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg" 
-                  : "hover:shadow-md"
-              }`}
-              onClick={() => setSelectedCategory(category.key)}
-            >
-              {category.label}
-              <span className="ml-2 text-xs opacity-80">({category.count})</span>
-            </Chip>
-          ))}
+      <div className="w-full">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-wrap gap-2 md:gap-3 justify-center">
+            {categories.map((category) => (
+              <Chip
+                key={category.key}
+                variant={selectedCategory === category.key ? "solid" : "flat"}
+                color={selectedCategory === category.key ? "secondary" : "default"}
+                size="sm"
+                className={`cursor-pointer transition-all text-xs md:text-small ${
+                  selectedCategory === category.key 
+                    ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg" 
+                    : "hover:shadow-md"
+                }`}
+                onClick={() => setSelectedCategory(category.key)}
+              >
+                {category.label}
+                <span className="ml-1 opacity-80">({category.count})</span>
+              </Chip>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -139,62 +142,63 @@ export default function ProjectsPage() {
       ) : (
         <>
           {/* Projects Grid */}
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
-              {filteredProjects.map((project) => (
-                <Card
-                  key={project.$id}
-                  className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
-                  shadow="lg"
-                  isPressable
-                >
-                  <CardBody className="p-0 overflow-hidden">
-                    {/* Project Image */}
-                    <div className="relative">
-                      <img
-                        src={project.image}
-                        alt={project.title}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      
-                      {/* Overlay Badges */}
-                      <div className="absolute top-4 left-4 flex flex-col gap-2">
-                        {project.isFeatured && (
-                          <Badge 
-                            color="warning" 
-                            variant="solid"
-                            className="font-bold"
-                          >
-                            <StarIcon className="w-3 h-3 mr-1" />
-                            Featured
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Save Button */}
-                      <Button
-                        isIconOnly
-                        variant="flat"
-                        className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
-                        size="sm"
-                        onPress={() => toggleSaveProject(project.$id!)}
-                      >
-                        <HeartIcon 
-                          className={`w-5 h-5 ${
-                            savedProjects.includes(project.$id!) 
-                              ? "text-red-500 fill-red-500" 
-                              : "text-default-600"
-                          }`} 
+          <div className="w-full">
+            <div className="max-w-7xl mx-auto">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
+                {filteredProjects.map((project) => (
+                  <Card
+                    key={project.$id}
+                    className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
+                    shadow="lg"
+                    isPressable
+                  >
+                    <CardBody className="p-0 overflow-hidden">
+                      {/* Project Image */}
+                      <div className="relative">
+                        <img
+                          src={project.image}
+                          alt={project.title}
+                          className="w-full h-40 sm:h-44 md:h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                      </Button>
+                        
+                        {/* Overlay Badges */}
+                        <div className="absolute top-2 sm:top-3 md:top-4 left-2 sm:left-3 md:left-4 flex flex-col gap-2">
+                          {project.isFeatured && (
+                            <Badge 
+                              color="warning" 
+                              variant="solid"
+                              className="font-bold text-xs"
+                            >
+                              <StarIcon className="w-3 h-3 mr-1" />
+                              Featured
+                            </Badge>
+                          )}
+                        </div>
 
-                      {/* Status Badge */}
-                      <div className="absolute bottom-4 right-4">
-                        <Chip
-                          color={getStatusColor(project.status || "planning") as any}
-                          variant="solid"
+                        {/* Save Button */}
+                        <Button
+                          isIconOnly
+                          variant="flat"
+                          className="absolute top-2 sm:top-3 md:top-4 right-2 sm:right-3 md:right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
                           size="sm"
+                          onPress={() => toggleSaveProject(project.$id!)}
                         >
+                          <HeartIcon 
+                            className={`w-4 md:w-5 h-4 md:h-5 ${
+                              savedProjects.includes(project.$id!) 
+                                ? "text-red-500 fill-red-500" 
+                                : "text-default-600"
+                            }`} 
+                          />
+                        </Button>
+
+                        {/* Status Badge */}
+                        <div className="absolute bottom-2 sm:bottom-3 md:bottom-4 right-2 sm:right-3 md:right-4">
+                          <Chip
+                            color={getStatusColor(project.status || "planning") as any}
+                            variant="solid"
+                            size="sm"
+                          >
                           {(project.status || "planning").replace("-", " ")}
                         </Chip>
                       </div>
@@ -353,9 +357,9 @@ export default function ProjectsPage() {
                 </CardBody>
               </Card>
             )}
+            </div>
           </div>
 
-         
         </>
       )}
     </div>

@@ -266,49 +266,50 @@ export default function EventsPage() {
       </div>
 
       {/* Filters and Search */}
-      <div className="max-w-7xl mx-auto px-6">
-        <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-          <CardBody className="p-6">
-            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-              <div className="flex-1 w-full lg:max-w-md">
-                <Input
-                  placeholder="Search events, topics, or locations..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  startContent={<SearchIcon className="w-5 h-5 text-default-400" />}
-                  classNames={{ input: "text-lg" }}
-                  size="lg"
-                />
-              </div>
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
+            <CardBody className="p-4 sm:p-6">
+              <div className="flex flex-col gap-3 md:gap-4">
+                <div className="w-full">
+                  <Input
+                    placeholder="Search events..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    startContent={<SearchIcon className="w-4 h-4 text-default-400" />}
+                    size="lg"
+                  />
+                </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                <Select
-                  label="Sort by"
-                  selectedKeys={[sortBy]}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  size="sm"
-                  className="min-w-[150px]"
-                >
-                  <SelectItem key="date">Date</SelectItem>
-                  <SelectItem key="price">Price</SelectItem>
-                  <SelectItem key="popularity">Popularity</SelectItem>
-                </Select>
+                <div className="flex flex-col sm:flex-row gap-3 md:gap-4 w-full">
+                  <Select
+                    label="Sort by"
+                    selectedKeys={[sortBy]}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    size="lg"
+                    className="flex-1"
+                  >
+                    <SelectItem key="date">Date</SelectItem>
+                    <SelectItem key="price">Price</SelectItem>
+                    <SelectItem key="popularity">Popularity</SelectItem>
+                  </Select>
 
-                <Select
-                  label="Category"
-                  selectedKeys={[selectedCategory]}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  size="sm"
-                  className="min-w-[150px]"
-                >
-                  {categories.map(category => (
-                    <SelectItem key={category.key}>{category.label}</SelectItem>
-                  ))}
-                </Select>
+                  <Select
+                    label="Category"
+                    selectedKeys={[selectedCategory]}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    size="lg"
+                    className="flex-1"
+                  >
+                    {categories.map(category => (
+                      <SelectItem key={category.key}>{category.label}</SelectItem>
+                    ))}
+                  </Select>
+                </div>
               </div>
-            </div>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        </div>
       </div>
 
       {/* Events Grid */}

@@ -186,15 +186,15 @@ export default function ContactPage() {
         {/* Contact Form */}
         <div className="lg:col-span-2">
           <Card className="border-none shadow-xl" shadow="lg">
-            <CardHeader className="flex flex-col items-start px-6 sm:px-8 pt-6 sm:pt-8 pb-0">
-              <h2 className="text-xl md:text-2xl font-bold">Send us a Message</h2>
-              <p className="text-default-600 mt-2 text-sm md:text-base">Fill out the form below and we'll get back to you shortly</p>
+            <CardHeader className="flex flex-col items-start px-4 sm:px-6 md:px-8 pt-6 sm:pt-8 pb-0">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold">Send us a Message</h2>
+              <p className="text-default-600 mt-2 text-xs sm:text-small md:text-base">Fill out the form below and we'll get back to you shortly</p>
             </CardHeader>
-            <CardBody className="p-6 sm:p-8">
-              <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+            <CardBody className="p-4 sm:p-6 md:p-8">
+              <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4 lg:space-y-6">
                 {submitStatus.type && (
                   <div
-                    className={`p-4 rounded-lg ${submitStatus.type === "success"
+                    className={`p-3 md:p-4 rounded-lg text-sm ${submitStatus.type === "success"
                       ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
                       : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
                       }`}
@@ -203,7 +203,7 @@ export default function ContactPage() {
                   </div>
                 )}
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-3 md:gap-4">
                   <Input
                     isRequired
                     label="Name"
@@ -243,7 +243,7 @@ export default function ContactPage() {
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   variant="bordered"
-                  minRows={6}
+                  minRows={5}
                   size="lg"
                   isDisabled={isSubmitting}
                 />
