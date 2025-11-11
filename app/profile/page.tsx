@@ -187,9 +187,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8 px-4">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-8 flex items-center justify-center min-h-[calc(100vh-200px)]">
       <Card className="w-full max-w-2xl">
-        <CardHeader className="flex flex-col gap-4 items-center pt-8">
+        <CardHeader className="flex flex-col gap-4 items-center pt-6 sm:pt-8 px-6 sm:px-8">
           <div className="relative">
             <Avatar
               src={profilePicture}
@@ -249,18 +249,18 @@ export default function ProfilePage() {
           <div className="border-t border-divider pt-6">
             <h2 className="text-lg font-semibold mb-4">Account Information</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               <div className="flex flex-col gap-2">
-                <label className="text-sm text-default-500">User ID</label>
-                <p className="text-xs md:text-sm font-mono bg-default-100 p-2 rounded-lg break-all">
+                <label className="text-xs sm:text-small text-default-500">User ID</label>
+                <p className="text-xs md:text-sm font-mono bg-default-100 p-2 md:p-3 rounded-lg break-all">
                   {user.$id}
                 </p>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-sm text-default-500">Email</label>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm p-2 break-all">{user.email}</p>
+                <label className="text-xs sm:text-small text-default-500">Email</label>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <p className="text-xs sm:text-small p-2 break-all">{user.email}</p>
                   <Chip 
                     color={user.emailVerification ? "success" : "warning"} 
                     variant="flat" 
@@ -272,9 +272,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-sm text-default-500">Phone Number</label>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm p-2">{user.phone || "Not added"}</p>
+                <label className="text-xs sm:text-small text-default-500">Phone Number</label>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <p className="text-xs sm:text-small p-2">{user.phone || "Not added"}</p>
                   <Chip 
                     color={user.phoneVerification ? "success" : "warning"} 
                     variant="flat" 
@@ -286,8 +286,8 @@ export default function ProfilePage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-sm text-default-500">Account Created</label>
-                <p className="text-sm p-2">
+                <label className="text-xs sm:text-small text-default-500">Account Created</label>
+                <p className="text-xs sm:text-small p-2">
                   {new Date(user.$createdAt).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "long",
@@ -314,7 +314,7 @@ export default function ProfilePage() {
             </div>
 
             {isEditing ? (
-              <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <form onSubmit={handleUpdateProfile} className="space-y-3 md:space-y-4">
                 <Input
                   label="Name"
                   value={name}
@@ -322,13 +322,15 @@ export default function ProfilePage() {
                   placeholder="Enter your name"
                   required
                   isDisabled={updateLoading}
+                  size="lg"
                 />
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <Button
                     type="submit"
                     color="primary"
                     isLoading={updateLoading}
+                    size="lg"
                   >
                     Save Changes
                   </Button>
@@ -341,16 +343,17 @@ export default function ProfilePage() {
                       setUpdateSuccess(false);
                     }}
                     isDisabled={updateLoading}
+                    size="lg"
                   >
                     Cancel
                   </Button>
                 </div>
               </form>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm text-default-500">Name</label>
-                  <p className="text-sm p-2">{user.name}</p>
+                  <label className="text-xs sm:text-small text-default-500">Name</label>
+                  <p className="text-xs sm:text-small p-2">{user.name}</p>
                 </div>
               </div>
             )}

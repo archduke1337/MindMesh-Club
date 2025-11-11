@@ -198,8 +198,8 @@ export default function AdminBlogsPage() {
       <Tabs
         selectedKey={selectedTab}
         onSelectionChange={(key) => setSelectedTab(key as string)}
-        size="lg"
-        className="mb-8"
+        size="md"
+        className="mb-6 md:mb-8 overflow-x-auto"
       >
         <Tab
           key="pending"
@@ -235,11 +235,11 @@ export default function AdminBlogsPage() {
       </Tabs>
 
       {/* Blog List */}
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {filteredBlogs.length === 0 ? (
           <Card>
-            <CardBody className="text-center py-12">
-              <p className="text-lg text-default-600">
+            <CardBody className="text-center py-8 md:py-12 px-4 md:px-6">
+              <p className="text-sm md:text-lg text-default-600">
                 No blogs in this category
               </p>
             </CardBody>
@@ -247,22 +247,22 @@ export default function AdminBlogsPage() {
         ) : (
           filteredBlogs.map((blog) => (
             <Card key={blog.$id} className="border-2">
-              <CardBody className="p-6">
-                <div className="grid md:grid-cols-12 gap-6">
+              <CardBody className="p-4 sm:p-5 md:p-6">
+                <div className="grid md:grid-cols-12 gap-4 md:gap-6">
                   {/* Cover Image */}
                   <div className="md:col-span-3">
                     <img
                       src={blog.coverImage}
                       alt={blog.title}
-                      className="w-full h-32 object-cover rounded-lg"
+                      className="w-full h-28 sm:h-32 object-cover rounded-lg"
                     />
                   </div>
 
                   {/* Content */}
-                  <div className="md:col-span-6 space-y-3">
+                  <div className="md:col-span-6 space-y-2 md:space-y-3">
                     {/* Title & Status */}
-                    <div className="flex items-start justify-between gap-4">
-                      <h3 className="font-bold text-xl flex-1">{blog.title}</h3>
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                      <h3 className="font-bold text-base sm:text-lg md:text-xl flex-1">{blog.title}</h3>
                       <Chip
                         color={
                           blog.status === "approved"
@@ -272,33 +272,34 @@ export default function AdminBlogsPage() {
                             : "warning"
                         }
                         variant="flat"
+                        size="sm"
                       >
                         {blog.status}
                       </Chip>
                     </div>
 
                     {/* Excerpt */}
-                    <p className="text-sm text-default-600 line-clamp-2">
+                    <p className="text-xs sm:text-small text-default-600 line-clamp-2">
                       {blog.excerpt}
                     </p>
 
                     {/* Meta */}
-                    <div className="flex items-center gap-4 text-sm text-default-500">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-small text-default-500">
                       <div className="flex items-center gap-2">
                         <Avatar
                           src={blog.authorAvatar}
                           name={blog.authorName}
                           size="sm"
                         />
-                        <span>{blog.authorName}</span>
+                        <span className="truncate">{blog.authorName}</span>
                       </div>
-                      <div>•</div>
-                      <div>{blog.category}</div>
-                      <div>•</div>
-                      <div>{blog.readTime} min read</div>
+                      <div className="hidden sm:block">•</div>
+                      <div className="truncate">{blog.category}</div>
+                      <div className="hidden sm:block">•</div>
+                      <div className="whitespace-nowrap">{blog.readTime} min</div>
                       {blog.featured && (
                         <>
-                          <div>•</div>
+                          <div className="hidden sm:block">•</div>
                           <Chip size="sm" color="warning">
                             <StarIcon className="w-3 h-3" /> Featured
                           </Chip>
@@ -307,7 +308,7 @@ export default function AdminBlogsPage() {
                     </div>
 
                     {/* Tags */}
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1 md:gap-2">
                       {blog.tags.map((tag, i) => (
                         <Chip key={i} size="sm" variant="flat">
                           #{tag}
@@ -317,11 +318,11 @@ export default function AdminBlogsPage() {
 
                     {/* Rejection Reason */}
                     {blog.status === "rejected" && blog.rejectionReason && (
-                      <div className="bg-danger/10 border border-danger/20 rounded-lg p-3">
-                        <p className="text-sm font-semibold text-danger">
+                      <div className="bg-danger/10 border border-danger/20 rounded-lg p-2 md:p-3">
+                        <p className="text-xs font-semibold text-danger">
                           Rejection Reason:
                         </p>
-                        <p className="text-sm text-default-600">
+                        <p className="text-xs text-default-600">
                           {blog.rejectionReason}
                         </p>
                       </div>
@@ -335,7 +336,7 @@ export default function AdminBlogsPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="md:col-span-3 flex md:flex-col gap-2">
+                  <div className="md:col-span-3 flex flex-wrap md:flex-col gap-2">
                     <Button
                       as="a"
                       href={`/blog/${blog.slug}`}

@@ -54,9 +54,9 @@ function VerifyEmailContent() {
   }, [searchParams, router]);
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+    <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-center min-h-[calc(100vh-200px)]">
       <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-col gap-1 items-center">
+        <CardHeader className="flex flex-col gap-1 items-center px-6 sm:px-8 pt-6 sm:pt-8">
           {status === "loading" && (
             <>
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
@@ -77,16 +77,16 @@ function VerifyEmailContent() {
           )}
         </CardHeader>
         
-        <CardBody className="text-center gap-4">
+        <CardBody className="text-center gap-4 px-6 sm:px-8 pb-6 sm:pb-8">
           {status === "loading" && (
-            <p className="text-default-500">
+            <p className="text-default-500 text-xs sm:text-small">
               Please wait while we verify your email address...
             </p>
           )}
           
           {status === "success" && (
             <>
-              <p className="text-default-500">
+              <p className="text-default-500 text-xs sm:text-small">
                 Your email has been successfully verified! You will be redirected to your profile shortly.
               </p>
               <Button
@@ -94,6 +94,7 @@ function VerifyEmailContent() {
                 href="/profile"
                 color="primary"
                 className="mt-4"
+                size="lg"
               >
                 Go to Profile
               </Button>
@@ -102,18 +103,19 @@ function VerifyEmailContent() {
           
           {status === "error" && (
             <>
-              <p className="text-danger text-sm">
+              <p className="text-danger text-xs sm:text-small">
                 {errorMessage}
               </p>
-              <p className="text-default-500 text-sm mt-2">
+              <p className="text-default-500 text-xs sm:text-small mt-2">
                 Please try requesting a new verification email from your settings page.
               </p>
-              <div className="flex gap-2 justify-center mt-4">
+              <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4">
                 <Button
                   as={NextLink}
                   href="/settings"
                   color="primary"
                   variant="flat"
+                  size="lg"
                 >
                   Go to Settings
                 </Button>
@@ -121,6 +123,7 @@ function VerifyEmailContent() {
                   as={NextLink}
                   href="/"
                   variant="light"
+                  size="lg"
                 >
                   Go Home
                 </Button>
@@ -135,11 +138,11 @@ function VerifyEmailContent() {
 
 function LoadingFallback() {
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+    <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-center min-h-[calc(100vh-200px)]">
       <Card className="w-full max-w-md">
-        <CardBody className="py-12 text-center">
+        <CardBody className="py-8 sm:py-12 text-center px-6 sm:px-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-          <p className="mt-4 text-default-500">Verifying your email...</p>
+          <p className="mt-4 text-default-500 text-sm">Verifying your email...</p>
         </CardBody>
       </Card>
     </div>

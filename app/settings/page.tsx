@@ -200,8 +200,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">Settings</h1>
+    <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-8 max-w-4xl mx-auto">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 md:mb-8">Settings</h1>
 
       {/* Security Settings */}
       <Card className="mb-6">
@@ -212,7 +212,7 @@ export default function SettingsPage() {
           {/* Change Password */}
           <div>
             <h3 className="text-lg font-medium mb-4">Change Password</h3>
-            <form onSubmit={handlePasswordChange} className="space-y-4">
+            <form onSubmit={handlePasswordChange} className="space-y-3 md:space-y-4">
               <Input
                 label="Current Password"
                 type="password"
@@ -221,6 +221,7 @@ export default function SettingsPage() {
                 placeholder="Enter current password"
                 required
                 isDisabled={passwordLoading}
+                size="lg"
               />
               <Input
                 label="New Password"
@@ -230,6 +231,7 @@ export default function SettingsPage() {
                 placeholder="Enter new password (min 8 characters)"
                 required
                 isDisabled={passwordLoading}
+                size="lg"
               />
               <Input
                 label="Confirm New Password"
@@ -239,6 +241,7 @@ export default function SettingsPage() {
                 placeholder="Confirm new password"
                 required
                 isDisabled={passwordLoading}
+                size="lg"
               />
 
               {passwordError && (
