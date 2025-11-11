@@ -283,8 +283,7 @@ export const eventService = {
           userId,
           userName,
           userEmail,
-          registeredAt: new Date().toISOString()
-          // Removed 'status' field - add it back if you create the attribute in Appwrite
+          registeredAt: new Date().toISOString(),
         }
       );
 
