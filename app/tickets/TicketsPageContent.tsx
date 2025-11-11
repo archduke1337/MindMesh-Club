@@ -821,30 +821,30 @@ export default function TicketsPageContent() {
           </Card>
         </div>
       ) : (
-        <div className="space-y-4 md:space-y-6">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6">
           {/* Summary Card */}
           <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-200/50">
-            <CardBody className="py-4 md:py-6 px-4 md:px-8">
-              <div className="flex items-center justify-between">
+            <CardBody className="py-3 sm:py-4 md:py-5 lg:py-6 px-3 sm:px-4 md:px-6 lg:px-8">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm md:text-base text-default-500">
+                  <p className="text-xs sm:text-sm md:text-base text-default-500">
                     Total Registered Events
                   </p>
-                  <h3 className="text-2xl md:text-3xl font-bold text-primary">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mt-1">
                     {tickets.length}
                   </h3>
                 </div>
-                <TicketIcon className="w-12 h-12 text-primary/40" />
+                <TicketIcon className="w-10 sm:w-11 md:w-12 h-10 sm:h-11 md:h-12 text-primary/40 flex-shrink-0" />
               </div>
             </CardBody>
           </Card>
 
           {/* Tickets List */}
-          <div className="space-y-3 md:space-y-4">
+          <div className="space-y-2 sm:space-y-3 md:space-y-4">
             {tickets.map((ticket) => (
               <Card
                 key={ticket.ticketId}
-                className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
+                className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 isPressable
                 onPress={() => setSelectedTicket(ticket)}
               >
@@ -974,13 +974,13 @@ export default function TicketsPageContent() {
       {/* Ticket Detail Modal */}
       {selectedTicket && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-2 sm:p-3 md:p-4 overflow-y-auto"
           onClick={() => setSelectedTicket(null)}
         >
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader className="flex flex-col gap-1 items-start px-4 sm:px-6 md:px-8 pt-6 sm:pt-8 pb-0">
-              <div className="flex items-center justify-between w-full">
-                <h2 className="text-xl md:text-2xl font-bold">
+          <Card className="w-full max-w-lg sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto my-4 sm:my-auto">
+            <CardHeader className="flex flex-col gap-1 items-start px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 pb-0">
+              <div className="flex items-center justify-between w-full gap-2">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold break-words">
                   Ticket Details
                 </h2>
                 <Button
@@ -988,22 +988,23 @@ export default function TicketsPageContent() {
                   variant="light"
                   size="sm"
                   onPress={() => setSelectedTicket(null)}
+                  className="flex-shrink-0"
                 >
                   ✕
                 </Button>
               </div>
             </CardHeader>
 
-            <CardBody className="p-4 sm:p-6 md:p-8 space-y-4 md:space-y-6">
+            <CardBody className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6">
               {/* Ticket ID */}
-              <div className="bg-default/50 p-4 md:p-6 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <QrCodeIcon className="w-6 h-6 text-primary" />
-                  <div>
-                    <p className="text-xs md:text-small text-default-500">
+              <div className="bg-default/50 p-3 sm:p-4 md:p-6 rounded-lg">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <QrCodeIcon className="w-5 sm:w-6 h-5 sm:h-6 text-primary flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-small text-default-500">
                       Ticket ID
                     </p>
-                    <p className="text-sm md:text-lg font-mono font-semibold text-primary break-all">
+                    <p className="text-xs sm:text-sm md:text-lg font-mono font-semibold text-primary break-all">
                       {selectedTicket.ticketId}
                     </p>
                   </div>
@@ -1014,10 +1015,10 @@ export default function TicketsPageContent() {
 
               {/* Event Details */}
               <div>
-                <h3 className="text-base md:text-lg font-semibold mb-4">
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-3 sm:mb-4">
                   Event Information
                 </h3>
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-2 sm:space-y-3 md:space-y-4">
                   <div>
                     <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
                       Event Title
