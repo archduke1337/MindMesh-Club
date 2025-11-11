@@ -165,36 +165,36 @@ export default function ContactPage() {
   ];
 
   return (
-    <div className="space-y-12 md:space-y-16 pb-12 md:pb-16 px-4 sm:px-6 lg:px-8">
+    <div className="space-y-8 sm:space-y-10 md:space-y-12 lg:space-y-16 pb-10 sm:pb-12 md:pb-16 lg:pb-20 px-3 sm:px-4 md:px-6 lg:px-8">
       {/* Hero Section */}
-      <div className="text-center space-y-4 md:space-y-6 relative">
-        <div className="absolute top-0 left-1/3 w-72 md:w-96 h-72 md:h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-10 right-1/3 w-56 md:w-72 h-56 md:h-72 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
+      <div className="text-center space-y-3 sm:space-y-4 md:space-y-5 lg:space-y-6 relative py-6 sm:py-8">
+        <div className="absolute top-0 left-1/3 w-48 sm:w-64 md:w-72 lg:w-96 h-48 sm:h-64 md:h-72 lg:h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-6 sm:top-8 md:top-10 right-1/3 w-40 sm:w-56 md:w-64 lg:w-72 h-40 sm:h-56 md:h-64 lg:h-72 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
 
         <div className="relative z-10">
           <h1 className={title({ size: "lg" })}>
             Get in{" "}
             <span className={title({ color: "violet", size: "lg" })}>Touch</span>
           </h1>
-          <p className={subtitle({ class: "mt-4 max-w-2xl mx-auto text-sm md:text-base" })}>
+          <p className={subtitle({ class: "mt-3 sm:mt-4 md:mt-5 lg:mt-6 max-w-2xl mx-auto text-xs sm:text-sm md:text-base lg:text-lg" })}>
             Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
           </p>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6 md:gap-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6 lg:gap-8 max-w-7xl mx-auto w-full">
         {/* Contact Form */}
         <div className="lg:col-span-2">
           <Card className="border-none shadow-xl" shadow="lg">
-            <CardHeader className="flex flex-col items-start px-4 sm:px-6 md:px-8 pt-6 sm:pt-8 pb-0">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold">Send us a Message</h2>
-              <p className="text-default-600 mt-2 text-xs sm:text-small md:text-base">Fill out the form below and we'll get back to you shortly</p>
+            <CardHeader className="flex flex-col items-start px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-5 md:pt-6 lg:pt-8 pb-0">
+              <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">Send us a Message</h2>
+              <p className="text-default-600 mt-1.5 sm:mt-2 text-xs sm:text-xs md:text-sm lg:text-base">Fill out the form below and we'll get back to you shortly</p>
             </CardHeader>
-            <CardBody className="p-4 sm:p-6 md:p-8">
-              <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5 lg:space-y-6">
+            <CardBody className="p-3 sm:p-4 md:p-5 lg:p-6">
+              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 md:space-y-5 lg:space-y-6">
                 {submitStatus.type && (
                   <div
-                    className={`p-3 md:p-4 rounded-lg text-xs md:text-small font-medium ${submitStatus.type === "success"
+                    className={`p-2.5 sm:p-3 md:p-4 rounded-lg text-xs md:text-sm font-medium ${submitStatus.type === "success"
                       ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
                       : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
                       }`}

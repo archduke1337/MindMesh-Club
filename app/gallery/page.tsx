@@ -78,38 +78,38 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="space-y-12 pb-16">
+    <div className="space-y-8 sm:space-y-10 md:space-y-12 lg:space-y-16 pb-10 sm:pb-12 md:pb-16 lg:pb-20 px-3 sm:px-4 md:px-6 lg:px-8">
       {/* Hero Section */}
-      <div className="text-center space-y-4 relative">
-        <div className="absolute top-0 left-1/4 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-20 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-700" />
+      <div className="text-center space-y-3 sm:space-y-4 md:space-y-5 lg:space-y-6 relative py-6 sm:py-8">
+        <div className="absolute top-0 left-1/4 w-48 sm:w-64 md:w-72 h-48 sm:h-64 md:h-72 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-6 sm:top-10 md:top-16 right-1/4 w-64 sm:w-80 md:w-96 h-64 sm:h-80 md:h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-700" />
 
         <div className="relative z-10">
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight">
             Our{" "}
             <span className="bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
               Gallery
             </span>
           </h1>
-          <p className="mt-4 max-w-2xl mx-auto text-lg text-default-600">
+          <p className="mt-3 sm:mt-4 md:mt-5 lg:mt-6 max-w-2xl mx-auto text-xs sm:text-sm md:text-base lg:text-lg text-default-600">
             Capturing moments of innovation, collaboration, and growth
           </p>
         </div>
       </div>
 
       {/* Category Filter */}
-      <Card className="border-none bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30" shadow="lg">
-        <CardBody className="p-6">
-          <h3 className="text-xl font-semibold mb-4 text-center">Filter by Category</h3>
-          <div className="flex flex-wrap justify-center gap-3">
+      <Card className="border-none bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 max-w-7xl mx-auto w-full" shadow="lg">
+        <CardBody className="p-3 sm:p-4 md:p-5 lg:p-6">
+          <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-3 sm:mb-4 text-center">Filter by Category</h3>
+          <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 md:gap-3">
             {categories.map((category) => (
               <Button
                 key={category.id}
                 onPress={() => setSelectedCategory(category.id)}
                 variant={selectedCategory === category.id ? "solid" : "bordered"}
                 color={selectedCategory === category.id ? "secondary" : "default"}
-                className="transition-all"
-                startContent={<span className="text-lg">{category.icon}</span>}
+                className="transition-all text-xs sm:text-sm md:text-base"
+                startContent={<span className="text-base sm:text-lg">{category.icon}</span>}
               >
                 {category.label}
               </Button>
@@ -120,21 +120,21 @@ export default function GalleryPage() {
 
       {/* Loading State */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-8 sm:py-10 md:py-12">
           <Spinner label="Loading gallery..." size="lg" />
         </div>
       ) : filteredImages.length === 0 ? (
-        <Card className="border-none" shadow="sm">
-          <CardBody className="p-12 text-center">
-            <p className="text-4xl mb-4">🔍</p>
-            <h3 className="text-xl font-semibold mb-2">No images found</h3>
-            <p className="text-default-500">Try selecting a different category</p>
+        <Card className="border-none max-w-7xl mx-auto w-full" shadow="sm">
+          <CardBody className="p-6 sm:p-8 md:p-12 text-center space-y-2 sm:space-y-3">
+            <p className="text-3xl sm:text-4xl">🔍</p>
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold">No images found</h3>
+            <p className="text-xs sm:text-sm text-default-500">Try selecting a different category</p>
           </CardBody>
         </Card>
       ) : (
         <>
           {/* Gallery Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5 lg:gap-6 max-w-7xl mx-auto w-full">
             {filteredImages.map((image) => (
               <Card
                 key={image.$id}
@@ -151,22 +151,22 @@ export default function GalleryPage() {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                      <p className="text-white text-sm font-medium">{image.description}</p>
+                    <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 md:p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                      <p className="text-white text-xs sm:text-sm font-medium">{image.description}</p>
                     </div>
                   </div>
                 </CardBody>
-                <CardFooter className="flex-col items-start gap-2 p-4">
-                  <div className="flex justify-between items-center w-full gap-2">
+                <CardFooter className="flex-col items-start gap-1.5 sm:gap-2 md:gap-2.5 p-3 sm:p-4 md:p-5">
+                  <div className="flex justify-between items-center w-full gap-2 min-w-0">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-base md:text-lg font-semibold truncate">{image.title}</h3>
+                      <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold truncate">{image.title}</h3>
                       <p className="text-xs text-default-500">{image.date}</p>
                     </div>
                     <Chip
                       size="sm"
                       variant="flat"
                       color="secondary"
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 text-xs"
                       startContent={<span className="text-xs">👥</span>}
                     >
                       <span className="text-xs">{image.attendees}</span>
