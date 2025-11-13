@@ -32,7 +32,7 @@ const coreTeam: TeamMember[] = [
     color: "secondary",
   },
   {
-    name: "Vedant Wanzare",
+    name: "Vedant Wanzre",
     role: "Vice President",
     avatar: "https://media.licdn.com/dms/image/v2/D5635AQHH0c4L15sfqw/profile-framedphoto-shrink_400_400/B56Zfl.e.tHoAg-/0/1751910052068?e=1763359200&v=beta&t=MRb5sdffjPqrSXtsJ4wERO3a7Vi1el8G1qXtNG_RIck",
     linkedin: "https://linkedin.com/in/vedant-wanzare-85839a337",
@@ -266,8 +266,6 @@ export default function TeamPage() {
 
   const stats = useMemo(() => [
     { label: "Core Members", value: coreTeam.length.toString() },
-    { label: "Years Experience", value: "40+" },
-    { label: "Events Organized", value: "2+" },
     { label: "Community Size", value: "300+" },
   ], []);
 
@@ -318,9 +316,9 @@ export default function TeamPage() {
                   if (!isVisible) return null;
 
                   const translateX = position * 8;
-                  const translateY = Math.abs(position) * 10;
-                  const scale = 1 - Math.abs(position) * 0.05;
-                  const opacity = 1 - Math.abs(position) * 0.4;
+                  const translateY = Math.abs(position) * 12;
+                  const scale = 1 - Math.abs(position) * 0.08;
+                  const opacity = 1 - Math.abs(position) * 0.6;
                   const zIndex = 20 - Math.abs(position);
                   const blur = Math.abs(position) * 1.5;
 
