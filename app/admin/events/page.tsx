@@ -1,6 +1,6 @@
 // app/admin/events/page.tsx
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
@@ -49,6 +49,7 @@ export default function AdminEventsPage() {
   const [checkinData, setCheckinData] = useState('');
   const [checkinRecords, setCheckinRecords] = useState<Array<{id: string; name: string; email: string; time: string; status: 'success' | 'duplicate' | 'error';}>>([]);
   const [checkinStats, setCheckinStats] = useState({ successful: 0, duplicates: 0, errors: 0 });
+  const checkinInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [formData, setFormData] = useState<Partial<Event>>({
@@ -82,6 +83,15 @@ export default function AdminEventsPage() {
       loadEvents();
     }
   }, [user, loading]);
+
+  // Focus check-in input when check-in mode is activated
+  useEffect(() => {
+    if (checkinMode) {
+      setTimeout(() => {
+        checkinInputRef.current?.focus();
+      }, 100);
+    }
+  }, [checkinMode]);
 
   const loadEvents = async () => {
     try {
@@ -310,6 +320,10 @@ export default function AdminEventsPage() {
     setCheckinRecords([]);
     setCheckinStats({ successful: 0, duplicates: 0, errors: 0 });
     setCheckinData('');
+    // Focus input after reset
+    setTimeout(() => {
+      checkinInputRef.current?.focus();
+    }, 0);
   };
 
   const getQRCodeUrl = (registrationId: string) => {
@@ -1241,12 +1255,13 @@ export default function AdminEventsPage() {
                 {/* QR Input */}
                 <div>
                   <Input
-                    autoFocus
+                    ref={checkinInputRef}
                     placeholder="Scan QR code here..."
                     value={checkinData}
                     onKeyDown={handleCheckinScan}
                     onChange={(e) => setCheckinData(e.target.value)}
                     className="text-lg"
+                    autoFocus
                   />
                   <p className="text-xs text-default-500 mt-2">Point scanner at QR codes to check-in attendees</p>
                 </div>
