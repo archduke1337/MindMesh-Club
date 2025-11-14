@@ -26,8 +26,8 @@ export default function AdminEventsPage() {
   const router = useRouter();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isRegistrationsOpen, onOpen: onRegistrationsOpen, onClose: onRegistrationsClose } = useDisclosure();
-  const { isOpen: isQROpen, onOpen: onQROpen, onClose: onQRClose } = useDisclosure();
   const { isOpen: isAnalyticsOpen, onOpen: onAnalyticsOpen, onClose: onAnalyticsClose } = useDisclosure();
+  const { isOpen: isQRShareOpen, onOpen: onQRShareOpen, onClose: onQRShareClose } = useDisclosure();
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
@@ -429,7 +429,7 @@ export default function AdminEventsPage() {
 
   const handleViewQRCode = (event: Event) => {
     setSelectedEventForQR(event);
-    onQROpen();
+    onQRShareOpen();
   };
 
   const handleViewAnalytics = async (event: Event) => {
@@ -1395,108 +1395,6 @@ export default function AdminEventsPage() {
         </ModalContent>
       </Modal>
 
-      {/* QR Code Modal */}
-      <Modal 
-        isOpen={isQROpen} 
-        onClose={onQRClose} 
-        size="lg"
-      >
-        <ModalContent>
-          <ModalHeader className="flex items-center gap-2">
-            <QrCode className="w-5 h-5" />
-            <span>QR Codes for {selectedEventForQR?.title}</span>
-          </ModalHeader>
-          
-          <ModalBody className="py-6 space-y-6">
-            {selectedEventForQR && (
-              <>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-3">Check-in QR Code</h3>
-                  <div className="flex justify-center p-4 bg-default-100 rounded-xl">
-                    <img
-                      src={generateEventQRCodeUrl(selectedEventForQR.$id!, selectedEventForQR.title)}
-                      alt="Check-in QR"
-                      className="w-48 h-48"
-                    />
-                  </div>
-                  <p className="text-xs text-default-500 text-center mt-2">
-                    Use this QR code for venue check-ins
-                  </p>
-                  <Button
-                    fullWidth
-                    color="primary"
-                    variant="flat"
-                    className="mt-3"
-                    onPress={async () => {
-                      try {
-                        const qrUrl = generateEventQRCodeUrl(selectedEventForQR.$id!, selectedEventForQR.title);
-                        const response = await fetch(qrUrl);
-                        const blob = await response.blob();
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = `${selectedEventForQR.title}-checkin-qr.png`;
-                        link.click();
-                        URL.revokeObjectURL(link.href);
-                      } catch (error) {
-                        console.error('Failed to download QR code:', error);
-                      }
-                    }}
-                  >
-                    <Download className="w-4 h-4" />
-                    Download Check-in QR
-                  </Button>
-                </div>
-
-                <hr />
-
-                <div>
-                  <h3 className="font-semibold text-foreground mb-3">Shareable QR Code</h3>
-                  <div className="flex justify-center p-4 bg-default-100 rounded-xl">
-                    <img
-                      src={generateEventShareQRCodeUrl(selectedEventForQR.$id!)}
-                      alt="Share QR"
-                      className="w-48 h-48"
-                    />
-                  </div>
-                  <p className="text-xs text-default-500 text-center mt-2">
-                    Share this QR code to drive registrations
-                  </p>
-                  <Button
-                    fullWidth
-                    color="success"
-                    variant="flat"
-                    className="mt-3"
-                    onPress={async () => {
-                      try {
-                        const qrUrl = generateEventShareQRCodeUrl(selectedEventForQR.$id!);
-                        const response = await fetch(qrUrl);
-                        const blob = await response.blob();
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = `${selectedEventForQR.title}-share-qr.png`;
-                        link.click();
-                        URL.revokeObjectURL(link.href);
-                      } catch (error) {
-                        console.error('Failed to download QR code:', error);
-                      }
-                    }}
-                  >
-                    <Download className="w-4 h-4" />
-                    Download Share QR
-                  </Button>
-                </div>
-              </>
-            )}
-          </ModalBody>
-          
-          <ModalFooter>
-            <Button variant="light" onPress={onQRClose}>
-              Close
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
       {/* Analytics Modal */}
       <Modal 
         isOpen={isAnalyticsOpen} 
@@ -1620,6 +1518,87 @@ export default function AdminEventsPage() {
           
           <ModalFooter>
             <Button variant="light" onPress={onAnalyticsClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* QR Share Modal */}
+      <Modal 
+        isOpen={isQRShareOpen} 
+        onClose={onQRShareClose} 
+        size="md"
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1 border-b pb-4">
+            <div className="flex items-center gap-2">
+              <QrCode className="w-5 h-5" />
+              <span>Event QR Code</span>
+            </div>
+            {selectedEventForQR && (
+              <p className="text-sm text-default-500 font-normal">
+                {selectedEventForQR.title}
+              </p>
+            )}
+          </ModalHeader>
+          
+          <ModalBody className="py-6 space-y-4">
+            {selectedEventForQR && (
+              <>
+                {/* QR Code Display */}
+                <div className="flex justify-center p-4 bg-default-100 rounded-lg">
+                  <img
+                    src={generateEventQRCodeUrl(selectedEventForQR.$id!, selectedEventForQR.title)}
+                    alt={`QR for ${selectedEventForQR.title}`}
+                    className="w-48 h-48"
+                  />
+                </div>
+
+                {/* Event Info */}
+                <div className="space-y-2">
+                  <p className="text-sm text-default-600">
+                    <span className="font-semibold">Event:</span> {selectedEventForQR.title}
+                  </p>
+                  <p className="text-sm text-default-600">
+                    <span className="font-semibold">Date:</span> {new Date(selectedEventForQR.date).toLocaleDateString()}
+                  </p>
+                </div>
+
+                {/* Share Link Section */}
+                <div className="space-y-2 border-t pt-4">
+                  <p className="text-sm font-semibold text-default-700">Share QR Code</p>
+                  <div className="p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg">
+                    <p className="text-xs text-default-600 mb-2">Shareable Link:</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={generateEventShareQRCodeUrl(selectedEventForQR.$id!)}
+                        readOnly
+                        className="flex-1 text-xs p-2 bg-white dark:bg-default-900 border border-default-200 dark:border-default-700 rounded px-3 py-2 font-mono"
+                      />
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        color="primary"
+                        isIconOnly
+                        onClick={() => {
+                          const url = generateEventShareQRCodeUrl(selectedEventForQR.$id!);
+                          navigator.clipboard.writeText(url);
+                        }}
+                        title="Copy to clipboard"
+                      >
+                        <LinkIcon className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </ModalBody>
+          
+          <ModalFooter>
+            <Button variant="light" onPress={onQRShareClose}>
               Close
             </Button>
           </ModalFooter>
