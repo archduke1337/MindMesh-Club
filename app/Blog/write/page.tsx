@@ -491,6 +491,7 @@ export default function WriteBlogPage() {
           </form>
         </CardBody>
       </Card>
+      </div>
 
       {/* Toast Notification */}
       {toast && (
@@ -505,6 +506,7 @@ export default function WriteBlogPage() {
           {toast.message}
         </div>
       )}
+    </div>
     </div>
   );
 }

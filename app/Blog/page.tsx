@@ -320,8 +320,7 @@ export default function BlogPage() {
                           isIconOnly
                           size="sm"
                           variant="light"
-                          onPress={(e) => {
-                            e.stopPropagation();
+                          onPress={() => {
                             router.push(`/Blog/edit/${blog.$id}`);
                           }}
                           className="text-xs"

@@ -266,7 +266,7 @@ export default function EditBlogPage() {
                 required
               >
                 {blogCategories.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
+                  <SelectItem key={cat.value}>
                     {cat.label}
                   </SelectItem>
                 ))}
