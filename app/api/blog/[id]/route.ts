@@ -25,7 +25,7 @@ export async function GET(
 
     // Increment views
     if (blog.$id) {
-      await blogService.incrementViews(blog.$id, blog.views);
+      await blogService.incrementViews(blog.$id);
     }
 
     return NextResponse.json({
