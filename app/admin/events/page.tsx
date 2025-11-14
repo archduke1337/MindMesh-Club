@@ -39,6 +39,8 @@ export default function AdminEventsPage() {
   const [selectedEventForRegistrations, setSelectedEventForRegistrations] = useState<Event | null>(null);
   const [selectedEventForQR, setSelectedEventForQR] = useState<Event | null>(null);
   const [selectedEventForAnalytics, setSelectedEventForAnalytics] = useState<Event | null>(null);
+  const [analyticsRegistrations, setAnalyticsRegistrations] = useState<Registration[]>([]);
+  const [loadingAnalyticsRegistrations, setLoadingAnalyticsRegistrations] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
   // Form state
@@ -244,6 +246,16 @@ export default function AdminEventsPage() {
 
   const handleViewAnalytics = async (event: Event) => {
     setSelectedEventForAnalytics(event);
+    setLoadingAnalyticsRegistrations(true);
+    try {
+      const regs = await eventService.getEventRegistrations(event.$id!);
+      setAnalyticsRegistrations(regs);
+    } catch (err) {
+      console.error("Error loading analytics registrations:", err);
+      setAnalyticsRegistrations([]);
+    } finally {
+      setLoadingAnalyticsRegistrations(false);
+    }
     onAnalyticsOpen();
   };
 
@@ -1221,9 +1233,10 @@ export default function AdminEventsPage() {
                             color="primary"
                             variant="flat"
                             size="sm"
+                            isLoading={loadingAnalyticsRegistrations}
                             onPress={() => {
                               if (selectedEventForAnalytics) {
-                                downloadEventStatsCSV(selectedEventForAnalytics, metrics, []);
+                                downloadEventStatsCSV(selectedEventForAnalytics, metrics, analyticsRegistrations);
                               }
                             }}
                           >
@@ -1235,9 +1248,10 @@ export default function AdminEventsPage() {
                             color="secondary"
                             variant="flat"
                             size="sm"
+                            isLoading={loadingAnalyticsRegistrations}
                             onPress={() => {
                               if (selectedEventForAnalytics) {
-                                downloadRegistrationList(selectedEventForAnalytics.title, []);
+                                downloadRegistrationList(selectedEventForAnalytics.title, analyticsRegistrations);
                               }
                             }}
                           >
