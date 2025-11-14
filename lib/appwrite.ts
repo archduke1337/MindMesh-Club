@@ -9,11 +9,12 @@ export const account = new Account(client);
 export const storage = new Storage(client);
 export const databases = new Databases(client);
 
-// Server-side admin access (use with API key header)
+// Server-side admin access (use with API key)
 export const createAdminDatabases = () => {
   const adminClient = new Client()
     .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+    .setKey(process.env.APPWRITE_API_KEY || "");
   
   return new Databases(adminClient);
 };
@@ -21,7 +22,8 @@ export const createAdminDatabases = () => {
 export const createAdminStorage = () => {
   const adminClient = new Client()
     .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+    .setKey(process.env.APPWRITE_API_KEY || "");
   
   return new Storage(adminClient);
 };
