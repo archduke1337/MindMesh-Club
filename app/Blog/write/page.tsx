@@ -146,7 +146,7 @@ export default function WriteBlogPage() {
         coverImage: formData.coverImage,
         category: formData.category,
         tags,
-        authorId: user.$id,
+        userId: user.$id,
         authorName: user.name,
         authorEmail: user.email,
         authorAvatar: user.prefs?.avatar,

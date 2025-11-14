@@ -16,7 +16,7 @@ export interface Blog {
   coverImage: string;
   category: string;
   tags: string[];
-  authorId: string;
+  userId: string;
   authorName: string;
   authorEmail: string;
   authorAvatar?: string;
@@ -139,7 +139,7 @@ export const blogService = {
         DATABASE_ID,
         BLOGS_COLLECTION_ID,
         [
-          Query.equal("authorId", userId),
+          Query.equal("userId", userId),
           Query.orderDesc("$createdAt"),
         ]
       );
@@ -288,7 +288,7 @@ export const blogService = {
       // If userId is provided, verify user owns the blog before deletion
       if (userId) {
         const blog = await this.getBlogById(blogId);
-        if (blog && blog.authorId !== userId) {
+        if (blog && blog.userId !== userId) {
           throw new Error("Unauthorized: You can only delete your own blogs");
         }
       }

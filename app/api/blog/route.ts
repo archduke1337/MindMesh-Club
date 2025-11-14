@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
 
-    // Validate authentication - user must provide authorId to prove they're authenticated
-    if (!data.authorId || !data.authorEmail) {
+    // Validate authentication - user must provide userId to prove they're authenticated
+    if (!data.userId || !data.authorEmail) {
       return NextResponse.json(
         {
           success: false,
@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check rate limit (max 5 blogs per 24 hours)
-    if (!checkBlogRateLimit(data.authorId)) {
-      const remaining = getRemainingSubmissions(data.authorId);
+    if (!checkBlogRateLimit(data.userId)) {
+      const remaining = getRemainingSubmissions(data.userId);
       return NextResponse.json(
         {
           success: false,
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         coverImage: data.coverImage || "",
         category: data.category || "other",
         tags: data.tags || [],
-        authorId: data.authorId,
+        userId: data.userId,
         authorName: data.authorName || "Anonymous",
         authorEmail: data.authorEmail,
         authorAvatar: data.authorAvatar,
