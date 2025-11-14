@@ -162,7 +162,7 @@ export default function BlogPage() {
             color="primary"
             size="lg"
             startContent={<PenIcon className="w-3 sm:w-3.5 md:w-4 lg:w-5 h-3 sm:h-3.5 md:h-4 lg:h-5" />}
-            onPress={() => router.push("/blog/write")}
+            onPress={() => router.push("/Blog/write")}
             className="mt-2 sm:mt-3 md:mt-4 lg:mt-5 text-xs sm:text-sm md:text-base"
           >
             Write a Blog
