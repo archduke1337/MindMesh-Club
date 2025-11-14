@@ -86,9 +86,7 @@ export default function BlogPage() {
         (blog) =>
           blog.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           blog.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          blog.tags.some((tag) =>
-            tag.toLowerCase().includes(searchQuery.toLowerCase())
-          )
+          blog.tags.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
