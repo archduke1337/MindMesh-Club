@@ -49,7 +49,7 @@ export function generateRegistrationListPDF(
   doc.line(margin, startY + 2, pageWidth - margin, startY + 2);
   
   // Table rows
-  doc.setFont(undefined, "normal");
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   let currentY = startY + 10;
   const rowHeight = 8;
@@ -62,7 +62,7 @@ export function generateRegistrationListPDF(
       currentY = 14;
       
       // Repeat header on new page
-      doc.setFont(undefined, "bold");
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       doc.text("Name", margin, currentY);
       doc.text("Email", margin + col1Width, currentY);
@@ -71,7 +71,7 @@ export function generateRegistrationListPDF(
       doc.setDrawColor(200);
       doc.line(margin, currentY + 2, pageWidth - margin, currentY + 2);
       
-      doc.setFont(undefined, "normal");
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       currentY += 8;
     }
