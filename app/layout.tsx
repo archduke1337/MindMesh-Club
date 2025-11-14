@@ -2,6 +2,7 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
+import { Analytics } from "@vercel/analytics/react";
 
 import { Providers } from "./providers";
 import { AuthProvider } from "@/context/AuthContext";
@@ -56,6 +57,7 @@ export default function RootLayout({
             </div>
           </AuthProvider>
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
