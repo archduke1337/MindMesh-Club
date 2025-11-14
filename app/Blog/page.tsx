@@ -276,7 +276,7 @@ export default function BlogPage() {
 
                       {/* Tags */}
                       <div className="flex flex-wrap gap-1 md:gap-1.5">
-                        {blog.tags.slice(0, 2).map((tag, index) => (
+                        {(blog.tags ? blog.tags.split(",").map((t) => t.trim()).filter(Boolean).slice(0, 2) : []).map((tag, index) => (
                           <Chip key={index} size="sm" variant="flat" className="text-xs">
                             #{tag}
                           </Chip>
