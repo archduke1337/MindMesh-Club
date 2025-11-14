@@ -711,27 +711,28 @@ export default function AdminEventsPage() {
         <ModalContent>
           <form onSubmit={handleSubmit}>
             <ModalHeader className="flex flex-col gap-1 border-b pb-4">
-              <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 {editingEvent ? "Edit Event" : "Create New Event"}
               </h2>
-              <p className="text-sm text-default-500 font-normal">
+              <p className="text-xs md:text-sm text-default-500 font-normal">
                 Fill in the details below to {editingEvent ? "update" : "create"} an event
               </p>
             </ModalHeader>
             
-            <ModalBody className="py-6">
+            <ModalBody className="py-4 md:py-6">
               {!editingEvent && !showTemplateSelector && (
-                <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-foreground">Quick Start with Templates</h3>
-                      <p className="text-sm text-default-500 mt-1">Use pre-built templates to create events faster</p>
+                <div className="mb-3 md:mb-4 p-3 md:p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg md:rounded-xl border border-purple-200 dark:border-purple-800">
+                  <div className="flex items-center justify-between gap-2 md:gap-4">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-sm md:text-base text-foreground">Quick Start with Templates</h3>
+                      <p className="text-xs md:text-sm text-default-500 mt-1">Use pre-built templates to create events faster</p>
                     </div>
                     <Button
                       color="primary"
                       size="sm"
                       onPress={() => setShowTemplateSelector(true)}
                       variant="flat"
+                      className="flex-shrink-0"
                     >
                       Browse Templates
                     </Button>
@@ -740,13 +741,14 @@ export default function AdminEventsPage() {
               )}
 
               {showTemplateSelector && (
-                <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-foreground">Select a Template</h3>
+                <div className="mb-3 md:mb-4 p-3 md:p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg md:rounded-xl border border-purple-200 dark:border-purple-800">
+                  <div className="flex items-center justify-between mb-3 md:mb-4">
+                    <h3 className="font-semibold text-sm md:text-base text-foreground">Select a Template</h3>
                     <Button
                       size="sm"
                       variant="light"
                       onPress={() => setShowTemplateSelector(false)}
+                      isIconOnly
                     >
                       <XIcon className="w-4 h-4" />
                     </Button>
@@ -755,12 +757,12 @@ export default function AdminEventsPage() {
                     {EVENT_TEMPLATES.map(template => (
                       <Button
                         key={template.id}
-                        className="justify-start h-auto py-3 px-4"
+                        className="justify-start h-auto py-2 md:py-3 px-3 md:px-4 text-xs md:text-sm"
                         color="primary"
                         variant="flat"
                         onPress={() => handleApplyTemplate(template.id)}
                       >
-                        <div className="flex flex-col items-start gap-1">
+                        <div className="flex flex-col items-start gap-0.5 md:gap-1">
                           <span className="font-semibold">{template.name}</span>
                           <span className="text-xs text-default-500">{template.description}</span>
                         </div>
@@ -770,15 +772,15 @@ export default function AdminEventsPage() {
                 </div>
               )}
               
-              <Tabs aria-label="Event form sections" color="primary" variant="underlined">
+              <Tabs aria-label="Event form sections" color="primary" variant="underlined" size="sm">
                 <Tab key="basic" title={
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
                     <CalendarIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">Basic Info</span>
                     <span className="sm:hidden">Basic</span>
                   </div>
                 }>
-                  <div className="space-y-6 pt-4">
+                  <div className="space-y-4 md:space-y-6 pt-3 md:pt-4">
                     {/* Image URL */}
                     <div className="space-y-3">
                       <label className="text-sm font-semibold flex items-center gap-2">
@@ -886,14 +888,14 @@ export default function AdminEventsPage() {
                 </Tab>
 
                 <Tab key="details" title={
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
                     <MapPinIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">Date & Location</span>
                     <span className="sm:hidden">Location</span>
                   </div>
                 }>
-                  <div className="space-y-6 pt-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-4 md:space-y-6 pt-3 md:pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                       <Input
                         label="Date"
                         type="date"
@@ -954,14 +956,14 @@ export default function AdminEventsPage() {
                 </Tab>
 
                 <Tab key="pricing" title={
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
                     <DollarSignIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">Pricing & Capacity</span>
                     <span className="sm:hidden">Pricing</span>
                   </div>
                 }>
-                  <div className="space-y-6 pt-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-4 md:space-y-6 pt-3 md:pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                       <Input
                         label="Regular Price ($)"
                         type="number"
@@ -1025,22 +1027,22 @@ export default function AdminEventsPage() {
                 </Tab>
 
                 <Tab key="organizer" title={
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
                     <UsersIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">Organizer & Recurring</span>
                     <span className="sm:hidden">More</span>
                   </div>
                 }>
-                  <div className="space-y-6 pt-4">
+                  <div className="space-y-4 md:space-y-6 pt-3 md:pt-4">
                     {/* Recurring Events Section */}
-                    <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="font-semibold text-foreground flex items-center gap-2">
-                            <CalendarIcon className="w-4 h-4 text-blue-600" />
+                    <div className="p-3 md:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg md:rounded-xl border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-start justify-between mb-3 md:mb-4">
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-foreground text-sm md:text-base flex items-center gap-2">
+                            <CalendarIcon className="w-4 h-4 text-blue-600 flex-shrink-0" />
                             Recurring Events
                           </h3>
-                          <p className="text-sm text-default-500 mt-1">Set up recurring events for regular meetups</p>
+                          <p className="text-xs md:text-sm text-default-500 mt-1">Set up recurring events for regular meetups</p>
                         </div>
                       </div>
                       
@@ -1048,12 +1050,13 @@ export default function AdminEventsPage() {
                         isSelected={formData.isRecurring}
                         onValueChange={(checked) => handleInputChange("isRecurring", checked)}
                         color="primary"
+                        size="sm"
                       >
-                        <span className="text-sm font-medium">Enable recurring</span>
+                        <span className="text-xs md:text-sm font-medium">Enable recurring</span>
                       </Switch>
 
                       {formData.isRecurring && (
-                        <div className="mt-4 space-y-3">
+                        <div className="mt-3 md:mt-4 space-y-3">
                           <Select
                             label="Repeat Pattern"
                             placeholder="Select a pattern"
@@ -1080,14 +1083,14 @@ export default function AdminEventsPage() {
                     <hr className="my-2" />
 
                     {/* Close Event Section */}
-                    <div className="p-4 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-xl border border-red-200 dark:border-red-800">
+                    <div className="p-3 md:p-4 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-lg md:rounded-xl border border-red-200 dark:border-red-800">
                       <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-foreground flex items-center gap-2">
-                            <XIcon className="w-4 h-4 text-red-600" />
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-foreground text-sm md:text-base flex items-center gap-2">
+                            <XIcon className="w-4 h-4 text-red-600 flex-shrink-0" />
                             Close Event
                           </h3>
-                          <p className="text-sm text-default-500 mt-1">Disable new registrations after event is over</p>
+                          <p className="text-xs md:text-sm text-default-500 mt-1">Disable new registrations after event is over</p>
                         </div>
                       </div>
                       
@@ -1096,8 +1099,9 @@ export default function AdminEventsPage() {
                         onValueChange={(checked) => handleInputChange("isClosed", checked)}
                         color="danger"
                         className="mt-3"
+                        size="sm"
                       >
-                        <span className="text-sm font-medium">Event is closed for registrations</span>
+                        <span className="text-xs md:text-sm font-medium">Event is closed for registrations</span>
                       </Switch>
 
                       {formData.isClosed && (
@@ -1117,8 +1121,9 @@ export default function AdminEventsPage() {
                       value={formData.organizerName}
                       onChange={(e) => handleInputChange("organizerName", e.target.value)}
                       required
+                      size="sm"
                       classNames={{
-                        label: "font-semibold"
+                        label: "font-semibold text-xs md:text-sm"
                       }}
                     />
                     
@@ -1213,11 +1218,11 @@ export default function AdminEventsPage() {
               </Tabs>
             </ModalBody>
 
-            <ModalFooter className="border-t pt-4">
+            <ModalFooter className="border-t pt-3 md:pt-4 gap-2 md:gap-3">
               <Button 
                 variant="flat" 
                 onPress={handleCloseModal}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto text-xs md:text-sm"
               >
                 Cancel
               </Button>
@@ -1225,7 +1230,7 @@ export default function AdminEventsPage() {
                 color="primary" 
                 type="submit" 
                 isLoading={submitting}
-                className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold"
+                className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-xs md:text-sm"
               >
                 {editingEvent ? "Update Event" : "Create Event"}
               </Button>
