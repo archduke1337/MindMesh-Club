@@ -54,7 +54,7 @@ export default function BlogPostPage() {
     } catch (error) {
       console.error("Error loading blog:", error);
       alert("Blog not found");
-      router.push("/blog");
+      router.push("/Blog");
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ export default function BlogPostPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-xl font-semibold mb-4">Blog not found</p>
-          <Button color="primary" onPress={() => router.push("/blog")}>
+          <Button color="primary" onPress={() => router.push("/Blog")}>
             Back to Blogs
           </Button>
         </div>
@@ -113,7 +113,7 @@ export default function BlogPostPage() {
           <Button
             variant="light"
             startContent={<ArrowLeftIcon className="w-3.5 sm:w-4 md:w-5 h-3.5 sm:h-4 md:h-5" />}
-            onPress={() => router.push("/blog")}
+            onPress={() => router.push("/Blog")}
             size="lg"
             className="text-xs sm:text-small md:text-base"
           >
@@ -227,7 +227,7 @@ export default function BlogPostPage() {
                   <Card
                     key={relatedBlog.$id}
                     isPressable
-                    onPress={() => router.push(`/blog/${relatedBlog.slug}`)}
+                    onPress={() => router.push(`/Blog/${relatedBlog.slug}`)}
                     className="hover:shadow-xl transition-all"
                   >
                     <CardBody className="p-0">

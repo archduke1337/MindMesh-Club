@@ -346,7 +346,7 @@ export default function AdminBlogsPage() {
                   <div className="md:col-span-3 flex flex-wrap md:flex-col gap-2">
                     <Button
                       as="a"
-                      href={`/blog/${blog.slug}`}
+                      href={`/Blog/${blog.slug}`}
                       target="_blank"
                       size="sm"
                       variant="flat"

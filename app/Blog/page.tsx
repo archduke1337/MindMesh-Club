@@ -222,7 +222,7 @@ export default function BlogPage() {
                 <Button
                   color="primary"
                   startContent={<PenIcon className="w-3 sm:w-3.5 md:w-4 h-3 sm:h-3.5 md:h-4" />}
-                  onPress={() => router.push("/blog/write")}
+                  onPress={() => router.push("/Blog/write")}
                   size="lg"
                   className="text-xs sm:text-sm md:text-base"
                 >
@@ -238,7 +238,7 @@ export default function BlogPage() {
                   className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
                   shadow="lg"
                   isPressable
-                  onPress={() => router.push(`/blog/${blog.slug}`)}
+                  onPress={() => router.push(`/Blog/${blog.slug}`)}
                 >
                   <CardBody className="p-0">
                     {/* Cover Image */}

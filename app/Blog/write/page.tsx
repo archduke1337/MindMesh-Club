@@ -133,7 +133,7 @@ export default function WriteBlogPage() {
       }
 
       showToast(result.message || "Blog submitted successfully! It will be reviewed by our team before publishing.", "success");
-      setTimeout(() => router.push("/blog"), 1500);
+      setTimeout(() => router.push("/Blog"), 1500);
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Error submitting blog:", message);
@@ -170,7 +170,7 @@ export default function WriteBlogPage() {
             </Button>
             <Button
               variant="light"
-              onPress={() => router.push("/blog")}
+              onPress={() => router.push("/Blog")}
             >
               Back to Blog
             </Button>
