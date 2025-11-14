@@ -9,26 +9,22 @@ export const account = new Account(client);
 export const storage = new Storage(client);
 export const databases = new Databases(client);
 
-// Server-side admin client (uses API key for server operations)
-let adminClient: Client | null = null;
-let adminDatabases: Databases | null = null;
-let adminStorage: Storage | null = null;
-
-export const getAdminClient = () => {
-  if (!adminClient) {
-    adminClient = new Client()
-      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
-      .setKey(process.env.APPWRITE_API_KEY || "");
-    
-    adminDatabases = new Databases(adminClient);
-    adminStorage = new Storage(adminClient);
-  }
-  return { client: adminClient, databases: adminDatabases, storage: adminStorage };
+// Server-side admin access (use with API key header)
+export const createAdminDatabases = () => {
+  const adminClient = new Client()
+    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+  
+  return new Databases(adminClient);
 };
 
-// Export for use in server-side operations
-export const getAdminDatabases = () => getAdminClient().databases;
+export const createAdminStorage = () => {
+  const adminClient = new Client()
+    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+  
+  return new Storage(adminClient);
+};
 
 // Export configuration
 export const APPWRITE_CONFIG = {

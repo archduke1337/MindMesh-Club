@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { blogService } from "@/lib/blog";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { getAdminDatabases } from "@/lib/appwrite";
+import { createAdminDatabases } from "@/lib/appwrite";
 import { ID } from "appwrite";
 import { DATABASE_ID, BLOGS_COLLECTION_ID } from "@/lib/database";
 
@@ -59,19 +59,9 @@ export async function POST(request: NextRequest) {
     const readTime = blogService.calculateReadTime(data.content);
 
     // Use admin client for server-side database operations
-    const adminDatabases = getAdminDatabases();
-    
-    if (!adminDatabases) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Server configuration error",
-        },
-        { status: 500 }
-      );
-    }
+    const adminDatabases = createAdminDatabases();
 
-    const blog = await adminDatabases!.createDocument(
+    const blog = await adminDatabases.createDocument(
       DATABASE_ID,
       BLOGS_COLLECTION_ID,
       ID.unique(),
