@@ -1,10 +1,8 @@
 // lib/blogs.ts
 import { ID, Query } from "appwrite";
 import { databases, storage } from "./appwrite";
-import { DATABASE_ID } from "./database";
+import { DATABASE_ID, BLOGS_COLLECTION_ID } from "./database";
 
-// Collection IDs
-export const BLOGS_COLLECTION_ID = "blogs";
 export const BLOG_IMAGES_BUCKET_ID = "blog-images";
 
 // Blog Interface
@@ -34,6 +32,25 @@ export interface Blog {
 
 // Blog Service
 export const blogService = {
+  // Diagnostic helper to check if collection exists
+  async checkBlogsCollection() {
+    try {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        BLOGS_COLLECTION_ID,
+        [Query.limit(1)]
+      );
+      return true;
+    } catch (error: any) {
+      if (error?.message?.includes("Collection with the requested ID could not be found")) {
+        console.error("❌ Blogs collection not found! You need to create the 'blogs' collection in your Appwrite database.");
+        console.error("📋 Collection ID:", BLOGS_COLLECTION_ID);
+        console.error("📝 Create it at: https://cloud.appwrite.io/console/databases");
+      }
+      return false;
+    }
+  },
+
   // Get all approved blogs (public)
   async getPublishedBlogs(limit: number = 50) {
     try {

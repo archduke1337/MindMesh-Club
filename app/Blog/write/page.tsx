@@ -45,6 +45,21 @@ export default function WriteBlogPage() {
     }
   }, [user, loading, router, showToast]);
 
+  useEffect(() => {
+    // Check if blogs collection exists on mount
+    const checkCollection = async () => {
+      try {
+        await blogService.checkBlogsCollection();
+      } catch (error) {
+        console.error("Collection check failed:", error);
+      }
+    };
+    
+    if (user) {
+      checkCollection();
+    }
+  }, [user]);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
