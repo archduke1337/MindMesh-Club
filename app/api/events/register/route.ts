@@ -47,16 +47,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
 
     console.log(`[API] Registering user ${userId} for event ${eventId}`);
 
-    // Initialize Appwrite client with user session from cookies
+    // Initialize Appwrite client
     const client = new Client()
       .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
       .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
-
-    // Copy cookies from request to client for authentication
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      client.setHeader('Cookie', cookieHeader);
-    }
 
     const databases = new Databases(client);
     const databaseId = DATABASE_ID;
