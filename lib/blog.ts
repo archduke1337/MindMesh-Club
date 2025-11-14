@@ -1,9 +1,10 @@
 // lib/blogs.ts
 import { ID, Query } from "appwrite";
 import { databases, storage } from "./appwrite";
-import { DATABASE_ID, BLOGS_COLLECTION_ID } from "./database";
+import { DATABASE_ID } from "./database";
 
-export const BLOG_IMAGES_BUCKET_ID = "blog-images";
+export const BLOGS_COLLECTION_ID = "blog";
+export const BLOG_IMAGES_BUCKET_ID = "6917a084000157e9e8f9";
 
 // Blog Interface
 export interface Blog {

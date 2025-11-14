@@ -10,7 +10,7 @@ export const REGISTRATIONS_COLLECTION_ID = "registrations";
 export const PROJECTS_COLLECTION_ID = "projects";
 export const GALLERY_COLLECTION_ID = "gallery";
 export const TEAM_COLLECTION_ID = "team";
-export const BLOGS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_BLOGS_COLLECTION_ID || "blogs";
+export const BLOGS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_BLOGS_COLLECTION_ID || "blog";
 export const EVENT_IMAGES_BUCKET_ID = "68ed50100010aa893cf8";
 export const GALLERY_IMAGES_BUCKET_ID = "69126ef7000269c07764";
 
