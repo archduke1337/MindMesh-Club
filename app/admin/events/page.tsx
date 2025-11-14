@@ -330,7 +330,14 @@ export default function AdminEventsPage() {
     if (!selectedEventForRegistrations) return '';
     const registration = registrations.find(r => r.$id === registrationId);
     if (!registration) return '';
-    const ticketData = `TICKET|${registrationId}|${registration.userName}|${selectedEventForRegistrations.title}`;
+    
+    // Use stored QR data if available, otherwise generate it
+    let ticketData = registration.ticketQRData;
+    if (!ticketData) {
+      // Fallback to generating on-the-fly if not stored
+      ticketData = `TICKET|${registrationId}|${registration.userName}|${selectedEventForRegistrations.title}`;
+    }
+    
     const encoded = encodeURIComponent(ticketData);
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encoded}`;
   };

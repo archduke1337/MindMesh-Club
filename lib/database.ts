@@ -52,6 +52,7 @@ export interface Registration {
   userPhone?: string;
   registeredAt: string;
   status?: string; // Made optional
+  ticketQRData?: string; // QR code data string (TICKET|id|name|title)
   $createdAt?: string;
   $updatedAt?: string;
 }

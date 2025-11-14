@@ -38,6 +38,7 @@ interface Ticket {
   registeredAt: string;
   price?: number;
   discountPrice?: number | null;
+  ticketQRData?: string; // Stored QR code data
 }
 
 export default function TicketsPageContent() {
@@ -165,7 +166,14 @@ export default function TicketsPageContent() {
 
   const getQRCodeUrl = (ticket: Ticket) => {
     if (!ticket.ticketId || !ticket.userName || !ticket.eventTitle) return '';
-    const ticketData = `TICKET|${ticket.ticketId}|${ticket.userName}|${ticket.eventTitle}`;
+    
+    // Use stored QR data if available, otherwise generate it
+    let ticketData = ticket.ticketQRData;
+    if (!ticketData) {
+      // Fallback to generating on-the-fly if not stored
+      ticketData = `TICKET|${ticket.ticketId}|${ticket.userName}|${ticket.eventTitle}`;
+    }
+    
     const encoded = encodeURIComponent(ticketData);
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encoded}`;
   };
