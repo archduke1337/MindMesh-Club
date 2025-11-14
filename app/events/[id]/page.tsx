@@ -451,21 +451,21 @@ export default function EventDetailPage() {
                     {event.discountPrice && event.discountPrice < event.price ? (
                       <>
                         <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
-                          ${event.discountPrice}
+                          ₹{event.discountPrice}
                         </span>
                         <span className="text-xl sm:text-2xl text-default-400 line-through">
-                          ${event.price}
+                          ₹{event.price}
                         </span>
                       </>
                     ) : (
                       <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
-                        ${event.price}
+                        ₹{event.price}
                       </span>
                     )}
                   </div>
                   {event.discountPrice && event.discountPrice < event.price && (
                     <Badge color="success" variant="flat" size="sm" className="text-[10px] sm:text-xs md:text-small">
-                      Save ${event.price - event.discountPrice} ({calculateDiscount(event.price, event.discountPrice)}% OFF)
+                      Save ₹{event.price - event.discountPrice} ({calculateDiscount(event.price, event.discountPrice)}% OFF)
                     </Badge>
                   )}
                 </div>

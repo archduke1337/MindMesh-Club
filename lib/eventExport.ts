@@ -150,9 +150,9 @@ export function generateEventStatsCSV(
   lines.push(`Time,${event.time}`);
   lines.push(`Location,${event.location}`);
   lines.push(`Category,${event.category}`);
-  lines.push(`Price,$${event.price}`);
+  lines.push(`Price,₹${event.price}`);
   if (event.discountPrice) {
-    lines.push(`Discount Price,$${event.discountPrice}`);
+    lines.push(`Discount Price,₹${event.discountPrice}`);
   }
   lines.push("");
 
@@ -172,9 +172,9 @@ export function generateEventStatsCSV(
   }, 0);
 
   lines.push("REVENUE METRICS");
-  lines.push(`Unit Price,$${event.discountPrice || event.price}`);
-  lines.push(`Total Revenue,$${totalRevenue}`);
-  lines.push(`Average Revenue Per Attendee,$${totalRevenue > 0 ? (totalRevenue / registrations.length).toFixed(2) : 0}`);
+  lines.push(`Unit Price,₹${event.discountPrice || event.price}`);
+  lines.push(`Total Revenue,₹${totalRevenue}`);
+  lines.push(`Average Revenue Per Attendee,₹${totalRevenue > 0 ? (totalRevenue / registrations.length).toFixed(2) : 0}`);
   lines.push("");
 
   // Registrations Table
@@ -245,6 +245,6 @@ export function downloadRegistrationList(eventTitle: string, registrations: Regi
 export function generateStatsShareText(event: Event, metrics: EventMetrics): string {
   return `🎉 ${event.title}\n📍 ${event.location}\n📅 ${event.date}\n\n` +
     `👥 ${metrics.totalRegistered}/${metrics.capacity} registered (${Math.round(metrics.registrationPercentage)}%)\n` +
-    `💰 $${event.price}${event.discountPrice ? ` (on sale: $${event.discountPrice})` : ''}\n\n` +
+    `💰 ₹${event.price}${event.discountPrice ? ` (on sale: ₹${event.discountPrice})` : ''}\n\n` +
     `Register: https://mindmesh.club/events/${event.$id}`;
 }

@@ -46,7 +46,7 @@ export function shareToTwitter(event: Event): void {
   const text = `🎉 ${event.title}
 📅 ${new Date(event.date).toLocaleDateString()}
 📍 ${event.location}
-💰 ${event.price === 0 ? 'FREE' : `$${event.price}`}
+💰 ${event.price === 0 ? 'FREE' : `₹${event.price}`}
 
 #events #${event.category}`;
 
@@ -82,7 +82,7 @@ ${getEventShareUrl(event.$id!)}
 export function shareViaEmail(event: Event): void {
   const url = getEventShareUrl(event.$id!);
   const subject = `Check out: ${event.title}`;
-  const body = `Hi!\n\nI wanted to invite you to this amazing event:\n\n${event.title}\n\nDate: ${new Date(event.date).toLocaleDateString()}\nTime: ${event.time}\nLocation: ${event.location}\n\nPrice: ${event.price === 0 ? 'FREE' : `$${event.price}`}\n\nDescription:\n${event.description}\n\nRegister here: ${url}\n\nHope to see you there!`;
+  const body = `Hi!\n\nI wanted to invite you to this amazing event:\n\n${event.title}\n\nDate: ${new Date(event.date).toLocaleDateString()}\nTime: ${event.time}\nLocation: ${event.location}\n\nPrice: ${event.price === 0 ? 'FREE' : `₹${event.price}`}\n\nDescription:\n${event.description}\n\nRegister here: ${url}\n\nHope to see you there!`;
 
   const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   window.open(mailtoUrl);
@@ -139,7 +139,7 @@ export function generateShareableText(event: Event, platform: 'twitter' | 'linke
 
   switch (platform) {
     case 'twitter':
-      return `${baseText}\n💰 ${event.price === 0 ? 'FREE' : `$${event.price}`}\n#events #${event.category}`;
+      return `${baseText}\n💰 ${event.price === 0 ? 'FREE' : `₹${event.price}`}\n#events #${event.category}`;
 
     case 'linkedin':
       return `${baseText}\n\n${event.description.substring(0, 200)}...\n\nLooking forward to this! #events`;

@@ -965,24 +965,24 @@ export default function AdminEventsPage() {
                   <div className="space-y-4 md:space-y-6 pt-3 md:pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                       <Input
-                        label="Regular Price ($)"
+                        label="Regular Price (₹)"
                         type="number"
                         placeholder="0"
                         value={formData.price?.toString()}
                         onChange={(e) => handleInputChange("price", parseFloat(e.target.value) || 0)}
                         required
-                        startContent={<DollarSignIcon className="w-4 h-4 text-default-400" />}
+                        startContent={<span className="text-default-400">₹</span>}
                         classNames={{
                           label: "font-semibold"
                         }}
                       />
                       <Input
-                        label="Discount Price ($)"
+                        label="Discount Price (₹)"
                         type="number"
                         placeholder="Optional"
                         value={formData.discountPrice?.toString() || ""}
                         onChange={(e) => handleInputChange("discountPrice", e.target.value ? parseFloat(e.target.value) : null)}
-                        startContent={<DollarSignIcon className="w-4 h-4 text-default-400" />}
+                        startContent={<span className="text-default-400">₹</span>}
                         classNames={{
                           label: "font-semibold"
                         }}
@@ -1007,7 +1007,7 @@ export default function AdminEventsPage() {
                           💰 Discount Applied!
                         </p>
                         <p className="text-sm text-green-700 dark:text-green-300">
-                          Attendees save ${formData.price - formData.discountPrice} ({Math.round(((formData.price - formData.discountPrice) / formData.price) * 100)}% off)
+                          Attendees save ₹{formData.price - formData.discountPrice} ({Math.round(((formData.price - formData.discountPrice) / formData.price) * 100)}% off)
                         </p>
                       </div>
                     )}
@@ -1017,7 +1017,7 @@ export default function AdminEventsPage() {
                         💡 Pricing Tips
                       </p>
                       <ul className="text-sm text-purple-700 dark:text-purple-300 space-y-1">
-                        <li>• Set price to $0 for free events</li>
+                        <li>• Set price to ₹0 for free events</li>
                         <li>• Add discount price for early bird offers</li>
                         <li>• Consider your target audience's budget</li>
                         <li>• Capacity helps manage registrations</li>
