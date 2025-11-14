@@ -233,7 +233,7 @@ export function calculateFeedbackStats(feedbacks: EventFeedback[]) {
     .filter(r => r > 0);
 
   const averageRating = ratings.length > 0
-    ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2)
+    ? parseFloat((ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2))
     : 0;
 
   const ratingDistribution = {
@@ -255,7 +255,7 @@ export function calculateFeedbackStats(feedbacks: EventFeedback[]) {
 
   return {
     totalResponses,
-    averageRating: parseFloat(averageRating.toString()),
+    averageRating,
     satisfactionScore,
     ratingDistribution,
     sentiment
