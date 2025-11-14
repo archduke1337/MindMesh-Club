@@ -51,7 +51,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
     const adminClient = new Client()
       .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
       .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
-      .setKey(process.env.APPWRITE_API_KEY!); // Use API key for admin access
+      .setApiKey(process.env.APPWRITE_API_KEY!); // Use API key for admin access
 
     const adminDatabases = new Databases(adminClient);
 

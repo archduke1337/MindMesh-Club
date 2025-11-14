@@ -1,8 +1,133 @@
 // lib/eventExport.ts
-// Export event statistics to CSV and other formats
+// Export event statistics to CSV, PDF and other formats
 
 import { Event, Registration } from "./database";
 import { EventMetrics } from "./eventAnalytics";
+import { jsPDF } from "jspdf";
+
+/**
+ * Generate PDF for registration list
+ */
+export function generateRegistrationListPDF(
+  eventTitle: string,
+  eventDate: string,
+  registrations: Registration[]
+): Blob {
+  const doc = new jsPDF();
+  
+  // Title
+  doc.setFontSize(18);
+  doc.text("Event Registration List", 14, 22);
+  
+  // Event Info
+  doc.setFontSize(11);
+  doc.text(`Event: ${eventTitle}`, 14, 32);
+  doc.text(`Date: ${new Date(eventDate).toLocaleDateString()}`, 14, 40);
+  doc.text(`Total Registrations: ${registrations.length}`, 14, 48);
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 56);
+
+  // Table headers
+  const startY = 66;
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  const contentWidth = pageWidth - 2 * margin;
+  
+  // Column widths
+  const col1Width = 60;  // Name
+  const col2Width = 80;  // Email
+  const col3Width = 50;  // Registration Date
+  
+  doc.setFontSize(10);
+  doc.setFont(undefined, "bold");
+  doc.text("Name", margin, startY);
+  doc.text("Email", margin + col1Width, startY);
+  doc.text("Registration Date", margin + col1Width + col2Width, startY);
+  
+  // Draw line
+  doc.setDrawColor(200);
+  doc.line(margin, startY + 2, pageWidth - margin, startY + 2);
+  
+  // Table rows
+  doc.setFont(undefined, "normal");
+  doc.setFontSize(9);
+  let currentY = startY + 10;
+  const rowHeight = 8;
+  const pageBottomMargin = 20;
+  
+  registrations.forEach((reg, index) => {
+    // Check if we need a new page
+    if (currentY + rowHeight > pageHeight - pageBottomMargin) {
+      doc.addPage();
+      currentY = 14;
+      
+      // Repeat header on new page
+      doc.setFont(undefined, "bold");
+      doc.setFontSize(10);
+      doc.text("Name", margin, currentY);
+      doc.text("Email", margin + col1Width, currentY);
+      doc.text("Registration Date", margin + col1Width + col2Width, currentY);
+      
+      doc.setDrawColor(200);
+      doc.line(margin, currentY + 2, pageWidth - margin, currentY + 2);
+      
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(9);
+      currentY += 8;
+    }
+    
+    const regDate = new Date(reg.registeredAt).toLocaleDateString();
+    
+    // Wrap text for long emails
+    const email = reg.userEmail.length > 35 ? reg.userEmail.substring(0, 35) + "..." : reg.userEmail;
+    
+    doc.text(reg.userName, margin, currentY);
+    doc.text(email, margin + col1Width, currentY);
+    doc.text(regDate, margin + col1Width + col2Width, currentY);
+    
+    currentY += rowHeight;
+  });
+  
+  // Footer
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.text(
+      `Page ${i} of ${totalPages}`,
+      pageWidth / 2,
+      pageHeight - 10,
+      { align: "center" }
+    );
+  }
+  
+  return doc.output("blob");
+}
+
+/**
+ * Download registration list as PDF
+ */
+export function downloadRegistrationListPDF(
+  eventTitle: string,
+  eventDate: string,
+  registrations: Registration[]
+): void {
+  const pdfBlob = generateRegistrationListPDF(eventTitle, eventDate, registrations);
+  const url = URL.createObjectURL(pdfBlob);
+  const link = document.createElement("a");
+  
+  link.href = url;
+  link.download = `${eventTitle.replace(/\s+/g, "_")}_registrations.pdf`;
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Generate CSV content for event statistics
 
 /**
  * Generate CSV content for event statistics
@@ -103,21 +228,15 @@ export function generateRegistrationList(registrations: Registration[]): string 
 }
 
 /**
- * Trigger registration list download
+ * Trigger registration list download as PDF
+ * @deprecated Use downloadRegistrationListPDF instead
  */
 export function downloadRegistrationList(eventTitle: string, registrations: Registration[]): void {
-  const content = generateRegistrationList(registrations);
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
-  const link = document.createElement("a");
-  const url = URL.createObjectURL(blob);
-
-  link.setAttribute("href", url);
-  link.setAttribute("download", `${eventTitle.replace(/\s+/g, "_")}_registrations.txt`);
-  link.style.visibility = "hidden";
-
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  // Get the first registration date to pass as eventDate
+  const eventDate = registrations.length > 0 
+    ? new Date().toISOString() 
+    : new Date().toISOString();
+  downloadRegistrationListPDF(eventTitle, eventDate, registrations);
 }
 
 /**
