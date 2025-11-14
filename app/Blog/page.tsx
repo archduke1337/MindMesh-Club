@@ -315,7 +315,7 @@ export default function BlogPage() {
                         <EyeIcon className="w-2.5 sm:w-3 md:w-3.5 lg:w-4 h-2.5 sm:h-3 md:h-3.5 lg:h-4" />
                         <span className="text-xs">{blog.views}</span>
                       </div>
-                      {user && blog.userId === user.$id && (
+                      {user && blog.authorId === user.$id && (
                         <Button
                           isIconOnly
                           size="sm"
