@@ -14,7 +14,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { eventService, type Event as EventType } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { sendRegistrationEmail } from "@/lib/emailService";
+import { eventStorageManager } from "@/lib/eventStorageManager";
 import {
   CalendarIcon,
   MapPinIcon,
@@ -66,42 +66,24 @@ export default function EventDetailPage() {
   };
 
   const checkSavedStatus = () => {
-    const saved = localStorage.getItem("savedEvents");
-    if (saved) {
-      const savedEvents = JSON.parse(saved);
-      setIsSaved(savedEvents.includes(eventId));
-    }
+    setIsSaved(eventStorageManager.isSaved(eventId));
   };
 
   const checkRegistrationStatus = () => {
-    const registered = localStorage.getItem("registeredEvents");
-    if (registered) {
-      const registeredEvents = JSON.parse(registered);
-      setIsRegistered(registeredEvents.includes(eventId));
-      
-      // Check if we have ticket info
-      const ticketInfo = localStorage.getItem(`ticket_${eventId}`);
-      if (ticketInfo) {
-        const { ticketId: tid, emailSent: sent } = JSON.parse(ticketInfo);
-        setTicketId(tid);
-        setEmailSent(sent);
-      }
+    const isReg = eventStorageManager.isRegistered(eventId);
+    setIsRegistered(isReg);
+    
+    // Check if we have ticket info
+    const ticketInfo = eventStorageManager.getTicket(eventId);
+    if (ticketInfo) {
+      setTicketId(ticketInfo.ticketId);
+      setEmailSent(true);
     }
   };
 
   const toggleSave = () => {
-    const saved = localStorage.getItem("savedEvents");
-    const savedEvents = saved ? JSON.parse(saved) : [];
-    
-    if (isSaved) {
-      const filtered = savedEvents.filter((id: string) => id !== eventId);
-      localStorage.setItem("savedEvents", JSON.stringify(filtered));
-      setIsSaved(false);
-    } else {
-      savedEvents.push(eventId);
-      localStorage.setItem("savedEvents", JSON.stringify(savedEvents));
-      setIsSaved(true);
-    }
+    const isSaved = eventStorageManager.toggleSavedEvent(eventId);
+    setIsSaved(isSaved);
   };
 
   const handleRegister = async () => {
@@ -115,11 +97,8 @@ export default function EventDetailPage() {
       const confirmed = confirm("Are you sure you want to unregister from this event?");
       if (!confirmed) return;
       
-      const registered = localStorage.getItem("registeredEvents");
-      const registeredEvents = registered ? JSON.parse(registered) : [];
-      const filtered = registeredEvents.filter((id: string) => id !== eventId);
-      localStorage.setItem("registeredEvents", JSON.stringify(filtered));
-      localStorage.removeItem(`ticket_${eventId}`);
+      eventStorageManager.removeRegisteredEvent(eventId);
+      eventStorageManager.deleteTicket(eventId);
       setIsRegistered(false);
       setEmailSent(false);
       setTicketId("");
@@ -128,57 +107,47 @@ export default function EventDetailPage() {
 
     setRegistering(true);
     try {
-      // Register for event in database
-      await eventService.registerForEvent(eventId, user.$id, user.name, user.email);
-      
-      // Send email with e-ticket
-      const emailResult = await sendRegistrationEmail(
-        user.email,
-        user.name,
-        {
-          title: event!.title,
-          date: event!.date,
-          time: event!.time,
-          venue: event!.venue,
-          location: event!.location,
-          image: event!.image,
-          organizerName: event!.organizerName,
-          price: event!.price,
-          discountPrice: event!.discountPrice,
-        }
-      );
+      // Call server-side registration endpoint for atomic registration
+      const response = await fetch('/api/events/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId,
+          userId: user.$id,
+          userName: user.name,
+          userEmail: user.email,
+        }),
+      });
 
-      if (emailResult.success) {
-        setTicketId(emailResult.ticketId);
-        setEmailSent(true);
-        
-        // Save to localStorage
-        const registered = localStorage.getItem("registeredEvents");
-        const registeredEvents = registered ? JSON.parse(registered) : [];
-        registeredEvents.push(eventId);
-        localStorage.setItem("registeredEvents", JSON.stringify(registeredEvents));
-        
-        // Save ticket info
-        localStorage.setItem(`ticket_${eventId}`, JSON.stringify({
-          ticketId: emailResult.ticketId,
-          emailSent: true
-        }));
-        
-        setIsRegistered(true);
-        
-        alert(`✅ Registration successful! \n\n🎫 Your ticket ID: ${emailResult.ticketId}\n📧 E-ticket sent to: ${user.email}\n\nCheck your email for your e-ticket with QR code!`);
-        await loadEvent();
-      } else {
-        // Registration succeeded but email failed
-        const registered = localStorage.getItem("registeredEvents");
-        const registeredEvents = registered ? JSON.parse(registered) : [];
-        registeredEvents.push(eventId);
-        localStorage.setItem("registeredEvents", JSON.stringify(registeredEvents));
-        setIsRegistered(true);
-        
-        alert("✅ Registration successful!\n\n⚠️ However, we couldn't send your e-ticket email. Please contact support with your registration details.");
-        await loadEvent();
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || 'Registration failed');
       }
+
+      setTicketId(result.ticketId);
+      setEmailSent(true);
+      
+      // Save to localStorage using centralized manager
+      const ticketData = {
+        ticketId: result.ticketId,
+        eventId: eventId,
+        eventTitle: event!.title,
+        userName: user.name,
+        userEmail: user.email,
+        date: event!.date,
+        time: event!.time,
+        venue: event!.venue,
+        location: event!.location,
+        registeredAt: new Date().toISOString(),
+      };
+      
+      eventStorageManager.setTicket(eventId, ticketData);
+      eventStorageManager.addRegisteredEvent(eventId);
+      setIsRegistered(true);
+      
+      alert(`✅ Registration successful! \n\n🎫 Your ticket ID: ${result.ticketId}\n📧 E-ticket sent to: ${user.email}\n\nCheck your email for your e-ticket with QR code!`);
+      await loadEvent();
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Registration error:", message);

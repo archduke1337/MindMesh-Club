@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { eventService, type Event as EventType } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { sendRegistrationEmail } from "@/lib/emailService";
+import { eventStorageManager } from "@/lib/eventStorageManager";
 import {
   CalendarIcon,
   MapPinIcon,
@@ -82,15 +82,9 @@ export default function EventsPage() {
         const registeredEventIds = userTickets.map(ticket => ticket.eventId);
         console.log('📋 Registered event IDs:', registeredEventIds);
         
-        // Merge with existing localStorage registrations
-        const localRegistered = localStorage.getItem("registeredEvents");
-        const localIds = localRegistered ? JSON.parse(localRegistered) : [];
-        
-        // Combine and deduplicate
-        const mergedIds = Array.from(new Set([...localIds, ...registeredEventIds]));
-        
+      // Sync and merge with existing localStorage registrations
+        const mergedIds = eventStorageManager.syncRegistrations(registeredEventIds);
         setRegisteredEvents(mergedIds);
-        localStorage.setItem("registeredEvents", JSON.stringify(mergedIds));
         
         console.log('✅ Registered events synced:', mergedIds.length);
       }
@@ -101,11 +95,11 @@ export default function EventsPage() {
   };
 
   const loadSavedEvents = () => {
-    const saved = localStorage.getItem("savedEvents");
-    if (saved) setSavedEvents(JSON.parse(saved));
+    const saved = eventStorageManager.getSavedEvents();
+    setSavedEvents(saved);
     
-    const registered = localStorage.getItem("registeredEvents");
-    if (registered) setRegisteredEvents(JSON.parse(registered));
+    const registered = eventStorageManager.getRegisteredEvents();
+    setRegisteredEvents(registered);
   };
 
   const categories = [
@@ -142,12 +136,8 @@ export default function EventsPage() {
 
   const toggleSaveEvent = (e: React.MouseEvent, eventId: string) => {
     e.stopPropagation();
-    const newSaved = savedEvents.includes(eventId)
-      ? savedEvents.filter(id => id !== eventId)
-      : [...savedEvents, eventId];
-    
-    setSavedEvents(newSaved);
-    localStorage.setItem("savedEvents", JSON.stringify(newSaved));
+    const isSaved = eventStorageManager.toggleSavedEvent(eventId);
+    setSavedEvents(eventStorageManager.getSavedEvents());
   };
 
   const toggleRegisterEvent = async (e: React.MouseEvent, eventId: string) => {
@@ -163,10 +153,9 @@ export default function EventsPage() {
       const confirmed = confirm("Are you sure you want to unregister from this event?");
       if (!confirmed) return;
       
-      const newRegistered = registeredEvents.filter(id => id !== eventId);
-      setRegisteredEvents(newRegistered);
-      localStorage.setItem("registeredEvents", JSON.stringify(newRegistered));
-      localStorage.removeItem(`ticket_${eventId}`);
+      eventStorageManager.removeRegisteredEvent(eventId);
+      eventStorageManager.deleteTicket(eventId);
+      setRegisteredEvents(eventStorageManager.getRegisteredEvents());
       alert("Successfully unregistered from event");
       return;
     }
@@ -179,31 +168,30 @@ export default function EventsPage() {
 
       console.log("🔄 Registering for event:", eventId);
       
-      // Register for event in database
-      const registration = await eventService.registerForEvent(eventId, user.$id, user.name, user.email);
-      console.log("✅ Database registration successful:", registration);
-      
-      // Try to send email with e-ticket
-      const emailResult = await sendRegistrationEmail(
-        user.email,
-        user.name,
-        {
-          title: event.title,
-          date: event.date,
-          time: event.time,
-          venue: event.venue,
-          location: event.location,
-          image: event.image,
-          organizerName: event.organizerName,
-          price: event.price,
-          discountPrice: event.discountPrice,
-        }
-      );
+      // Call server-side registration endpoint for atomic registration
+      const response = await fetch('/api/events/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId,
+          userId: user.$id,
+          userName: user.name,
+          userEmail: user.email,
+        }),
+      });
 
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || 'Registration failed');
+      }
+
+      console.log("✅ Server registration successful, ticket:", result.ticketId);
+      
       // Store ticket data locally
       const ticketData = {
-        ticketId: emailResult.ticketId || `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        eventId: event.$id,
+        ticketId: result.ticketId,
+        eventId: event.$id || eventId,
         eventTitle: event.title,
         userName: user.name,
         userEmail: user.email,
@@ -214,32 +202,20 @@ export default function EventsPage() {
         registeredAt: new Date().toISOString(),
       };
       
-      localStorage.setItem(`ticket_${eventId}`, JSON.stringify(ticketData));
+      eventStorageManager.setTicket(eventId, ticketData);
       
-      // Update registered events
-      const newRegistered = [...registeredEvents, eventId];
-      setRegisteredEvents(newRegistered);
-      localStorage.setItem("registeredEvents", JSON.stringify(newRegistered));
+      // Update registered events using centralized manager
+      eventStorageManager.addRegisteredEvent(eventId);
+      setRegisteredEvents(eventStorageManager.getRegisteredEvents());
       
-      // Show appropriate message with better formatting
-      if (emailResult.success) {
-        alert(
-          "🎉 Registration Successful!\n\n" +
-          "✅ You're registered for the event\n" +
-          "📧 E-ticket sent to: " + user.email + "\n" +
-          "🎫 Ticket ID: " + emailResult.ticketId + "\n\n" +
-          "Please check your email inbox (and spam folder) for your e-ticket."
-        );
-      } else {
-        alert(
-          "⚠️ Registration Successful (Email Issue)\n\n" +
-          "✅ You're registered for the event\n" +
-          "❌ E-ticket email failed to send\n" +
-          "🎫 Ticket ID: " + ticketData.ticketId + "\n\n" +
-          "Your ticket is saved locally. You can view it in your dashboard.\n\n" +
-          "If you need help, contact: hello@mindmesh.club"
-        );
-      }
+      // Show success message
+      alert(
+        "🎉 Registration Successful!\n\n" +
+        "✅ You're registered for the event\n" +
+        "📧 E-ticket sent to: " + user.email + "\n" +
+        "🎫 Ticket ID: " + result.ticketId + "\n\n" +
+        "Please check your email inbox (and spam folder) for your e-ticket."
+      );
       
       // Reload events to update registration count
       await loadEvents();

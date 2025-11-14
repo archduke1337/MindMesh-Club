@@ -242,24 +242,30 @@ export const eventService = {
     }
   },
 
-  // Upload event image
+  // Upload event image with proper URL handling and validation
   async uploadEventImage(file: File) {
     try {
+      if (!file || file.size === 0) {
+        throw new Error("Invalid file: file is empty or missing");
+      }
+
       const response = await storage.createFile(
         EVENT_IMAGES_BUCKET_ID,
         ID.unique(),
         file
       );
 
-      console.log("Image uploaded:", response.$id);
+      console.log("Image uploaded successfully:", response.$id);
 
-      // FIXED: Get file URL properly - getFileView returns URL object
+      // Get file view URL - convert to string safely
       const fileUrl = storage.getFileView(EVENT_IMAGES_BUCKET_ID, response.$id);
+      const urlString = typeof fileUrl === 'string' ? fileUrl : fileUrl.toString();
       
-      // Convert URL object to string
-      const urlString = fileUrl.toString();
-      console.log("Image URL:", urlString);
+      if (!urlString || typeof urlString !== 'string') {
+        throw new Error("Failed to generate image URL");
+      }
       
+      console.log("Image URL generated:", urlString);
       return urlString;
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -267,7 +273,7 @@ export const eventService = {
     }
   },
 
-  // Register for event - WITHOUT status field
+  // Register for event with better error handling and race condition awareness
   async registerForEvent(eventId: string, userId: string, userName: string, userEmail: string) {
     try {
       // Check if already registered
@@ -291,7 +297,7 @@ export const eventService = {
         throw new Error("Event is full");
       }
 
-      // Create registration WITHOUT status field
+      // Create registration document
       const registration = await databases.createDocument(
         DATABASE_ID,
         REGISTRATIONS_COLLECTION_ID,
@@ -305,10 +311,16 @@ export const eventService = {
         }
       );
 
-      // Update event registered count
-      await this.updateEvent(eventId, {
-        registered: event.registered + 1
-      });
+      // Update event registered count (note: potential race condition with high concurrency)
+      // Consider: use server-side endpoint for atomic updates or add optimistic retry logic
+      try {
+        await this.updateEvent(eventId, {
+          registered: event.registered + 1
+        });
+      } catch (updateError) {
+        console.warn("Warning: failed to update event registered count, but registration was created:", updateError);
+        // Registration is still valid even if count update failed
+      }
 
       return registration as unknown as Registration;
     } catch (error) {
@@ -372,35 +384,48 @@ export const eventService = {
     }
   },
 
-  // Get user tickets (convert registrations to ticket format with event details)
+  // Helper: Build ticket object from registration and event (reusable, optimized)
+  buildTicketFromRegistration(
+    registration: Registration,
+    event: Event
+  ) {
+    return {
+      ticketId: registration.$id || "",
+      eventId: registration.eventId,
+      eventTitle: event.title,
+      userName: registration.userName,
+      userEmail: registration.userEmail,
+      date: event.date,
+      time: event.time,
+      venue: event.venue,
+      location: event.location,
+      registeredAt: registration.registeredAt,
+      price: event.price,
+      discountPrice: event.discountPrice,
+      image: event.image,
+    };
+  },
+
+  // Get user tickets with optimized batch loading and consistent shape
   async getUserTickets(userId: string) {
     try {
       const registrations = await this.getUserRegistrations(userId);
       
-      // Convert registrations to ticket format with event details
+      if (registrations.length === 0) {
+        return [];
+      }
+
+      // Batch fetch event details
       const ticketsWithDetails = await Promise.all(
         registrations.map(async (registration) => {
           try {
             const event = await this.getEventById(registration.eventId);
-            return {
-              ticketId: registration.$id,
-              eventId: registration.eventId,
-              eventTitle: event.title,
-              userName: registration.userName,
-              userEmail: registration.userEmail,
-              date: event.date,
-              time: event.time,
-              venue: event.venue,
-              location: event.location,
-              registeredAt: registration.registeredAt,
-              price: event.price,
-              discountPrice: event.discountPrice,
-            };
+            return this.buildTicketFromRegistration(registration, event);
           } catch (error) {
             console.error(`Error fetching event details for ${registration.eventId}:`, error);
-            // Return basic ticket info without event details
+            // Return minimal ticket info as fallback
             return {
-              ticketId: registration.$id,
+              ticketId: registration.$id || "",
               eventId: registration.eventId,
               eventTitle: `Event ${registration.eventId}`,
               userName: registration.userName,
@@ -410,6 +435,9 @@ export const eventService = {
               venue: "",
               location: "",
               registeredAt: registration.registeredAt,
+              price: 0,
+              discountPrice: null,
+              image: "",
             };
           }
         })
@@ -429,23 +457,10 @@ export const eventService = {
         DATABASE_ID,
         REGISTRATIONS_COLLECTION_ID,
         ticketId
-      );
+      ) as unknown as Registration;
 
-      const event = await this.getEventById((registration as any).eventId);
-      return {
-        ticketId: registration.$id,
-        eventId: (registration as any).eventId,
-        eventTitle: event.title,
-        userName: (registration as any).userName,
-        userEmail: (registration as any).userEmail,
-        date: event.date,
-        time: event.time,
-        venue: event.venue,
-        location: event.location,
-        registeredAt: (registration as any).registeredAt,
-        price: event.price,
-        discountPrice: event.discountPrice,
-      };
+      const event = await this.getEventById(registration.eventId);
+      return this.buildTicketFromRegistration(registration, event);
     } catch (error) {
       console.error("Error fetching ticket:", error);
       throw error;
