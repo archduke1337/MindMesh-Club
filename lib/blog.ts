@@ -288,7 +288,7 @@ export const blogService = {
       // If userId is provided, verify user owns the blog before deletion
       if (userId) {
         const blog = await this.getBlogById(blogId);
-        if (blog && blog.userId !== userId) {
+        if (blog && blog.authorId !== userId) {
           throw new Error("Unauthorized: You can only delete your own blogs");
         }
       }
