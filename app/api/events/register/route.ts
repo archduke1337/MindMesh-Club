@@ -47,94 +47,70 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
 
     console.log(`[API] Registering user ${userId} for event ${eventId}`);
 
-    // Use Appwrite REST API directly with API key for admin access
-    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
-    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!;
-    const apiKey = process.env.APPWRITE_API_KEY;
-    
-    if (!apiKey) {
-      console.error('[API] APPWRITE_API_KEY is not set');
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Server configuration error',
-          error: 'API key not configured',
-        },
-        { status: 500 }
-      );
+    // Initialize Appwrite client with user session from cookies
+    const client = new Client()
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+
+    // Copy cookies from request to client for authentication
+    const cookieHeader = request.headers.get('cookie');
+    if (cookieHeader) {
+      client.setHeader('Cookie', cookieHeader);
     }
 
+    const databases = new Databases(client);
     const databaseId = DATABASE_ID;
     const registrationsCollectionId = REGISTRATIONS_COLLECTION_ID;
 
-    // Check if already registered using REST API with proper query encoding
-    const queries = [
-      `equal("eventId","${eventId}")`,
-      `equal("userId","${userId}")`
-    ];
-    const queryParams = new URLSearchParams();
-    queries.forEach((q, i) => {
-      queryParams.append(`queries[${i}]`, q);
-    });
-    const listUrl = `${endpoint}/v1/databases/${databaseId}/collections/${registrationsCollectionId}/documents?${queryParams.toString()}`;
-    
-    console.log(`[API] Checking registrations at: ${listUrl}`);
-    
-    const listResponse = await fetch(listUrl, {
-      method: 'GET',
-      headers: {
-        'X-Appwrite-Key': apiKey,
-        'X-Appwrite-Project': projectId,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!listResponse.ok) {
-      const errorData = await listResponse.json().catch(() => ({}));
-      console.error('[API] Check registrations failed:', {
-        status: listResponse.status,
-        url: listUrl,
-        error: errorData,
-        headers: {
-          'X-Appwrite-Key': apiKey ? 'SET' : 'MISSING',
-          'X-Appwrite-Project': projectId
-        }
-      });
-      throw new Error(`Failed to check existing registrations: ${listResponse.statusText}`);
-    }
-
-    const listData = await listResponse.json();
-
-    if (listData.documents && listData.documents.length > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Already registered for this event',
-          error: 'Already registered for this event',
-        },
-        { status: 409 }
+    // Check if already registered
+    try {
+      const existingRegistrations = await databases.listDocuments(
+        databaseId,
+        registrationsCollectionId,
+        [
+          Query.equal("eventId", eventId),
+          Query.equal("userId", userId),
+          Query.limit(1)
+        ]
       );
+
+      if (existingRegistrations.documents.length > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Already registered for this event',
+            error: 'Already registered for this event',
+          },
+          { status: 409 }
+        );
+      }
+    } catch (listError) {
+      console.error('[API] Error checking existing registrations:', listError);
+      // If we can't check, proceed with registration attempt
     }
 
     // Get event to check capacity
-    const getEventUrl = `${endpoint}/v1/databases/${databaseId}/collections/${EVENTS_COLLECTION_ID}/documents/${eventId}`;
-    
-    const getEventResponse = await fetch(getEventUrl, {
-      method: 'GET',
-      headers: {
-        'X-Appwrite-Key': apiKey,
-        'X-Appwrite-Project': projectId,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!getEventResponse.ok) {
-      throw new Error(`Failed to fetch event: ${getEventResponse.statusText}`);
+    let event;
+    try {
+      event = await databases.getDocument(
+        databaseId,
+        EVENTS_COLLECTION_ID,
+        eventId
+      );
+    } catch (getError) {
+      console.error('[API] Error fetching event:', getError);
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Event not found',
+          error: 'The event does not exist',
+        },
+        { status: 404 }
+      );
     }
 
-    const event = await getEventResponse.json();
-
-    if (event.capacity && event.registered >= event.capacity) {
+    const eventData = event as any;
+    if (eventData.capacity && eventData.registered >= eventData.capacity) {
       return NextResponse.json(
         {
           success: false,
@@ -146,32 +122,32 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
     }
 
     // Create registration document
-    const createUrl = `${endpoint}/v1/databases/${databaseId}/collections/${registrationsCollectionId}/documents`;
-    
-    const createResponse = await fetch(createUrl, {
-      method: 'POST',
-      headers: {
-        'X-Appwrite-Key': apiKey,
-        'X-Appwrite-Project': projectId,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        documentId: ID.unique(),
-        data: {
+    let registration;
+    try {
+      registration = await databases.createDocument(
+        databaseId,
+        registrationsCollectionId,
+        ID.unique(),
+        {
           eventId,
           userId,
           userName,
           userEmail,
           registeredAt: new Date().toISOString(),
         }
-      })
-    });
-
-    if (!createResponse.ok) {
-      throw new Error(`Failed to create registration: ${createResponse.statusText}`);
+      );
+    } catch (createError) {
+      console.error('[API] Error creating registration:', createError);
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Failed to create registration',
+          error: getErrorMessage(createError),
+        },
+        { status: 500 }
+      );
     }
 
-    const registration = await createResponse.json();
     const ticketId = registration.$id || '';
 
     if (!ticketId) {
@@ -182,21 +158,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
 
     // Update event registered count
     try {
-      const updateUrl = `${endpoint}/v1/databases/${databaseId}/collections/${EVENTS_COLLECTION_ID}/documents/${eventId}`;
-      
-      await fetch(updateUrl, {
-        method: 'PATCH',
-        headers: {
-          'X-Appwrite-Key': apiKey,
-          'X-Appwrite-Project': projectId,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          registered: (event.registered || 0) + 1
-        })
-      });
-      
-      console.log(`[API] Updated event registered count to ${(event.registered || 0) + 1}`);
+      await databases.updateDocument(
+        databaseId,
+        EVENTS_COLLECTION_ID,
+        eventId,
+        {
+          registered: (eventData.registered || 0) + 1
+        }
+      );
+      console.log(`[API] Updated event registered count to ${(eventData.registered || 0) + 1}`);
     } catch (updateError) {
       console.warn(`[API] Warning: failed to update event registered count:`, updateError);
       // Don't fail registration if count update fails
@@ -205,11 +175,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
     // Try to send email in the background (don't block if it fails)
     try {
       await sendRegistrationEmail(userEmail, userName, {
-        title: event.title,
-        date: event.date,
-        time: event.time,
-        venue: event.venue,
-        location: event.location,
+        title: eventData.title,
+        date: eventData.date,
+        time: eventData.time,
+        venue: eventData.venue,
+        location: eventData.location,
         image: event.image,
         organizerName: event.organizerName,
         price: event.price,
