@@ -1092,11 +1092,19 @@ export default function AdminEventsPage() {
                     color="primary"
                     variant="flat"
                     className="mt-3"
-                    onPress={() => {
-                      const link = document.createElement('a');
-                      link.href = generateEventQRCodeUrl(selectedEventForQR.$id!, selectedEventForQR.title);
-                      link.download = `${selectedEventForQR.title}-checkin-qr.png`;
-                      link.click();
+                    onPress={async () => {
+                      try {
+                        const qrUrl = generateEventQRCodeUrl(selectedEventForQR.$id!, selectedEventForQR.title);
+                        const response = await fetch(qrUrl);
+                        const blob = await response.blob();
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `${selectedEventForQR.title}-checkin-qr.png`;
+                        link.click();
+                        URL.revokeObjectURL(link.href);
+                      } catch (error) {
+                        console.error('Failed to download QR code:', error);
+                      }
                     }}
                   >
                     <Download className="w-4 h-4" />
@@ -1123,11 +1131,19 @@ export default function AdminEventsPage() {
                     color="success"
                     variant="flat"
                     className="mt-3"
-                    onPress={() => {
-                      const link = document.createElement('a');
-                      link.href = generateEventShareQRCodeUrl(selectedEventForQR.$id!);
-                      link.download = `${selectedEventForQR.title}-share-qr.png`;
-                      link.click();
+                    onPress={async () => {
+                      try {
+                        const qrUrl = generateEventShareQRCodeUrl(selectedEventForQR.$id!);
+                        const response = await fetch(qrUrl);
+                        const blob = await response.blob();
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `${selectedEventForQR.title}-share-qr.png`;
+                        link.click();
+                        URL.revokeObjectURL(link.href);
+                      } catch (error) {
+                        console.error('Failed to download QR code:', error);
+                      }
                     }}
                   >
                     <Download className="w-4 h-4" />
