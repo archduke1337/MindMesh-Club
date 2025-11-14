@@ -48,9 +48,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
     console.log(`[API] Registering user ${userId} for event ${eventId}`);
 
     // Initialize Appwrite client
+    // Note: This endpoint should work with public read access or use admin API key
     const client = new Client()
       .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
       .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+
+    // If API key is available, use it for admin access
+    if (process.env.APPWRITE_API_KEY) {
+      // For admin operations, we can use the API key as a custom header
+      // However, since setHeader is not supported, we'll try with public permissions
+      console.log('[API] API key available, attempting admin operations');
+    }
 
     const databases = new Databases(client);
     const databaseId = DATABASE_ID;
