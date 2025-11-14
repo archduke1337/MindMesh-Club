@@ -372,6 +372,11 @@ export default function AdminBlogsPage() {
                         <p className="text-xs text-default-600">
                           {blog.rejectionReason}
                         </p>
+                        {blog.rejectionCount && blog.rejectionCount > 1 && (
+                          <p className="text-xs text-danger mt-1">
+                            Rejected {blog.rejectionCount} times
+                          </p>
+                        )}
                       </div>
                     )}
 

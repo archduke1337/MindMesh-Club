@@ -287,7 +287,7 @@ export default function BlogPage() {
                     </div>
                   </CardBody>
 
-                  <CardFooter className="px-3 sm:px-4 md:px-5 lg:px-6 pb-3 sm:pb-4 md:pb-5 lg:pb-6 pt-0 flex flex-col sm:flex-row justify-between gap-2 sm:gap-3 lg:gap-4">
+                  <CardFooter className="px-3 sm:px-4 md:px-5 lg:px-6 pb-3 sm:pb-4 md:pb-5 lg:pb-6 pt-0 flex flex-col gap-2 sm:flex-row justify-between gap-2 sm:gap-3 lg:gap-4">
                     {/* Author */}
                     <div className="flex items-center gap-2 min-w-0">
                       <Avatar
@@ -305,7 +305,7 @@ export default function BlogPage() {
                       </div>
                     </div>
 
-                    {/* Meta */}
+                    {/* Meta & Actions */}
                     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3 text-xs text-default-500 whitespace-nowrap">
                       <div className="flex items-center gap-0.5 sm:gap-1">
                         <ClockIcon className="w-2.5 sm:w-3 md:w-3.5 lg:w-4 h-2.5 sm:h-3 md:h-3.5 lg:h-4" />
@@ -315,6 +315,20 @@ export default function BlogPage() {
                         <EyeIcon className="w-2.5 sm:w-3 md:w-3.5 lg:w-4 h-2.5 sm:h-3 md:h-3.5 lg:h-4" />
                         <span className="text-xs">{blog.views}</span>
                       </div>
+                      {user && blog.authorId === user.$id && (
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            router.push(`/Blog/edit/${blog.$id}`);
+                          }}
+                          className="text-xs"
+                        >
+                          ✎
+                        </Button>
+                      )}
                     </div>
                   </CardFooter>
                 </Card>
