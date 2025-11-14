@@ -15,23 +15,32 @@ export const createAdminDatabases = () => {
   // instead of using the SDK client
   return {
     createDocument: async (databaseId: string, collectionId: string, documentId: string, data: any) => {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/databases/${databaseId}/collections/${collectionId}/documents`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Appwrite-Key": process.env.APPWRITE_API_KEY || "",
-          },
-          body: JSON.stringify({
-            documentId,
-            data,
-          }),
-        }
-      );
+      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+      const apiKey = process.env.APPWRITE_API_KEY;
+
+      if (!endpoint || !projectId || !apiKey) {
+        throw new Error("Missing required environment variables: APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, or APPWRITE_API_KEY");
+      }
+
+      const url = `${endpoint}/v1/databases/${databaseId}/collections/${collectionId}/documents`;
+      
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Appwrite-Key": apiKey,
+          "X-Appwrite-Project": projectId,
+        },
+        body: JSON.stringify({
+          documentId,
+          data,
+        }),
+      });
       
       if (!response.ok) {
         const error = await response.json();
+        console.error("Appwrite API Error:", error);
         throw new Error(error.message || "Failed to create document");
       }
       
@@ -43,23 +52,32 @@ export const createAdminDatabases = () => {
 export const createAdminStorage = () => {
   return {
     createFile: async (bucketId: string, fileId: string, file: File) => {
+      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+      const apiKey = process.env.APPWRITE_API_KEY;
+
+      if (!endpoint || !projectId || !apiKey) {
+        throw new Error("Missing required environment variables for admin storage access");
+      }
+
       const formData = new FormData();
       formData.append("fileId", fileId);
       formData.append("file", file);
       
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files`,
-        {
-          method: "POST",
-          headers: {
-            "X-Appwrite-Key": process.env.APPWRITE_API_KEY || "",
-          },
-          body: formData,
-        }
-      );
+      const url = `${endpoint}/v1/storage/buckets/${bucketId}/files`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "X-Appwrite-Key": apiKey,
+          "X-Appwrite-Project": projectId,
+        },
+        body: formData,
+      });
       
       if (!response.ok) {
         const error = await response.json();
+        console.error("Appwrite Storage Error:", error);
         throw new Error(error.message || "Failed to upload file");
       }
       
