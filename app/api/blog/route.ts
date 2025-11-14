@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         content: data.content,
         coverImage: data.coverImage || "",
         category: data.category || "other",
-        tags: data.tags || [],
+        tags: Array.isArray(data.tags) ? data.tags.join(", ") : (data.tags || ""),
         authorId: data.authorId,
         authorName: data.authorName || "Anonymous",
         authorEmail: data.authorEmail,

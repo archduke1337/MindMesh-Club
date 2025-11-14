@@ -15,7 +15,7 @@ export interface Blog {
   content: string;
   coverImage: string;
   category: string;
-  tags: string[];
+  tags: string;
   authorId: string;
   authorName: string;
   authorEmail: string;
