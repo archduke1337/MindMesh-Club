@@ -1328,6 +1328,16 @@ export default function AdminEventsPage() {
                               />
                             </div>
 
+                            {/* QR Data Display */}
+                            {(reg as any).ticketQRData && (
+                              <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg p-2">
+                                <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-1">QR Data:</p>
+                                <p className="text-xs font-mono text-purple-600 dark:text-purple-400 break-all leading-tight">
+                                  {(reg as any).ticketQRData}
+                                </p>
+                              </div>
+                            )}
+
                             {/* Download QR Button */}
                             <Button
                               size="sm"

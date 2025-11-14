@@ -272,6 +272,12 @@ export default function TicketsPageContent() {
 
             <div style="height: 1px; background: #e5e7eb; margin: 24px 0;"></div>
 
+            <!-- QR Data Section (for PDF) -->
+            <div style="background: #f5f3ff; border: 1px solid #e9d5ff; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+              <div style="font-size: 11px; color: #7c3aed; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 700;">📱 QR Code Data (Text Format)</div>
+              <div style="font-family: 'Courier New', monospace; font-size: 11px; color: #6b21a8; background: white; padding: 12px; border-radius: 4px; word-break: break-all; line-height: 1.6;">${ticket.ticketQRData || 'N/A'}</div>
+            </div>
+
             <!-- Instructions -->
             <div style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 20px; border-radius: 6px; margin-bottom: 24px;">
               <div style="font-size: 12px; color: #16a34a; text-transform: uppercase; font-weight: 700; margin-bottom: 12px; letter-spacing: 1px;">✓ Instructions</div>
@@ -648,6 +654,12 @@ export default function TicketsPageContent() {
                 </div>
                 
                 <div class="divider"></div>
+                
+                <!-- QR Data Section (for Print) -->
+                <div style="background: #f5f3ff; border: 1px solid #e9d5ff; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+                  <div style="font-size: 11px; color: #7c3aed; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 700;">📱 QR Code Data (Text Format)</div>
+                  <div style="font-family: 'Courier New', monospace; font-size: 11px; color: #6b21a8; background: white; padding: 12px; border-radius: 4px; word-break: break-all; line-height: 1.6;">${ticket.ticketQRData || 'N/A'}</div>
+                </div>
                 
                 <!-- Instructions -->
                 <div class="instructions">
@@ -1063,6 +1075,17 @@ export default function TicketsPageContent() {
                           title="Scan this QR code for check-in"
                         />
                       </div>
+                      
+                      {/* QR Code Data Display */}
+                      {selectedTicket.ticketQRData && (
+                        <div className="w-full bg-white/60 dark:bg-default-900/40 border border-default-300 dark:border-default-700 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-default-700 mb-2">QR Data (Text Format):</p>
+                          <p className="text-xs font-mono text-default-600 dark:text-default-400 break-all leading-relaxed">
+                            {selectedTicket.ticketQRData}
+                          </p>
+                        </div>
+                      )}
+                      
                       <p className="text-xs text-center text-default-500 max-w-sm">
                         💡 <strong>Tip:</strong> You can take a screenshot, download, or print this QR code and present it at the event.
                       </p>
