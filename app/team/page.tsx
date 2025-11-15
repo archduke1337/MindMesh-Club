@@ -142,7 +142,7 @@ const coreTeam: TeamMember[] = [
     role: "Lead Social Media Operations",
     avatar: "https://media.licdn.com/dms/image/v2/D5603AQFBOmD17JVjAQ/profile-displayphoto-scale_400_400/B56ZlnopCsKIAg-/0/1758380333072?e=1764806400&v=beta&t=53k2seWu8e9SfnhRnqjdRn5EcVQN63OPJfKSH1C6oBI",
     linkedin: "https://www.linkedin.com/in/rutuja-darade-a53ab3311/",
-    github: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    github: "https://github.com/rutuja2005byte",
     bio: "Driving our social media presence and engagement strategies.",
     achievements: ["Social Media Management", "Engagement Strategies"],
     color: "primary",
