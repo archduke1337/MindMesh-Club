@@ -129,14 +129,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       );
     }
 
-    // Create registration document with QR code data
+    // Create registration document
     let registration;
     try {
-      // Generate QR code data format: TICKET|{ticketId}|{userName}|{eventTitle}
-      // Note: ticketId will be the registration document ID, so we use a placeholder
-      const eventTitle = (event as any).title;
-      const ticketQRData = `TICKET|{TICKET_ID}|${userName}|${eventTitle}`;
-      
       registration = await databases.createDocument(
         databaseId,
         registrationsCollectionId,
@@ -147,7 +142,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
           userName,
           userEmail,
           registeredAt: new Date().toISOString(),
-          ticketQRData: ticketQRData,
         }
       );
     } catch (createError) {
@@ -166,24 +160,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
 
     if (!ticketId) {
       throw new Error('Registration created but no ticket ID returned');
-    }
-
-    // Update the QR code data with actual ticket ID
-    try {
-      const eventTitle = (event as any).title;
-      const actualQRData = `TICKET|${ticketId}|${userName}|${eventTitle}`;
-      await databases.updateDocument(
-        databaseId,
-        registrationsCollectionId,
-        ticketId,
-        {
-          ticketQRData: actualQRData,
-        }
-      );
-      console.log(`[API] Updated QR code data for ticket ${ticketId}`);
-    } catch (updateError) {
-      console.warn(`[API] Warning: failed to update QR code data:`, updateError);
-      // Don't fail registration if QR update fails
     }
 
     console.log(`[API] Registration successful: ${ticketId}`);
