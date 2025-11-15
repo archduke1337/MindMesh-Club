@@ -101,13 +101,20 @@ export default function AdminBlogsPage() {
   const handleApprove = async (blogId: string) => {
     if (!confirm("Approve this blog for publishing?")) return;
 
+    if (!user?.email) {
+      showToast("Error: Not logged in or email not available", "error");
+      console.error("No user email available:", user);
+      return;
+    }
+
     setProcessingBlog(blogId);
     try {
+      console.log("[Admin] Sending approve request with email:", user.email);
       const res = await fetch(`/api/blog/${blogId}/approve`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "x-user-email": user?.email || "",
+          "x-user-email": user.email,
         },
         credentials: "same-origin",
       });
@@ -141,11 +148,20 @@ export default function AdminBlogsPage() {
       return;
     }
 
+    if (!user?.email) {
+      showToast("Error: Not logged in or email not available", "error");
+      return;
+    }
+
     setProcessingBlog(rejectingBlog.$id!);
     try {
+      console.log("[Admin] Sending reject request with email:", user.email);
       const res = await fetch(`/api/blog/${rejectingBlog.$id}/reject`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-user-email": user.email,
+        },
         credentials: "same-origin",
         body: JSON.stringify({ reason: rejectionReason }),
       });
@@ -168,12 +184,18 @@ export default function AdminBlogsPage() {
   const handleDelete = async (blogId: string) => {
     if (!confirm("Permanently delete this blog? This cannot be undone.")) return;
 
+    if (!user?.email) {
+      showToast("Error: Not logged in or email not available", "error");
+      return;
+    }
+
     try {
+      console.log("[Admin] Sending delete request with email:", user.email);
       const res = await fetch(`/api/blog/${blogId}`, { 
         method: "DELETE", 
         credentials: "same-origin",
         headers: {
-          "x-user-email": user?.email || "",
+          "x-user-email": user.email,
         },
       });
       const result = await res.json();
@@ -188,13 +210,19 @@ export default function AdminBlogsPage() {
   };
 
   const toggleFeatured = async (blog: Blog) => {
+    if (!user?.email) {
+      showToast("Error: Not logged in or email not available", "error");
+      return;
+    }
+
     try {
+      console.log("[Admin] Sending featured toggle request with email:", user.email);
       const res = await fetch(`/api/blog/${blog.$id}/featured`, {
         method: "POST",
         credentials: "same-origin",
         headers: { 
           "Content-Type": "application/json",
-          "x-user-email": user?.email || "",
+          "x-user-email": user.email,
         },
         body: JSON.stringify({ isFeatured: !blog.featured }),
       });
