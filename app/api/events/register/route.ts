@@ -77,18 +77,24 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       );
 
       if (existingRegistrations.documents.length > 0) {
+        const existingRegistration = existingRegistrations.documents[0];
+        console.log(`[API] Found existing registration: ${existingRegistration.$id}`);
+        
+        // Check if this is a valid active registration or a stale one
+        // If found, return the existing ticket ID instead of error
         return NextResponse.json(
           {
-            success: false,
+            success: true,
             message: 'Already registered for this event',
-            error: 'Already registered for this event',
+            ticketId: existingRegistration.$id,
           },
-          { status: 409 }
+          { status: 200 }
         );
       }
     } catch (listError) {
       console.error('[API] Error checking existing registrations:', listError);
       // If we can't check, proceed with registration attempt
+      // This allows re-registration if the query fails
     }
 
     // Get event to check capacity
