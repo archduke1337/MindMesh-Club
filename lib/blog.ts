@@ -1,28 +1,43 @@
 // lib/blogs.ts
 import { ID, Query } from "appwrite";
-import { databases, storage, createAdminDatabases } from "./appwrite";
+import { databases, storage } from "./appwrite";
 import { DATABASE_ID } from "./database";
 
 export const BLOGS_COLLECTION_ID = "blog";
 export const BLOG_IMAGES_BUCKET_ID = "6917a084000157e9e8f9";
 
-// Cache admin databases client
-let adminDbCache: any = null;
+// Helper to update documents using admin API
+const updateDocumentAdmin = async (databaseId: string, collectionId: string, documentId: string, data: any) => {
+  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+  const apiKey = process.env.APPWRITE_API_KEY;
 
-// Helper to get the appropriate database client (admin in server routes, regular client)
-const getDbClient = () => {
-  // Try to use admin API if in server context (has access to API key)
-  try {
-    if (!adminDbCache) {
-      adminDbCache = createAdminDatabases();
-    }
-    if (adminDbCache && typeof adminDbCache.updateDocument === 'function') {
-      return adminDbCache;
-    }
-  } catch (error) {
-    console.warn("[Blog] Admin DB not available, falling back to regular client");
+  if (!endpoint || !projectId || !apiKey) {
+    console.warn("[Blog] Admin API not available, using regular client");
+    return databases.updateDocument(databaseId, collectionId, documentId, data);
   }
-  return databases;
+
+  const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents/${documentId}`;
+  
+  console.log("[Blog] Using admin API to update document");
+  
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Appwrite-Key": apiKey,
+      "X-Appwrite-Project": projectId,
+    },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[Blog] Admin API error:", response.status, errorText);
+    throw new Error(errorText);
+  }
+  
+  return response.json();
 };
 
 // Blog Interface
@@ -274,8 +289,7 @@ export const blogService = {
   // Update blog
   async updateBlog(blogId: string, blogData: Partial<Blog>) {
     try {
-      const db = getDbClient();
-      const response = await db.updateDocument(
+      const response = await updateDocumentAdmin(
         DATABASE_ID,
         BLOGS_COLLECTION_ID,
         blogId,
@@ -291,7 +305,6 @@ export const blogService = {
   // Approve blog (admin only)
   async approveBlog(blogId: string) {
     try {
-      const db = getDbClient();
       // First, try updating with publishedAt
       const updateData: Record<string, any> = {
         status: "approved",
@@ -299,7 +312,7 @@ export const blogService = {
       };
 
       try {
-        const response = await db.updateDocument(
+        const response = await updateDocumentAdmin(
           DATABASE_ID,
           BLOGS_COLLECTION_ID,
           blogId,
@@ -310,7 +323,7 @@ export const blogService = {
         // If publishedAt attribute doesn't exist, try without it
         if (error?.message?.includes("Attribute not found") || error?.message?.includes("publishedAt")) {
           console.warn("publishedAt attribute not found, updating without it");
-          const response = await db.updateDocument(
+          const response = await updateDocumentAdmin(
             DATABASE_ID,
             BLOGS_COLLECTION_ID,
             blogId,
@@ -329,7 +342,6 @@ export const blogService = {
   // Reject blog (admin only)
   async rejectBlog(blogId: string, reason: string) {
     try {
-      const db = getDbClient();
       const blog = await this.getBlogById(blogId);
       
       // Keep track of rejection history
@@ -360,7 +372,7 @@ export const blogService = {
       };
 
       try {
-        const response = await db.updateDocument(
+        const response = await updateDocumentAdmin(
           DATABASE_ID,
           BLOGS_COLLECTION_ID,
           blogId,
@@ -371,7 +383,7 @@ export const blogService = {
         // If we get an attribute not found error, try minimal update with just status and reason
         if (error?.message?.includes("Attribute not found")) {
           console.warn("Some rejection attributes not found, updating with minimal fields:", error?.message);
-          const response = await db.updateDocument(
+          const response = await updateDocumentAdmin(
             DATABASE_ID,
             BLOGS_COLLECTION_ID,
             blogId,
@@ -483,7 +495,6 @@ export const blogService = {
   // Toggle featured status with limit check
   async toggleFeatured(blogId: string, setFeatured: boolean) {
     try {
-      const db = getDbClient();
       // If trying to feature, check limit (max 5 featured blogs)
       if (setFeatured) {
         const featured = await databases.listDocuments(
@@ -500,7 +511,7 @@ export const blogService = {
         }
       }
 
-      const response = await db.updateDocument(
+      const response = await updateDocumentAdmin(
         DATABASE_ID,
         BLOGS_COLLECTION_ID,
         blogId,
