@@ -285,7 +285,7 @@ export default function TicketsPageContent() {
             <div style="height: 1px; background: #e5e7eb; margin: 24px 0;"></div>
 
             <!-- QR Code and Data Side-by-Side -->
-            <div style="display: flex; gap: 20px; margin-bottom: 24px; align-items: flex-start;">
+            <div class="qr-code-section" style="display: flex; gap: 20px; margin-bottom: 24px; align-items: flex-start;">
               <!-- QR Code Image -->
               <div style="flex-shrink: 0;">
                 <div style="font-size: 11px; color: #7c3aed; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 700;">📱 QR Code</div>
@@ -550,6 +550,20 @@ export default function TicketsPageContent() {
                 height: 1px;
                 background: #e5e7eb;
                 margin: 24px 0;
+              }
+
+              @media print {
+                .qr-code-section {
+                  page-break-before: always;
+                  margin-top: 40px;
+                }
+              }
+              
+              .qr-code-section {
+                display: flex;
+                gap: 20px;
+                margin-bottom: 24px;
+                align-items: flex-start;
               }
               
               .instructions {
