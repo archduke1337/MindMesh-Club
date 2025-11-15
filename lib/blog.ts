@@ -1,10 +1,24 @@
 // lib/blogs.ts
 import { ID, Query } from "appwrite";
-import { databases, storage } from "./appwrite";
+import { databases, storage, createAdminDatabases } from "./appwrite";
 import { DATABASE_ID } from "./database";
 
 export const BLOGS_COLLECTION_ID = "blog";
 export const BLOG_IMAGES_BUCKET_ID = "6917a084000157e9e8f9";
+
+// Helper to get the appropriate database client (admin in server routes, regular client)
+const getDbClient = () => {
+  // Try to use admin API if in server context (has access to API key)
+  try {
+    const adminDb = createAdminDatabases();
+    if (adminDb && typeof adminDb.updateDocument === 'function') {
+      return adminDb;
+    }
+  } catch (error) {
+    console.warn("Admin DB not available, falling back to regular client");
+  }
+  return databases;
+};
 
 // Blog Interface
 export interface Blog {
@@ -255,7 +269,8 @@ export const blogService = {
   // Update blog
   async updateBlog(blogId: string, blogData: Partial<Blog>) {
     try {
-      const response = await databases.updateDocument(
+      const db = getDbClient();
+      const response = await db.updateDocument(
         DATABASE_ID,
         BLOGS_COLLECTION_ID,
         blogId,
@@ -271,6 +286,7 @@ export const blogService = {
   // Approve blog (admin only)
   async approveBlog(blogId: string) {
     try {
+      const db = getDbClient();
       // First, try updating with publishedAt
       const updateData: Record<string, any> = {
         status: "approved",
@@ -278,7 +294,7 @@ export const blogService = {
       };
 
       try {
-        const response = await databases.updateDocument(
+        const response = await db.updateDocument(
           DATABASE_ID,
           BLOGS_COLLECTION_ID,
           blogId,
@@ -289,7 +305,7 @@ export const blogService = {
         // If publishedAt attribute doesn't exist, try without it
         if (error?.message?.includes("Attribute not found") || error?.message?.includes("publishedAt")) {
           console.warn("publishedAt attribute not found, updating without it");
-          const response = await databases.updateDocument(
+          const response = await db.updateDocument(
             DATABASE_ID,
             BLOGS_COLLECTION_ID,
             blogId,
@@ -308,6 +324,7 @@ export const blogService = {
   // Reject blog (admin only)
   async rejectBlog(blogId: string, reason: string) {
     try {
+      const db = getDbClient();
       const blog = await this.getBlogById(blogId);
       
       // Keep track of rejection history
@@ -338,7 +355,7 @@ export const blogService = {
       };
 
       try {
-        const response = await databases.updateDocument(
+        const response = await db.updateDocument(
           DATABASE_ID,
           BLOGS_COLLECTION_ID,
           blogId,
@@ -349,7 +366,7 @@ export const blogService = {
         // If we get an attribute not found error, try minimal update with just status and reason
         if (error?.message?.includes("Attribute not found")) {
           console.warn("Some rejection attributes not found, updating with minimal fields:", error?.message);
-          const response = await databases.updateDocument(
+          const response = await db.updateDocument(
             DATABASE_ID,
             BLOGS_COLLECTION_ID,
             blogId,
@@ -461,6 +478,7 @@ export const blogService = {
   // Toggle featured status with limit check
   async toggleFeatured(blogId: string, setFeatured: boolean) {
     try {
+      const db = getDbClient();
       // If trying to feature, check limit (max 5 featured blogs)
       if (setFeatured) {
         const featured = await databases.listDocuments(
@@ -477,7 +495,7 @@ export const blogService = {
         }
       }
 
-      const response = await databases.updateDocument(
+      const response = await db.updateDocument(
         DATABASE_ID,
         BLOGS_COLLECTION_ID,
         blogId,

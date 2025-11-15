@@ -54,6 +54,43 @@ export const createAdminDatabases = () => {
       
       return response.json();
     },
+
+    updateDocument: async (databaseId: string, collectionId: string, documentId: string, data: any) => {
+      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+      const apiKey = process.env.APPWRITE_API_KEY;
+
+      if (!endpoint || !projectId || !apiKey) {
+        throw new Error("Missing required environment variables: APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, or APPWRITE_API_KEY");
+      }
+
+      const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents/${documentId}`;
+      
+      console.log("[AdminAPI] Updating document at:", url.substring(0, 100) + "...");
+      
+      const response = await fetch(url, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Appwrite-Key": apiKey,
+          "X-Appwrite-Project": projectId,
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[AdminAPI] Appwrite API Error - Status:", response.status, "Body:", errorText);
+        try {
+          const error = JSON.parse(errorText);
+          throw new Error(error.message || `HTTP ${response.status}: Failed to update document`);
+        } catch {
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+      }
+      
+      return response.json();
+    },
   } as any;
 };
 
