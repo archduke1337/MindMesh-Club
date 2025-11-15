@@ -137,13 +137,13 @@ export default function EventsPage() {
             });
     }, [events, selectedCategory, searchQuery, sortBy]);
 
-    const toggleSaveEvent = useCallback((e: React.MouseEvent, eventId: string) => {
+    const toggleSaveEvent = useCallback((e: any, eventId: string) => {
         e.stopPropagation();
         eventStorageManager.toggleSavedEvent(eventId);
         setSavedEvents(eventStorageManager.getSavedEvents());
     }, []);
 
-    const toggleRegisterEvent = useCallback(async (e: React.MouseEvent, eventId: string) => {
+    const toggleRegisterEvent = useCallback(async (e: any, eventId: string) => {
         e.stopPropagation();
 
         if (!user) {
