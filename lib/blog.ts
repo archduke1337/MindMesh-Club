@@ -19,7 +19,7 @@ const updateDocumentAdmin = async (databaseId: string, collectionId: string, doc
 
   const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents/${documentId}`;
   
-  console.log("[Blog] Using admin API to update document", { documentId, dataKeys: Object.keys(data) });
+  console.log("[Blog] Admin API update - document:", documentId);
   
   const response = await fetch(url, {
     method: "PATCH",
@@ -33,8 +33,15 @@ const updateDocumentAdmin = async (databaseId: string, collectionId: string, doc
   
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[Blog] Admin API error:", response.status, errorText);
-    throw new Error(errorText);
+    console.error("[Blog] Admin API error - Status:", response.status, "Message:", errorText);
+    
+    // If it fails, try with regular client as fallback
+    console.warn("[Blog] Admin API failed, falling back to regular client");
+    try {
+      return await databases.updateDocument(databaseId, collectionId, documentId, data);
+    } catch (fallbackError) {
+      throw new Error(`Admin API: ${errorText}`);
+    }
   }
   
   return response.json();
