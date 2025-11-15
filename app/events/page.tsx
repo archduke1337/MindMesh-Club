@@ -163,22 +163,29 @@ export default function EventsPage() {
             } catch (err) {
                 console.warn("⚠️ Unregister failed:", getErrorMessage(err));
                 showNotification("Failed to unregister. Please try again.", "error");
-                return;
-            } finally {
                 setRegistering(null);
+                return;
             }
 
             eventStorageManager.removeRegisteredEvent(eventId);
             eventStorageManager.deleteTicket(eventId);
-            setRegisteredEvents(eventStorageManager.getRegisteredEvents());
-
-            // Update local event count instead of reloading all
-            setEvents(prevEvents =>
-                prevEvents.map(e =>
-                    e.$id === eventId ? {...e, registered: Math.max(0, e.registered - 1)} : e
-                )
-            );
-
+            
+            // Sync with database to get updated state
+            await syncRegisteredEventsFromDatabase();
+            
+            // Reload event to get updated registered count from database
+            try {
+                const updatedEvent = await eventService.getEventById(eventId);
+                setEvents(prevEvents =>
+                    prevEvents.map(e =>
+                        e.$id === eventId ? {...e, registered: updatedEvent.registered} : e
+                    )
+                );
+            } catch (err) {
+                console.warn("⚠️ Failed to reload event data:", getErrorMessage(err));
+            }
+            
+            setRegistering(null);
             showNotification("Successfully unregistered from event", "success");
             return;
         }
@@ -223,14 +230,21 @@ export default function EventsPage() {
 
             eventStorageManager.setTicket(eventId, ticketData);
             eventStorageManager.addRegisteredEvent(eventId);
-            setRegisteredEvents(eventStorageManager.getRegisteredEvents());
-
-            // Update local event count instead of reloading all
-            setEvents(prevEvents =>
-                prevEvents.map(e =>
-                    e.$id === eventId ? {...e, registered: e.registered + 1} : e
-                )
-            );
+            
+            // Sync with database to get updated registration state
+            await syncRegisteredEventsFromDatabase();
+            
+            // Reload event to get updated registered count from database
+            try {
+                const updatedEvent = await eventService.getEventById(eventId);
+                setEvents(prevEvents =>
+                    prevEvents.map(e =>
+                        e.$id === eventId ? {...e, registered: updatedEvent.registered} : e
+                    )
+                );
+            } catch (err) {
+                console.warn("⚠️ Failed to reload event data:", getErrorMessage(err));
+            }
 
             showNotification(
                 `🎉 Registration Successful! E-ticket sent to ${user.email}. Ticket ID: ${result.ticketId}`,
@@ -243,7 +257,7 @@ export default function EventsPage() {
         } finally {
             setRegistering(null);
         }
-    }, [user, events, registeredEvents, router]);
+    }, [user, events, registeredEvents, router, syncRegisteredEventsFromDatabase]);
 
     const handleEventClick = useCallback((eventId: string) => {
         router.push(`/events/${eventId}`);
