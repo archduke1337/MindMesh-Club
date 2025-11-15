@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
@@ -18,8 +18,10 @@ import {
 
 export default function BlogPostPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const slug = params.slug as string;
+  const isAdmin = searchParams.get("admin") === "true";
 
   const [blog, setBlog] = useState<Blog | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,15 +32,18 @@ export default function BlogPostPage() {
     if (slug) {
       loadBlog();
     }
-  }, [slug]);
+  }, [slug, isAdmin]);
 
   const loadBlog = async () => {
     try {
-      const blogData = await blogService.getBlogBySlug(slug);
+      // Use getBlogBySlugAny for admin preview, otherwise use regular getBlogBySlug
+      const blogData = isAdmin 
+        ? await blogService.getBlogBySlugAny(slug)
+        : await blogService.getBlogBySlug(slug);
       setBlog(blogData);
 
-      // Increment views
-      if (blogData) {
+      // Increment views (only for approved blogs)
+      if (blogData && blogData.status === "approved") {
         blogService.incrementViews(blogData.$id!);
       }
 

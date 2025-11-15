@@ -182,7 +182,7 @@ export const blogService = {
     }
   },
 
-  // Get blog by slug
+  // Get blog by slug (public - approved only)
   async getBlogBySlug(slug: string) {
     try {
       const response = await databases.listDocuments(
@@ -191,6 +191,24 @@ export const blogService = {
         [
           Query.equal("slug", slug),
           Query.equal("status", "approved"),
+          Query.limit(1),
+        ]
+      );
+      return response.documents[0] as unknown as Blog;
+    } catch (error) {
+      console.error("Error fetching blog by slug:", error);
+      throw error;
+    }
+  },
+
+  // Get blog by slug (any status - for admin or preview)
+  async getBlogBySlugAny(slug: string) {
+    try {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        BLOGS_COLLECTION_ID,
+        [
+          Query.equal("slug", slug),
           Query.limit(1),
         ]
       );
