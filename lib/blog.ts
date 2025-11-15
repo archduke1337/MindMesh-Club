@@ -6,6 +6,45 @@ import { DATABASE_ID } from "./database";
 export const BLOGS_COLLECTION_ID = "blog";
 export const BLOG_IMAGES_BUCKET_ID = "6917a084000157e9e8f9";
 
+// Helper to delete documents using admin API
+const deleteDocumentAdmin = async (databaseId: string, collectionId: string, documentId: string) => {
+  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+  const apiKey = process.env.APPWRITE_API_KEY;
+
+  if (!endpoint || !projectId || !apiKey) {
+    console.warn("[Blog] Admin API not available for delete, using regular client");
+    return databases.deleteDocument(databaseId, collectionId, documentId);
+  }
+
+  const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents/${documentId}`;
+  
+  console.log("[Blog] Admin API delete - document:", documentId);
+  
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      "X-Appwrite-Key": apiKey,
+      "X-Appwrite-Project": projectId,
+    },
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[Blog] Admin API delete error - Status:", response.status, "Message:", errorText);
+    
+    // If it fails, try with regular client as fallback
+    console.warn("[Blog] Admin API delete failed, falling back to regular client");
+    try {
+      return await databases.deleteDocument(databaseId, collectionId, documentId);
+    } catch (fallbackError) {
+      throw new Error(`Admin API: ${errorText}`);
+    }
+  }
+  
+  return true;
+};
+
 // Helper to update documents using admin API
 const updateDocumentAdmin = async (databaseId: string, collectionId: string, documentId: string, data: any) => {
   const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
@@ -449,7 +488,7 @@ export const blogService = {
         }
       }
       
-      await databases.deleteDocument(DATABASE_ID, BLOGS_COLLECTION_ID, blogId);
+      await deleteDocumentAdmin(DATABASE_ID, BLOGS_COLLECTION_ID, blogId);
       return true;
     } catch (error) {
       console.error("Error deleting blog:", error);
