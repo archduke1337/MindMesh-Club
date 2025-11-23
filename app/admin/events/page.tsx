@@ -19,6 +19,7 @@ import { EVENT_TEMPLATES } from "@/lib/eventTemplates";
 import { calculateEventMetrics, getCapacityAlertMessage, estimateFutureRegistrations } from "@/lib/eventAnalytics";
 import { generateEventQRCodeUrl, generateEventShareQRCodeUrl } from "@/lib/eventQRCode";
 import { downloadEventStatsCSV, downloadRegistrationList } from "@/lib/eventExport";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon, AlertCircle, XIcon, QrCode, Download, Share2, RefreshCw } from "lucide-react";
 
 export default function AdminEventsPage() {
@@ -831,17 +832,14 @@ export default function AdminEventsPage() {
                       }}
                     />
 
-                    <Textarea
-                      label="Description"
-                      placeholder="Describe your event in detail"
-                      value={formData.description}
-                      onChange={(e) => handleInputChange("description", e.target.value)}
-                      required
-                      minRows={4}
-                      classNames={{
-                        label: "font-semibold"
-                      }}
-                    />
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold">Description *</label>
+                      <MarkdownEditor
+                        value={formData.description || ""}
+                        onChange={(value) => handleInputChange("description", value)}
+                        placeholder="Describe your event in detail (markdown supported)"
+                      />
+                    </div>
 
                     <Select
                       label="Category"

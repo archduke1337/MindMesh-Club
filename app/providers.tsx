@@ -4,14 +4,12 @@ import * as React from "react";
 import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { ThemeProviderProps } from "next-themes/dist/types";
+import { Toaster } from "sonner";
 
 export interface ProvidersProps {
   children: React.ReactNode;
-  themeProps?: {
-    attribute?: string;
-    defaultTheme?: string;
-    storageKey?: string;
-  };
+  themeProps?: ThemeProviderProps;
 }
 
 declare module "@react-types/shared" {
@@ -27,7 +25,15 @@ export function Providers({ children, themeProps }: ProvidersProps) {
 
   return (
     <HeroUIProvider navigate={router.push}>
-      <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
+      <NextThemesProvider {...themeProps}>
+        {children}
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          duration={4000}
+        />
+      </NextThemesProvider>
     </HeroUIProvider>
   );
 }

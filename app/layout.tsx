@@ -1,4 +1,3 @@
-// app/layout.tsx
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
@@ -6,6 +5,7 @@ import { Analytics } from "@vercel/analytics/react";
 
 import { Providers } from "./providers";
 import { AuthProvider } from "@/context/AuthContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
@@ -44,19 +44,21 @@ export default function RootLayout({
           fontSans.variable,
         )}
       >
-        <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-          <AuthProvider>
-            <div className="relative flex flex-col min-h-screen">
-              {/* <CustomCursor /> */}
-              <Navbar />
-              <main className="flex-grow w-full">
-                {children}
-              </main>
-              {/* Footer already includes FooterSponsors inside it */}
-              <Footer />
-            </div>
-          </AuthProvider>
-        </Providers>
+        <ErrorBoundary>
+          <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
+            <AuthProvider>
+              <div className="relative flex flex-col min-h-screen">
+                {/* <CustomCursor /> */}
+                <Navbar />
+                <main className="flex-grow w-full">
+                  {children}
+                </main>
+                {/* Footer already includes FooterSponsors inside it */}
+                <Footer />
+              </div>
+            </AuthProvider>
+          </Providers>
+        </ErrorBoundary>
         <Analytics />
       </body>
     </html>

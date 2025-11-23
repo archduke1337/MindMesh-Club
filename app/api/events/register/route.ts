@@ -2,9 +2,12 @@
 // Server-side endpoint for atomic event registration to prevent race conditions
 import { NextRequest, NextResponse } from 'next/server';
 import { Client, Databases, ID, Query } from 'appwrite';
+import { ZodError } from 'zod';
 import { sendRegistrationEmail } from '@/lib/emailService';
 import { DATABASE_ID, REGISTRATIONS_COLLECTION_ID, EVENTS_COLLECTION_ID } from '@/lib/database';
 import { getErrorMessage } from '@/lib/errorHandler';
+import { registrationSchema } from '@/lib/validation/schemas';
+import { handleZodError } from '@/lib/utils/errorHandling';
 
 interface RegisterRequestBody {
   eventId: string;
@@ -31,19 +34,25 @@ interface RegisterResponseBody {
 export async function POST(request: NextRequest): Promise<NextResponse<RegisterResponseBody>> {
   try {
     const body: RegisterRequestBody = await request.json();
-    const { eventId, userId, userName, userEmail } = body;
 
-    // Validate input
-    if (!eventId || !userId || !userName || !userEmail) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Missing required fields',
-          error: 'eventId, userId, userName, and userEmail are required',
-        },
-        { status: 400 }
-      );
+    // Validate input with Zod
+    try {
+      registrationSchema.parse(body);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Validation failed',
+            error: handleZodError(error),
+          },
+          { status: 400 }
+        );
+      }
+      throw error;
     }
+
+    const { eventId, userId, userName, userEmail } = body;
 
     console.log(`[API] Registering user ${userId} for event ${eventId}`);
 
@@ -79,7 +88,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       if (existingRegistrations.documents.length > 0) {
         const existingRegistration = existingRegistrations.documents[0];
         console.log(`[API] Found existing registration: ${existingRegistration.$id}`);
-        
+
         // Check if this is a valid active registration or a stale one
         // If found, return the existing ticket ID instead of error
         return NextResponse.json(
@@ -129,9 +138,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       );
     }
 
-    // Create registration document
+    // Create registration document with QR code data
     let registration;
     try {
+      // Generate QR code data format: TICKET|{ticketId}|{userName}|{eventTitle}
+      // Note: ticketId will be the registration document ID, so we use a placeholder
+      const eventTitle = (event as any).title;
+      const ticketQRData = `TICKET|{TICKET_ID}|${userName}|${eventTitle}`;
+
       registration = await databases.createDocument(
         databaseId,
         registrationsCollectionId,
@@ -142,6 +156,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
           userName,
           userEmail,
           registeredAt: new Date().toISOString(),
+          ticketQRData: ticketQRData,
         }
       );
     } catch (createError) {
@@ -160,6 +175,24 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
 
     if (!ticketId) {
       throw new Error('Registration created but no ticket ID returned');
+    }
+
+    // Update the QR code data with actual ticket ID
+    try {
+      const eventTitle = (event as any).title;
+      const actualQRData = `TICKET|${ticketId}|${userName}|${eventTitle}`;
+      await databases.updateDocument(
+        databaseId,
+        registrationsCollectionId,
+        ticketId,
+        {
+          ticketQRData: actualQRData,
+        }
+      );
+      console.log(`[API] Updated QR code data for ticket ${ticketId}`);
+    } catch (updateError) {
+      console.warn(`[API] Warning: failed to update QR code data:`, updateError);
+      // Don't fail registration if QR update fails
     }
 
     console.log(`[API] Registration successful: ${ticketId}`);

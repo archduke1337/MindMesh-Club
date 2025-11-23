@@ -1,4 +1,3 @@
-// app/events/[id]/page.tsx
 "use client";
 
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -8,18 +7,7 @@ import { Avatar } from "@heroui/avatar";
 import { Chip } from "@heroui/chip";
 import { Progress } from "@heroui/progress";
 import { Divider } from "@heroui/divider";
-import { title } from "@/components/primitives";
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
-import { eventService, type Event as EventType } from "@/lib/database";
-import { getErrorMessage } from "@/lib/errorHandler";
-import { eventStorageManager } from "@/lib/eventStorageManager";
 import {
-  CalendarIcon,
-  MapPinIcon,
-  UsersIcon,
-  ClockIcon,
   StarIcon,
   HeartIcon,
   ShareIcon,
@@ -31,8 +19,19 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   TrendingUpIcon,
-  MailIcon
+  MailIcon,
+  CalendarIcon,
+  ClockIcon,
+  MapPinIcon,
+  UsersIcon
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter, useParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { eventService, Event as EventType } from "@/lib/database";
+import { eventStorageManager } from "@/lib/eventStorageManager";
+import { getErrorMessage } from "@/lib/errorHandler";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 export default function EventDetailPage() {
   const { user } = useAuth();
@@ -72,7 +71,7 @@ export default function EventDetailPage() {
   const checkRegistrationStatus = () => {
     const isReg = eventStorageManager.isRegistered(eventId);
     setIsRegistered(isReg);
-    
+
     // Check if we have ticket info
     const ticketInfo = eventStorageManager.getTicket(eventId);
     if (ticketInfo) {
@@ -96,7 +95,7 @@ export default function EventDetailPage() {
     if (isRegistered) {
       const confirmed = confirm("Are you sure you want to unregister from this event?");
       if (!confirmed) return;
-      
+
       try {
         // Unregister from database to sync with admin panel
         await eventService.unregisterFromEvent(eventId, user.$id);
@@ -105,16 +104,16 @@ export default function EventDetailPage() {
         console.warn("⚠️ Warning: Could not unregister from database, but removing from local storage:", error);
         // Continue with local cleanup even if DB fails
       }
-      
+
       eventStorageManager.removeRegisteredEvent(eventId);
       eventStorageManager.deleteTicket(eventId);
       setIsRegistered(false);
       setEmailSent(false);
       setTicketId("");
-      
+
       // Reload event to get updated registration count from DB
       await loadEvent();
-      
+
       alert("Successfully unregistered from event");
       return;
     }
@@ -141,7 +140,7 @@ export default function EventDetailPage() {
 
       setTicketId(result.ticketId);
       setEmailSent(true);
-      
+
       // Save to localStorage using centralized manager
       const ticketData = {
         ticketId: result.ticketId,
@@ -155,11 +154,11 @@ export default function EventDetailPage() {
         location: event!.location,
         registeredAt: new Date().toISOString(),
       };
-      
+
       eventStorageManager.setTicket(eventId, ticketData);
       eventStorageManager.addRegisteredEvent(eventId);
       setIsRegistered(true);
-      
+
       alert(`✅ Registration successful! \n\n🎫 Your ticket ID: ${result.ticketId}\n📧 E-ticket sent to: ${user.email}\n\nCheck your email for your e-ticket with QR code!`);
       await loadEvent();
     } catch (error) {
@@ -255,7 +254,7 @@ export default function EventDetailPage() {
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-        
+
         {/* Floating Action Buttons */}
         <div className="absolute top-3 sm:top-4 md:top-6 right-3 sm:right-4 md:right-6 flex gap-1.5 sm:gap-2">
           <Button
@@ -265,10 +264,9 @@ export default function EventDetailPage() {
             className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
             onPress={toggleSave}
           >
-            <HeartIcon 
-              className={`w-3.5 sm:w-4 md:w-5 h-3.5 sm:h-4 md:h-5 ${
-                isSaved ? "fill-red-500 text-red-500" : "text-gray-600"
-              }`} 
+            <HeartIcon
+              className={`w-3.5 sm:w-4 md:w-5 h-3.5 sm:h-4 md:h-5 ${isSaved ? "fill-red-500 text-red-500" : "text-gray-600"
+                }`}
             />
           </Button>
           <Button
@@ -302,11 +300,11 @@ export default function EventDetailPage() {
                 {event.category}
               </Badge>
             </div>
-            
+
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-3 md:mb-4">
               {event.title}
             </h1>
-            
+
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 md:gap-6 text-white/90 text-xs sm:text-small md:text-base">
               <div className="flex items-center gap-1 sm:gap-2">
                 <CalendarIcon className="w-3.5 sm:w-4 md:w-5 h-3.5 sm:h-4 md:h-5 flex-shrink-0" />
@@ -330,15 +328,13 @@ export default function EventDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
           {/* Left Column - Event Details */}
           <div className="lg:col-span-2 space-y-6 md:space-y-8 lg:space-y-10">
-            {/* Description */}
+            {/* About Event */}
             <Card className="border-none shadow-lg">
               <CardHeader className="pb-0 px-4 sm:px-6 md:px-8 pt-6">
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold">About This Event</h2>
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold">About Event</h2>
               </CardHeader>
               <CardBody className="pt-4 px-4 sm:px-6 md:px-8 pb-6">
-                <p className="text-xs sm:text-small md:text-base lg:text-lg text-default-600 leading-relaxed">
-                  {event.description}
-                </p>
+                <MarkdownRenderer content={event.description} />
               </CardBody>
             </Card>
 
@@ -404,10 +400,10 @@ export default function EventDetailPage() {
                 <CardBody className="pt-4 px-4 sm:px-6 md:px-8 pb-6">
                   <div className="flex flex-wrap gap-1.5 sm:gap-2 md:gap-3">
                     {event.tags.map((tag, index) => (
-                      <Chip 
-                        key={index} 
+                      <Chip
+                        key={index}
                         size="sm"
-                        variant="flat" 
+                        variant="flat"
                         color="secondary"
                         className="font-medium text-[10px] sm:text-xs md:text-small"
                       >
@@ -486,12 +482,12 @@ export default function EventDetailPage() {
 
                   {event.capacity && (
                     <>
-                      <Progress 
-                        value={getRegistrationPercentage()} 
-                        size="md" 
+                      <Progress
+                        value={getRegistrationPercentage()}
+                        size="md"
                         color={
-                          getRegistrationPercentage() > 90 ? "danger" : 
-                          getRegistrationPercentage() > 70 ? "warning" : "primary"
+                          getRegistrationPercentage() > 90 ? "danger" :
+                            getRegistrationPercentage() > 70 ? "warning" : "primary"
                         }
                         className="mt-1.5 sm:mt-2"
                       />
@@ -499,10 +495,9 @@ export default function EventDetailPage() {
                         <span className="text-default-500">
                           {getSpotsLeft()} spots remaining
                         </span>
-                        <span className={`font-semibold ${
-                          getRegistrationPercentage() > 90 ? "text-danger" : 
+                        <span className={`font-semibold ${getRegistrationPercentage() > 90 ? "text-danger" :
                           getRegistrationPercentage() > 70 ? "text-warning" : "text-success"
-                        }`}>
+                          }`}>
                           {Math.round(getRegistrationPercentage())}% filled
                         </span>
                       </div>
@@ -522,9 +517,9 @@ export default function EventDetailPage() {
                     isLoading={registering}
                     onPress={handleRegister}
                     startContent={
-                      isRegistered ? 
-                      <CheckCircleIcon className="w-3.5 sm:w-4 md:w-5 h-3.5 sm:h-4 md:h-5" /> : 
-                      <TicketIcon className="w-3.5 sm:w-4 md:w-5 h-3.5 sm:h-4 md:h-5" />
+                      isRegistered ?
+                        <CheckCircleIcon className="w-3.5 sm:w-4 md:w-5 h-3.5 sm:h-4 md:h-5" /> :
+                        <TicketIcon className="w-3.5 sm:w-4 md:w-5 h-3.5 sm:h-4 md:h-5" />
                     }
                   >
                     {registering ? "Registering..." : isRegistered ? "You're Registered!" : "Register Now"}
