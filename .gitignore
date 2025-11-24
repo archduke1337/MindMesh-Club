@@ -44,3 +44,6 @@ bun.lockb
 error*.txt
 *_error.txt
 build_error.txt
+
+# JetBrains IDEs (IntelliJ, WebStorm, etc.)
+.idea/
