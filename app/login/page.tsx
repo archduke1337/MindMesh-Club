@@ -1,4 +1,3 @@
-// app/login/page.tsx
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -7,13 +6,15 @@ import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
 import NextLink from "next/link";
-
 import { useAuth } from "@/context/AuthContext";
+import { loginSchema } from "@/lib/validation/schemas";
+import { z } from "zod";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const { login, loginWithGoogle, loginWithGitHub } = useAuth();
   const router = useRouter();
@@ -21,9 +22,25 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setValidationErrors({});
     setLoading(true);
 
     try {
+      // Validate input
+      const validationResult = loginSchema.safeParse({ email, password });
+
+      if (!validationResult.success) {
+        const errors: { [key: string]: string } = {};
+        validationResult.error.issues.forEach((err: z.ZodIssue) => {
+          if (err.path[0]) {
+            errors[err.path[0].toString()] = err.message;
+          }
+        });
+        setValidationErrors(errors);
+        setLoading(false);
+        return;
+      }
+
       await login(email, password);
       router.push("/");
     } catch (err: any) {
@@ -71,6 +88,8 @@ export default function LoginPage() {
                 input: "text-sm md:text-base",
                 label: "text-xs md:text-small"
               }}
+              isInvalid={!!validationErrors.email}
+              errorMessage={validationErrors.email}
             />
             <Input
               label="Password"
@@ -85,6 +104,8 @@ export default function LoginPage() {
                 input: "text-sm md:text-base",
                 label: "text-xs md:text-small"
               }}
+              isInvalid={!!validationErrors.password}
+              errorMessage={validationErrors.password}
             />
             {error && (
               <div className="text-danger text-xs sm:text-small bg-danger/10 p-2 md:p-3 rounded">{error}</div>

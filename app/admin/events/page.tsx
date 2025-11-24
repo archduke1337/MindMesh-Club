@@ -1,6 +1,6 @@
 // app/admin/events/page.tsx
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
@@ -38,17 +38,17 @@ export default function AdminEventsPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loadingRegistrations, setLoadingRegistrations] = useState(false);
   const [selectedEventForRegistrations, setSelectedEventForRegistrations] = useState<Event | null>(null);
-  const [selectedEventForQR, setSelectedEventForQR] = useState<Event | null>(null);
+  const [qrEvent, setQrEvent] = useState<Event | null>(null);
   const [selectedEventForAnalytics, setSelectedEventForAnalytics] = useState<Event | null>(null);
   const [analyticsRegistrations, setAnalyticsRegistrations] = useState<Registration[]>([]);
   const [loadingAnalyticsRegistrations, setLoadingAnalyticsRegistrations] = useState(false);
   const [syncingRegistrations, setSyncingRegistrations] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
-  
+
   // Check-in state
   const [checkinMode, setCheckinMode] = useState(false);
   const [checkinData, setCheckinData] = useState('');
-  const [checkinRecords, setCheckinRecords] = useState<Array<{id: string; name: string; email: string; time: string; status: 'success' | 'duplicate' | 'error';}>>([]);
+  const [checkinRecords, setCheckinRecords] = useState<Array<{ id: string; name: string; email: string; time: string; status: 'success' | 'duplicate' | 'error'; }>>([]);
   const [checkinStats, setCheckinStats] = useState({ successful: 0, duplicates: 0, errors: 0 });
   const checkinInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,22 +79,7 @@ export default function AdminEventsPage() {
   const [tagInput, setTagInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!loading && user) {
-      loadEvents();
-    }
-  }, [user, loading]);
-
-  // Focus check-in input when check-in mode is activated
-  useEffect(() => {
-    if (checkinMode) {
-      setTimeout(() => {
-        checkinInputRef.current?.focus();
-      }, 100);
-    }
-  }, [checkinMode]);
-
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       setError(null);
       setLoadingEvents(true);
@@ -107,19 +92,36 @@ export default function AdminEventsPage() {
     } finally {
       setLoadingEvents(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!loading && user) {
+      loadEvents();
+    }
+  }, [user, loading, loadEvents]);
+
+  // Focus check-in input when check-in mode is activated
+  useEffect(() => {
+    if (checkinMode) {
+      setTimeout(() => {
+        checkinInputRef.current?.focus();
+      }, 100);
+    }
+  }, [checkinMode]);
+
+
 
   const syncRegistrationsCount = async () => {
     try {
       setSyncingRegistrations(true);
       let totalSynced = 0;
-      
+
       // For each event, get registrations and update the count
       for (const event of events) {
         try {
           const regs = await eventService.getEventRegistrations(event.$id!);
           const registrationCount = regs.length;
-          
+
           // Update event registered count if it doesn't match
           if (event.registered !== registrationCount) {
             await eventService.updateEvent(event.$id!, {
@@ -133,7 +135,7 @@ export default function AdminEventsPage() {
           console.warn(`⚠️ Failed to sync ${event.title}:`, err);
         }
       }
-      
+
       // Reload events to show updated counts
       await loadEvents();
       alert(`✅ Synced ${totalSynced} events with latest registration counts`);
@@ -189,7 +191,7 @@ export default function AdminEventsPage() {
       } else {
         await eventService.createEvent(formData as Omit<Event, '$id' | '$createdAt' | '$updatedAt'>);
       }
-      
+
       await loadEvents();
       handleCloseModal();
       alert(editingEvent ? "Event updated successfully!" : "Event created successfully!");
@@ -265,7 +267,7 @@ export default function AdminEventsPage() {
       console.log('🔍 Scanned QR data:', data);
       const parsed = parseCheckInQR(data);
       console.log('📋 Parsed QR:', parsed);
-      
+
       if (!parsed) {
         console.warn('❌ Failed to parse QR code');
         const record = {
@@ -284,7 +286,7 @@ export default function AdminEventsPage() {
       // Find registration by ticket ID (registration document ID)
       const registration = registrations.find(r => r.$id === parsed.ticketId);
       console.log('🎫 Found registration:', registration);
-      
+
       if (!registration) {
         console.warn('❌ Registration not found for ticket:', parsed.ticketId);
         const record = {
@@ -312,7 +314,7 @@ export default function AdminEventsPage() {
         time: new Date().toLocaleTimeString(),
         status: isDuplicate ? ('duplicate' as const) : ('success' as const),
       };
-      
+
       console.log('✅ Check-in record:', record);
       setCheckinRecords([record, ...checkinRecords]);
       if (isDuplicate) {
@@ -322,7 +324,7 @@ export default function AdminEventsPage() {
         console.log('✓ Successful check-in');
         setCheckinStats(prev => ({ ...prev, successful: prev.successful + 1 }));
       }
-      
+
       setCheckinData('');
     }
   };
@@ -341,14 +343,14 @@ export default function AdminEventsPage() {
     if (!selectedEventForRegistrations) return '';
     const registration = registrations.find(r => r.$id === registrationId);
     if (!registration) return '';
-    
+
     // Use stored QR data if available, otherwise generate it
     let ticketData = registration.ticketQRData;
     if (!ticketData) {
       // Fallback to generating on-the-fly if not stored
-      ticketData = `TICKET|${registrationId}|${registration.userName}|${selectedEventForRegistrations.title}`;
+      ticketData = `TICKET | ${registrationId}| ${registration.userName}| ${selectedEventForRegistrations.title} `;
     }
-    
+
     const encoded = encodeURIComponent(ticketData);
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encoded}`;
   };
@@ -356,7 +358,7 @@ export default function AdminEventsPage() {
   const downloadTicketQR = async (registrationId: string) => {
     const qrUrl = getQRCodeUrl(registrationId);
     if (!qrUrl) return;
-    
+
     try {
       const response = await fetch(qrUrl);
       const blob = await response.blob();
@@ -429,7 +431,7 @@ export default function AdminEventsPage() {
   };
 
   const handleViewQRCode = (event: Event) => {
-    setSelectedEventForQR(event);
+    setQrEvent(event);
     onQRShareOpen();
   };
 
@@ -459,8 +461,8 @@ export default function AdminEventsPage() {
   }
 
   return (
-    <AdminPageWrapper 
-      title="Event Management" 
+    <AdminPageWrapper
+      title="Event Management"
       description="Create, edit, and manage all events"
     >
       {error && (
@@ -478,10 +480,10 @@ export default function AdminEventsPage() {
       )}
 
       {/* Controls Section */}
-      <div className="flex flex-col sm:flex-row gap-2 w-full mb-6 md:mb-8">
-        <Button 
-          color="warning" 
-          variant="flat" 
+      < div className="flex flex-col sm:flex-row gap-2 w-full mb-6 md:mb-8" >
+        <Button
+          color="warning"
+          variant="flat"
           onPress={syncRegistrationsCount}
           isLoading={syncingRegistrations}
           className="w-full sm:w-auto"
@@ -491,9 +493,9 @@ export default function AdminEventsPage() {
           <span className="hidden sm:inline ml-2">Sync Registrations</span>
           <span className="sm:hidden ml-2">Sync</span>
         </Button>
-        <Button 
-          color="danger" 
-          variant="flat" 
+        <Button
+          color="danger"
+          variant="flat"
           onPress={handleDeletePastEvents}
           className="w-full sm:w-auto"
           size="sm"
@@ -502,8 +504,8 @@ export default function AdminEventsPage() {
           <span className="hidden sm:inline ml-2">Delete Past Events</span>
           <span className="sm:hidden ml-2">Delete Past</span>
         </Button>
-        <Button 
-          color="primary" 
+        <Button
+          color="primary"
           onPress={onOpen}
           className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600"
           size="sm"
@@ -511,10 +513,10 @@ export default function AdminEventsPage() {
           <PlusIcon className="w-4 h-4" />
           <span className="ml-2">Add Event</span>
         </Button>
-      </div>
+      </div >
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8">
+      < div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8" >
         <Card className="border-none shadow-md">
           <CardBody className="p-4">
             <div className="flex items-center justify-between">
@@ -576,10 +578,10 @@ export default function AdminEventsPage() {
             </div>
           </CardBody>
         </Card>
-      </div>
+      </div >
 
       {/* Events Table */}
-      <Card className="border-none shadow-lg">
+      < Card className="border-none shadow-lg" >
         <CardBody className="p-0">
           <div className="overflow-x-auto">
             <Table aria-label="Events table" className="min-w-full">
@@ -695,18 +697,19 @@ export default function AdminEventsPage() {
             </Table>
           </div>
         </CardBody>
-      </Card>
+      </Card >
 
       {/* Add/Edit Modal */}
-      <Modal 
-        isOpen={isOpen} 
-        onClose={handleCloseModal} 
-        size="3xl" 
+      < Modal
+        isOpen={isOpen}
+        onClose={handleCloseModal}
+        size="3xl"
         scrollBehavior="inside"
         classNames={{
           base: "max-h-[95vh]",
           wrapper: "items-center"
-        }}
+        }
+        }
       >
         <ModalContent>
           <form onSubmit={handleSubmit}>
@@ -718,7 +721,7 @@ export default function AdminEventsPage() {
                 Fill in the details below to {editingEvent ? "update" : "create"} an event
               </p>
             </ModalHeader>
-            
+
             <ModalBody className="py-4 md:py-6">
               {!editingEvent && !showTemplateSelector && (
                 <div className="mb-3 md:mb-4 p-3 md:p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg md:rounded-xl border border-purple-200 dark:border-purple-800">
@@ -771,7 +774,7 @@ export default function AdminEventsPage() {
                   </div>
                 </div>
               )}
-              
+
               <Tabs aria-label="Event form sections" color="primary" variant="underlined" size="sm">
                 <Tab key="basic" title={
                   <div className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
@@ -800,9 +803,9 @@ export default function AdminEventsPage() {
                       />
                       {formData.image && formData.image.startsWith('http') && (
                         <div className="relative group w-full">
-                          <img 
-                            src={formData.image} 
-                            alt="Preview" 
+                          <img
+                            src={formData.image}
+                            alt="Preview"
                             className="w-full h-48 object-cover rounded-xl border-2 border-purple-200 dark:border-purple-800"
                             onError={(e) => {
                               e.currentTarget.src = "https://via.placeholder.com/400x300?text=Invalid+Image+URL";
@@ -1042,7 +1045,7 @@ export default function AdminEventsPage() {
                           <p className="text-xs md:text-sm text-default-500 mt-1">Set up recurring events for regular meetups</p>
                         </div>
                       </div>
-                      
+
                       <Switch
                         isSelected={formData.isRecurring}
                         onValueChange={(checked) => handleInputChange("isRecurring", checked)}
@@ -1090,7 +1093,7 @@ export default function AdminEventsPage() {
                         label: "font-semibold text-xs md:text-sm"
                       }}
                     />
-                    
+
                     <div className="space-y-3">
                       <label className="text-sm font-semibold flex items-center gap-2">
                         <ImageIcon className="w-4 h-4 text-purple-600" />
@@ -1109,9 +1112,9 @@ export default function AdminEventsPage() {
                       />
                       {formData.organizerAvatar && formData.organizerAvatar.startsWith('http') && (
                         <div className="flex items-center gap-3 p-3 bg-default-100 dark:bg-default-50/10 rounded-lg">
-                          <img 
-                            src={formData.organizerAvatar} 
-                            alt="Avatar preview" 
+                          <img
+                            src={formData.organizerAvatar}
+                            alt="Avatar preview"
                             className="w-12 h-12 rounded-full object-cover border-2 border-purple-200 dark:border-purple-800"
                             onError={(e) => {
                               e.currentTarget.src = "https://via.placeholder.com/100?text=Invalid";
@@ -1140,8 +1143,8 @@ export default function AdminEventsPage() {
                             }
                           }}
                         />
-                        <Button 
-                          type="button" 
+                        <Button
+                          type="button"
                           onPress={handleAddTag}
                           color="primary"
                           variant="flat"
@@ -1152,9 +1155,9 @@ export default function AdminEventsPage() {
                       {formData.tags && formData.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 p-4 bg-default-100 dark:bg-default-50/10 rounded-xl">
                           {formData.tags.map((tag, index) => (
-                            <Chip 
-                              key={index} 
-                              onClose={() => handleRemoveTag(tag)} 
+                            <Chip
+                              key={index}
+                              onClose={() => handleRemoveTag(tag)}
                               variant="flat"
                               color="secondary"
                               className="font-medium"
@@ -1183,16 +1186,16 @@ export default function AdminEventsPage() {
             </ModalBody>
 
             <ModalFooter className="border-t pt-3 md:pt-4 gap-2 md:gap-3">
-              <Button 
-                variant="flat" 
+              <Button
+                variant="flat"
                 onPress={handleCloseModal}
                 className="w-full sm:w-auto text-xs md:text-sm"
               >
                 Cancel
               </Button>
-              <Button 
-                color="primary" 
-                type="submit" 
+              <Button
+                color="primary"
+                type="submit"
                 isLoading={submitting}
                 className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-xs md:text-sm"
               >
@@ -1201,12 +1204,12 @@ export default function AdminEventsPage() {
             </ModalFooter>
           </form>
         </ModalContent>
-      </Modal>
+      </Modal >
 
       {/* Registrations Modal */}
-      <Modal 
-        isOpen={isRegistrationsOpen} 
-        onClose={onRegistrationsClose} 
+      < Modal
+        isOpen={isRegistrationsOpen}
+        onClose={onRegistrationsClose}
         size="4xl"
         scrollBehavior="inside"
         classNames={{
@@ -1240,7 +1243,7 @@ export default function AdminEventsPage() {
               </p>
             )}
           </ModalHeader>
-          
+
           <ModalBody>
             {loadingRegistrations ? (
               <div className="flex justify-center items-center py-8">
@@ -1320,7 +1323,7 @@ export default function AdminEventsPage() {
                               Registered: {new Date(reg.registeredAt).toLocaleDateString()}
                             </p>
                           </div>
-                          
+
                           {/* QR Code and Data Side-by-Side */}
                           {reg.$id && (
                             <>
@@ -1379,8 +1382,8 @@ export default function AdminEventsPage() {
           <ModalFooter className="border-t pt-4">
             {checkinMode ? (
               <>
-                <Button 
-                  variant="flat" 
+                <Button
+                  variant="flat"
                   onPress={() => {
                     setCheckinMode(false);
                     handleResetCheckin();
@@ -1388,17 +1391,17 @@ export default function AdminEventsPage() {
                 >
                   Back
                 </Button>
-                <Button 
-                  color="danger" 
-                  variant="flat" 
+                <Button
+                  color="danger"
+                  variant="flat"
                   onPress={handleResetCheckin}
                 >
                   Reset
                 </Button>
               </>
             ) : (
-              <Button 
-                variant="light" 
+              <Button
+                variant="light"
                 onPress={onRegistrationsClose}
               >
                 Close
@@ -1406,12 +1409,12 @@ export default function AdminEventsPage() {
             )}
           </ModalFooter>
         </ModalContent>
-      </Modal>
+      </Modal >
 
       {/* Analytics Modal */}
-      <Modal 
-        isOpen={isAnalyticsOpen} 
-        onClose={onAnalyticsClose} 
+      < Modal
+        isOpen={isAnalyticsOpen}
+        onClose={onAnalyticsClose}
         size="2xl"
         scrollBehavior="inside"
       >
@@ -1420,7 +1423,7 @@ export default function AdminEventsPage() {
             <TrendingUpIcon className="w-5 h-5" />
             <span>Event Analytics - {selectedEventForAnalytics?.title}</span>
           </ModalHeader>
-          
+
           <ModalBody className="py-6">
             {selectedEventForAnalytics && (
               <div className="space-y-6">
@@ -1428,7 +1431,7 @@ export default function AdminEventsPage() {
                   const metrics = calculateEventMetrics(selectedEventForAnalytics);
                   const estimatedFuture = estimateFutureRegistrations(selectedEventForAnalytics.registered, 7);
                   const alertMsg = getCapacityAlertMessage(metrics);
-                  
+
                   return (
                     <>
                       {/* Capacity Alert */}
@@ -1528,19 +1531,19 @@ export default function AdminEventsPage() {
               </div>
             )}
           </ModalBody>
-          
+
           <ModalFooter>
             <Button variant="light" onPress={onAnalyticsClose}>
               Close
             </Button>
           </ModalFooter>
         </ModalContent>
-      </Modal>
+      </Modal >
 
       {/* QR Share Modal */}
-      <Modal 
-        isOpen={isQRShareOpen} 
-        onClose={onQRShareClose} 
+      < Modal
+        isOpen={isQRShareOpen}
+        onClose={onQRShareClose}
         size="md"
       >
         <ModalContent>
@@ -1549,21 +1552,21 @@ export default function AdminEventsPage() {
               <QrCode className="w-5 h-5" />
               <span>Event QR Code</span>
             </div>
-            {selectedEventForQR && (
+            {qrEvent && (
               <p className="text-sm text-default-500 font-normal">
-                {selectedEventForQR.title}
+                {qrEvent.title}
               </p>
             )}
           </ModalHeader>
-          
+
           <ModalBody className="py-6 space-y-4">
-            {selectedEventForQR && (
+            {qrEvent && (
               <>
                 {/* QR Code Display */}
                 <div className="flex justify-center p-4 bg-default-100 rounded-lg">
                   <img
-                    src={generateEventQRCodeUrl(selectedEventForQR.$id!, selectedEventForQR.title)}
-                    alt={`QR for ${selectedEventForQR.title}`}
+                    src={generateEventQRCodeUrl(qrEvent.$id!, qrEvent.title)}
+                    alt={`QR for ${qrEvent.title}`}
                     className="w-48 h-48"
                   />
                 </div>
@@ -1571,10 +1574,10 @@ export default function AdminEventsPage() {
                 {/* Event Info */}
                 <div className="space-y-2">
                   <p className="text-sm text-default-600">
-                    <span className="font-semibold">Event:</span> {selectedEventForQR.title}
+                    <span className="font-semibold">Event:</span> {qrEvent.title}
                   </p>
                   <p className="text-sm text-default-600">
-                    <span className="font-semibold">Date:</span> {new Date(selectedEventForQR.date).toLocaleDateString()}
+                    <span className="font-semibold">Date:</span> {new Date(qrEvent.date).toLocaleDateString()}
                   </p>
                 </div>
 
@@ -1586,7 +1589,7 @@ export default function AdminEventsPage() {
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        value={generateEventShareQRCodeUrl(selectedEventForQR.$id!)}
+                        value={generateEventShareQRCodeUrl(qrEvent.$id!)}
                         readOnly
                         className="flex-1 text-xs p-2 bg-white dark:bg-default-900 border border-default-200 dark:border-default-700 rounded px-3 py-2 font-mono"
                       />
@@ -1596,7 +1599,7 @@ export default function AdminEventsPage() {
                         color="primary"
                         isIconOnly
                         onPress={() => {
-                          const url = generateEventShareQRCodeUrl(selectedEventForQR.$id!);
+                          const url = generateEventShareQRCodeUrl(qrEvent.$id!);
                           navigator.clipboard.writeText(url);
                         }}
                         title="Copy to clipboard"
@@ -1609,14 +1612,14 @@ export default function AdminEventsPage() {
               </>
             )}
           </ModalBody>
-          
+
           <ModalFooter>
             <Button variant="light" onPress={onQRShareClose}>
               Close
             </Button>
           </ModalFooter>
         </ModalContent>
-      </Modal>
-    </AdminPageWrapper>
+      </Modal >
+    </AdminPageWrapper >
   );
 }

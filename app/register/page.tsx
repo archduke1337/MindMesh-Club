@@ -1,4 +1,3 @@
-// app/register/page.tsx
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -7,8 +6,9 @@ import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
 import NextLink from "next/link";
-
 import { useAuth } from "@/context/AuthContext";
+import { registerSchema } from "@/lib/validation/schemas";
+import { z } from "zod";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const { register, loginWithGoogle, loginWithGitHub } = useAuth();
   const router = useRouter();
@@ -23,20 +24,30 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long");
-      return;
-    }
-
+    setValidationErrors({});
     setLoading(true);
 
     try {
+      // Validate input
+      const validationResult = registerSchema.safeParse({
+        name,
+        email,
+        password,
+        confirmPassword,
+      });
+
+      if (!validationResult.success) {
+        const errors: { [key: string]: string } = {};
+        validationResult.error.issues.forEach((err: z.ZodIssue) => {
+          if (err.path[0]) {
+            errors[err.path[0].toString()] = err.message;
+          }
+        });
+        setValidationErrors(errors);
+        setLoading(false);
+        return;
+      }
+
       await register(email, password, name);
       router.push("/");
     } catch (err: any) {
@@ -84,6 +95,8 @@ export default function RegisterPage() {
                 input: "text-sm md:text-base",
                 label: "text-xs md:text-small"
               }}
+              isInvalid={!!validationErrors.name}
+              errorMessage={validationErrors.name}
             />
             <Input
               label="Email"
@@ -98,6 +111,8 @@ export default function RegisterPage() {
                 input: "text-sm md:text-base",
                 label: "text-xs md:text-small"
               }}
+              isInvalid={!!validationErrors.email}
+              errorMessage={validationErrors.email}
             />
             <Input
               label="Password"
@@ -112,6 +127,8 @@ export default function RegisterPage() {
                 input: "text-sm md:text-base",
                 label: "text-xs md:text-small"
               }}
+              isInvalid={!!validationErrors.password}
+              errorMessage={validationErrors.password}
             />
             <Input
               label="Confirm Password"
@@ -126,6 +143,8 @@ export default function RegisterPage() {
                 input: "text-sm md:text-base",
                 label: "text-xs md:text-small"
               }}
+              isInvalid={!!validationErrors.confirmPassword}
+              errorMessage={validationErrors.confirmPassword}
             />
             {error && (
               <div className="text-danger text-xs sm:text-small bg-danger/10 p-2 md:p-3 rounded">{error}</div>

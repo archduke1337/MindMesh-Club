@@ -1,4 +1,3 @@
-// app/profile/page.tsx
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { Card, CardHeader, CardBody } from "@heroui/card";
@@ -9,16 +8,19 @@ import { Chip } from "@heroui/chip";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import NextLink from "next/link";
-import { account, storage, ID, APPWRITE_CONFIG } from "@/lib/appwrite";
+import { account, storage, ID } from "@/lib/appwrite";
+import { logger } from "@/lib/logger";
+import { userProfileSchema } from "@/lib/validation/schemas";
+import { z } from "zod";
 
 // Profile pictures bucket ID
-const PROFILE_BUCKET_ID = "profile-pictures"; // Make sure this exists in Appwrite
+const PROFILE_BUCKET_ID = "profile-pictures";
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -27,6 +29,7 @@ export default function ProfilePage() {
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateError, setUpdateError] = useState("");
   const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (!loading && !user) {
@@ -42,7 +45,6 @@ export default function ProfilePage() {
   const loadProfilePicture = () => {
     if (user?.prefs?.profilePictureId) {
       try {
-        // FIXED: Get the URL string properly
         const fileUrl = storage.getFilePreview(
           PROFILE_BUCKET_ID,
           user.prefs.profilePictureId,
@@ -51,18 +53,15 @@ export default function ProfilePage() {
           "center", // gravity
           100 // quality
         );
-        
-        // Convert URL object to string
+
         const urlString = fileUrl.toString();
-        console.log("Profile picture URL:", urlString);
+        logger.log("Profile picture URL:", urlString);
         setProfilePicture(urlString);
       } catch (error) {
-        console.error("Error loading profile picture:", error);
-        // Fallback to generated avatar
+        logger.error("Error loading profile picture:", error);
         setProfilePicture(getAvatarUrl(user.name));
       }
     } else {
-      // Use generated avatar if no profile picture
       setProfilePicture(getAvatarUrl(user?.name || "User"));
     }
   };
@@ -79,13 +78,11 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       setUpdateError("Please select an image file");
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setUpdateError("Image size should be less than 5MB");
       return;
@@ -95,32 +92,28 @@ export default function ProfilePage() {
     setUpdateError("");
 
     try {
-      // Delete old profile picture if exists
       if (user?.prefs?.profilePictureId) {
         try {
           await storage.deleteFile(PROFILE_BUCKET_ID, user.prefs.profilePictureId);
-          console.log("Old profile picture deleted");
+          logger.log("Old profile picture deleted");
         } catch (error) {
-          console.log("No old picture to delete or error:", error);
+          logger.log("No old picture to delete or error:", error);
         }
       }
 
-      // Upload new profile picture
       const response = await storage.createFile(
         PROFILE_BUCKET_ID,
         ID.unique(),
         file
       );
 
-      console.log("File uploaded:", response.$id);
+      logger.log("File uploaded:", response.$id);
 
-      // Update user preferences with new picture ID
       await account.updatePrefs({
         ...user?.prefs,
         profilePictureId: response.$id,
       });
 
-      // FIXED: Get preview URL properly
       const fileUrl = storage.getFilePreview(
         PROFILE_BUCKET_ID,
         response.$id,
@@ -129,20 +122,19 @@ export default function ProfilePage() {
         "center",
         100
       );
-      
+
       const urlString = fileUrl.toString();
-      console.log("New profile picture URL:", urlString);
+      logger.log("New profile picture URL:", urlString);
       setProfilePicture(urlString);
-      
+
       setUpdateSuccess(true);
       setUpdateError("Profile picture updated successfully!");
-      
-      // Reload after showing success message
+
       setTimeout(() => {
         window.location.reload();
       }, 2000);
     } catch (err: any) {
-      console.error("Upload error:", err);
+      logger.error("Upload error:", err);
       setUpdateError(err.message || "Failed to upload profile picture. Please check bucket permissions.");
     } finally {
       setUploadingPhoto(false);
@@ -152,20 +144,39 @@ export default function ProfilePage() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setUpdateError("");
+    setValidationErrors({});
     setUpdateSuccess(false);
     setUpdateLoading(true);
 
     try {
+      // Validate input
+      const validationResult = userProfileSchema.safeParse({
+        name,
+        phone: phone || undefined,
+      });
+
+      if (!validationResult.success) {
+        const errors: { [key: string]: string } = {};
+        validationResult.error.issues.forEach((err: z.ZodIssue) => {
+          if (err.path[0]) {
+            errors[err.path[0].toString()] = err.message;
+          }
+        });
+        setValidationErrors(errors);
+        setUpdateLoading(false);
+        return;
+      }
+
       await account.updateName(name);
       setUpdateSuccess(true);
       setUpdateError("Profile updated successfully!");
       setIsEditing(false);
-      
+
       setTimeout(() => {
         window.location.reload();
       }, 2000);
     } catch (err: any) {
-      console.error("Update error:", err);
+      logger.error("Update error:", err);
       setUpdateError(err.message || "Failed to update profile");
     } finally {
       setUpdateLoading(false);
@@ -272,16 +283,15 @@ export default function ProfilePage() {
 
           {/* Show upload status */}
           {updateError && (
-            <div className={`p-2 sm:p-3 md:p-4 rounded-lg text-[10px] sm:text-xs md:text-small font-medium ${
-              updateSuccess ? "bg-success/10 text-success-700 dark:text-success-200" : "bg-danger/10 text-danger-700 dark:text-danger-200"
-            }`}>
+            <div className={`p-2 sm:p-3 md:p-4 rounded-lg text-[10px] sm:text-xs md:text-small font-medium ${updateSuccess ? "bg-success/10 text-success-700 dark:text-success-200" : "bg-danger/10 text-danger-700 dark:text-danger-200"
+              }`}>
               {updateError}
             </div>
           )}
 
           <div className="border-t border-divider pt-6 sm:pt-7 md:pt-8">
             <h2 className="text-sm sm:text-base md:text-lg font-semibold mb-4 sm:mb-5 md:mb-6">Account Information</h2>
-            
+
             <div className="space-y-3 sm:space-y-4 md:space-y-5">
               <div className="flex flex-col gap-1.5 sm:gap-2">
                 <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">User ID</label>
@@ -294,9 +304,9 @@ export default function ProfilePage() {
                 <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Email</label>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2">
                   <p className="text-[10px] sm:text-xs md:text-small p-2 break-all">{user.email}</p>
-                  <Chip 
-                    color={user.emailVerification ? "success" : "warning"} 
-                    variant="flat" 
+                  <Chip
+                    color={user.emailVerification ? "success" : "warning"}
+                    variant="flat"
                     size="sm"
                     className="text-[10px] sm:text-xs md:text-small w-fit"
                   >
@@ -309,9 +319,9 @@ export default function ProfilePage() {
                 <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Phone Number</label>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2">
                   <p className="text-[10px] sm:text-xs md:text-small p-2">{user.phone || "Not added"}</p>
-                  <Chip 
-                    color={user.phoneVerification ? "success" : "warning"} 
-                    variant="flat" 
+                  <Chip
+                    color={user.phoneVerification ? "success" : "warning"}
+                    variant="flat"
                     size="sm"
                     className="text-[10px] sm:text-xs md:text-small w-fit"
                   >
@@ -363,6 +373,23 @@ export default function ProfilePage() {
                     input: "text-xs sm:text-small md:text-base",
                     label: "text-[10px] sm:text-xs md:text-small font-semibold"
                   }}
+                  isInvalid={!!validationErrors.name}
+                  errorMessage={validationErrors.name}
+                />
+
+                <Input
+                  label="Phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Enter your phone number"
+                  isDisabled={updateLoading}
+                  size="lg"
+                  classNames={{
+                    input: "text-xs sm:text-small md:text-base",
+                    label: "text-[10px] sm:text-xs md:text-small font-semibold"
+                  }}
+                  isInvalid={!!validationErrors.phone}
+                  errorMessage={validationErrors.phone}
                 />
 
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4">
@@ -380,8 +407,10 @@ export default function ProfilePage() {
                     onPress={() => {
                       setIsEditing(false);
                       setName(user.name);
+                      setPhone(user.phone || "");
                       setUpdateError("");
                       setUpdateSuccess(false);
+                      setValidationErrors({});
                     }}
                     isDisabled={updateLoading}
                     size="lg"
