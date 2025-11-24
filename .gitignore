@@ -40,3 +40,7 @@ pnpm-lock.yaml
 yarn.lock
 package-lock.json
 bun.lockb
+# Error logs from debugging
+error*.txt
+*_error.txt
+build_error.txt
