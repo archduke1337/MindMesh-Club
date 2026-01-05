@@ -1,4 +1,3 @@
-// app/tickets/TicketsPageContent.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { eventService } from "@/lib/database";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { logger } from "@/lib/logger";
 import {
   TicketIcon,
   CalendarIcon,
@@ -45,7 +45,7 @@ export default function TicketsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  
+
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -58,17 +58,17 @@ export default function TicketsPageContent() {
       setTicketsLoading(true);
 
       if (!user) {
-        console.error("❌ No user found");
+        logger.error("❌ No user found");
         setTickets([]);
         return;
       }
 
-      console.log("🔄 Loading tickets from database for user:", user.$id);
+      logger.log("🔄 Loading tickets from database for user:", user.$id);
 
       // Try to load from database first
       try {
         const databaseTickets = await eventService.getUserTickets(user.$id);
-        console.log("✅ Tickets loaded from database:", databaseTickets.length);
+        logger.log("✅ Tickets loaded from database:", databaseTickets.length);
 
         if (databaseTickets && databaseTickets.length > 0) {
           // Sort by registered date (newest first)
@@ -86,7 +86,7 @@ export default function TicketsPageContent() {
             );
             if (selectedTicketForEvent) {
               setSelectedTicket(selectedTicketForEvent as Ticket);
-              console.log(
+              logger.log(
                 "✅ Auto-selected ticket for event:",
                 eventIdParam
               );
@@ -95,24 +95,24 @@ export default function TicketsPageContent() {
           return;
         }
       } catch (dbError) {
-        console.warn(
+        logger.warn(
           "⚠️ Database error, falling back to localStorage:",
           dbError
         );
       }
 
       // Fallback to localStorage if database is empty or fails
-      console.log("📱 Falling back to localStorage...");
+      logger.log("📱 Falling back to localStorage...");
       const registered = localStorage.getItem("registeredEvents");
       const registeredEvents = registered ? JSON.parse(registered) : [];
 
-      console.log("📋 Registered Events from localStorage:", registeredEvents);
+      logger.log("📋 Registered Events from localStorage:", registeredEvents);
 
       const allTickets: Ticket[] = [];
 
       registeredEvents.forEach((eventId: string) => {
         const ticketData = localStorage.getItem(`ticket_${eventId}`);
-        console.log(
+        logger.log(
           `🎫 Ticket data for event ${eventId}:`,
           ticketData
         );
@@ -121,7 +121,7 @@ export default function TicketsPageContent() {
         }
       });
 
-      console.log("✅ All tickets loaded from localStorage:", allTickets);
+      logger.log("✅ All tickets loaded from localStorage:", allTickets);
 
       // Sort by registered date (newest first)
       const sortedAllTickets = [...allTickets].sort(
@@ -139,14 +139,14 @@ export default function TicketsPageContent() {
         );
         if (selectedTicketForEvent) {
           setSelectedTicket(selectedTicketForEvent as Ticket);
-          console.log(
+          logger.log(
             "✅ Auto-selected ticket for event:",
             eventIdParam
           );
         }
       }
     } catch (error) {
-      console.error("❌ Error loading tickets:", error);
+      logger.error("❌ Error loading tickets:", error);
       setTickets([]);
     } finally {
       setTicketsLoading(false);
@@ -166,42 +166,42 @@ export default function TicketsPageContent() {
 
   const getQRCodeUrl = (ticket: Ticket) => {
     if (!ticket.ticketId || !ticket.userName || !ticket.eventTitle) return '';
-    
+
     // Use stored QR data if available, otherwise generate it
     let ticketData = ticket.ticketQRData;
     if (!ticketData) {
       // Fallback to generating on-the-fly if not stored
       ticketData = `TICKET|${ticket.ticketId}|${ticket.userName}|${ticket.eventTitle}`;
     }
-    
+
     const encoded = encodeURIComponent(ticketData);
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encoded}`;
   };
 
   const handleDownloadTicket = async (ticket: Ticket) => {
     try {
-      console.log("[Download] Starting ticket download for:", ticket.ticketId);
-      
+      logger.log("[Download] Starting ticket download for:", ticket.ticketId);
+
       // Fetch QR code image and convert to data URL
       const qrCodeUrl = getQRCodeUrl(ticket);
-      console.log("[Download] QR Code URL:", qrCodeUrl);
-      
+      logger.log("[Download] QR Code URL:", qrCodeUrl);
+
       const qrResponse = await fetch(qrCodeUrl);
       if (!qrResponse.ok) {
         throw new Error(`Failed to fetch QR code: ${qrResponse.status}`);
       }
-      
+
       const qrBlob = await qrResponse.blob();
-      console.log("[Download] QR Blob size:", qrBlob.size);
-      
+      logger.log("[Download] QR Blob size:", qrBlob.size);
+
       const qrDataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
         reader.onerror = () => reject(new Error("Failed to read QR image"));
         reader.readAsDataURL(qrBlob);
       });
-      
-      console.log("[Download] QR Data URL created, length:", qrDataUrl.length);
+
+      logger.log("[Download] QR Data URL created, length:", qrDataUrl.length);
 
       // Create a temporary container for rendering
       const tempContainer = document.createElement("div");
@@ -341,36 +341,36 @@ export default function TicketsPageContent() {
       `;
 
       document.body.appendChild(tempContainer);
-      console.log("[Download] Temp container appended");
+      logger.log("[Download] Temp container appended");
 
       // Wait for images to load
       const images = tempContainer.querySelectorAll("img");
-      console.log("[Download] Found", images.length, "images");
-      
+      logger.log("[Download] Found", images.length, "images");
+
       await Promise.all(
         Array.from(images).map(
           (img) =>
             new Promise<void>((resolve, reject) => {
               if ((img as HTMLImageElement).complete) {
-                console.log("[Download] Image already loaded");
+                logger.log("[Download] Image already loaded");
                 resolve();
               } else {
                 img.onload = () => {
-                  console.log("[Download] Image loaded");
+                  logger.log("[Download] Image loaded");
                   resolve();
                 };
                 img.onerror = () => {
-                  console.warn("[Download] Image failed to load, continuing anyway");
+                  logger.warn("[Download] Image failed to load, continuing anyway");
                   resolve(); // Don't fail, just continue
                 };
               }
             })
         )
       );
-      console.log("[Download] All images loaded");
+      logger.log("[Download] All images loaded");
 
       // Convert HTML to canvas
-      console.log("[Download] Converting HTML to canvas...");
+      logger.log("[Download] Converting HTML to canvas...");
       const canvas = await html2canvas(tempContainer, {
         scale: 2,
         logging: false,
@@ -378,23 +378,23 @@ export default function TicketsPageContent() {
         allowTaint: true,
         useCORS: true,
         removeContainer: true,
-        ignoreElements: (element) => {
+        ignoreElements: (element: Element) => {
           // Ignore script and style elements
           if (element.tagName === "SCRIPT" || element.tagName === "STYLE") {
             return true;
           }
           return false;
         },
-        onclone: (clonedDocument) => {
+        onclone: (clonedDocument: Document) => {
           // Ensure all images are loaded before rendering
           const images = clonedDocument.querySelectorAll("img");
-          images.forEach((img) => {
+          images.forEach((img: HTMLImageElement) => {
             img.style.maxWidth = "100%";
             img.style.height = "auto";
           });
         },
       });
-      console.log("[Download] Canvas created, size:", canvas.width, "x", canvas.height);
+      logger.log("[Download] Canvas created, size:", canvas.width, "x", canvas.height);
 
       // Create PDF
       const pdf = new jsPDF({
@@ -402,13 +402,13 @@ export default function TicketsPageContent() {
         unit: "mm",
         format: "a4",
       });
-      console.log("[Download] PDF created");
+      logger.log("[Download] PDF created");
 
       const imgWidth = 210; // A4 width in mm
       const pageHeight = 297; // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const imgData = canvas.toDataURL("image/png");
-      console.log("[Download] Image data created, size:", imgData.length);
+      logger.log("[Download] Image data created, size:", imgData.length);
 
       // Handle multi-page PDFs
       let heightLeft = imgHeight;
@@ -417,7 +417,7 @@ export default function TicketsPageContent() {
       // Add first page
       pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
-      console.log("[Download] First page added, heightLeft:", heightLeft);
+      logger.log("[Download] First page added, heightLeft:", heightLeft);
 
       // Add additional pages if content exceeds one page
       let pageCount = 1;
@@ -427,22 +427,22 @@ export default function TicketsPageContent() {
         pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
         pageCount++;
-        console.log("[Download] Page", pageCount, "added, heightLeft:", heightLeft);
+        logger.log("[Download] Page", pageCount, "added, heightLeft:", heightLeft);
       }
 
       const fileName = `ticket_${ticket.ticketId}.pdf`;
-      console.log("[Download] Saving PDF as:", fileName);
+      logger.log("[Download] Saving PDF as:", fileName);
       pdf.save(fileName);
-      console.log("[Download] PDF saved successfully");
+      logger.log("[Download] PDF saved successfully");
 
       // Clean up
       document.body.removeChild(tempContainer);
-      console.log("[Download] Cleanup complete");
+      logger.log("[Download] Cleanup complete");
     } catch (error) {
-      console.error("[Download] Error generating PDF:", error);
+      logger.error("[Download] Error generating PDF:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error("[Download] Full error:", errorMsg);
-      
+      logger.error("[Download] Full error:", errorMsg);
+
       // Try to clean up even on error
       try {
         const tempContainers = document.querySelectorAll("div[style*='left: -9999px']");
@@ -450,9 +450,9 @@ export default function TicketsPageContent() {
           if (el.parentNode) el.parentNode.removeChild(el);
         });
       } catch (cleanupError) {
-        console.warn("[Download] Cleanup error:", cleanupError);
+        logger.warn("[Download] Cleanup error:", cleanupError);
       }
-      
+
       alert(`Failed to generate PDF: ${errorMsg}. Please try again or contact support.`);
     }
   };
@@ -851,7 +851,7 @@ export default function TicketsPageContent() {
           text: shareText,
         });
       } catch (error) {
-        console.log("Error sharing:", error);
+        logger.log("Error sharing:", error);
       }
     } else {
       // Fallback: copy to clipboard
@@ -961,454 +961,454 @@ export default function TicketsPageContent() {
                 <h3 className="text-xs sm:text-small md:text-base font-semibold">🔍 Troubleshooting</h3>
               </CardHeader>
               <CardBody className="text-xs sm:text-small space-y-2 sm:space-y-3 md:space-y-4 px-3 sm:px-4 md:px-6 lg:px-8">
-              <div>
-                <p>
-                  <strong>How to get tickets:</strong>
-                </p>
-                <ol className="list-decimal list-inside space-y-1 text-default-600 mt-2">
-                  <li>
-                    Go to{" "}
-                    <Button
-                      variant="light"
-                      size="sm"
-                      className="h-auto p-0 text-xs"
-                      onPress={() => router.push("/events")}
-                    >
-                      Events page
-                    </Button>
-                  </li>
-                  <li>Find an event you're interested in</li>
-                  <li>Click the ticket/register button</li>
-                  <li>Complete the registration</li>
-                  <li>You'll receive a confirmation and ticket ID</li>
-                  <li>Your ticket will appear here automatically</li>
-                </ol>
-              </div>
-              <p className="text-default-500">
-                💡 <strong>Tip:</strong> Tickets are stored in your browser's
-                local storage and persist across sessions.
-              </p>
-              <Button
-                size="sm"
-                variant="flat"
-                color="secondary"
-                onPress={createTestTicket}
-                className="w-full"
-              >
-                🧪 Create Test Ticket (For Demo)
-              </Button>
-            </CardBody>
-          </Card>
-        </div>
-      ) : (
-        <div className="space-y-3 sm:space-y-4 md:space-y-6">
-          {/* Summary Card */}
-          <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-200/50">
-            <CardBody className="py-3 sm:py-4 md:py-5 lg:py-6 px-3 sm:px-4 md:px-6 lg:px-8">
-              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs sm:text-sm md:text-base text-default-500">
-                    Total Registered Events
+                  <p>
+                    <strong>How to get tickets:</strong>
                   </p>
-                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mt-1">
-                    {tickets.length}
-                  </h3>
+                  <ol className="list-decimal list-inside space-y-1 text-default-600 mt-2">
+                    <li>
+                      Go to{" "}
+                      <Button
+                        variant="light"
+                        size="sm"
+                        className="h-auto p-0 text-xs"
+                        onPress={() => router.push("/events")}
+                      >
+                        Events page
+                      </Button>
+                    </li>
+                    <li>Find an event you're interested in</li>
+                    <li>Click the ticket/register button</li>
+                    <li>Complete the registration</li>
+                    <li>You'll receive a confirmation and ticket ID</li>
+                    <li>Your ticket will appear here automatically</li>
+                  </ol>
                 </div>
-                <TicketIcon className="w-10 sm:w-11 md:w-12 h-10 sm:h-11 md:h-12 text-primary/40 flex-shrink-0" />
-              </div>
-            </CardBody>
-          </Card>
+                <p className="text-default-500">
+                  💡 <strong>Tip:</strong> Tickets are stored in your browser's
+                  local storage and persist across sessions.
+                </p>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="secondary"
+                  onPress={createTestTicket}
+                  className="w-full"
+                >
+                  🧪 Create Test Ticket (For Demo)
+                </Button>
+              </CardBody>
+            </Card>
+          </div>
+        ) : (
+          <div className="space-y-3 sm:space-y-4 md:space-y-6">
+            {/* Summary Card */}
+            <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-200/50">
+              <CardBody className="py-3 sm:py-4 md:py-5 lg:py-6 px-3 sm:px-4 md:px-6 lg:px-8">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs sm:text-sm md:text-base text-default-500">
+                      Total Registered Events
+                    </p>
+                    <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mt-1">
+                      {tickets.length}
+                    </h3>
+                  </div>
+                  <TicketIcon className="w-10 sm:w-11 md:w-12 h-10 sm:h-11 md:h-12 text-primary/40 flex-shrink-0" />
+                </div>
+              </CardBody>
+            </Card>
 
-          {/* Tickets List */}
-          <div className="space-y-2 sm:space-y-3 md:space-y-4">
-            {tickets.map((ticket) => (
-              <Card
-                key={ticket.ticketId}
-                className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
-                isPressable
-                onPress={() => setSelectedTicket(ticket)}
-              >
-                <CardBody className="p-0 overflow-hidden">
-                  {/* Card Top Accent */}
-                  <div className="h-1 bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700" />
+            {/* Tickets List */}
+            <div className="space-y-2 sm:space-y-3 md:space-y-4">
+              {tickets.map((ticket) => (
+                <Card
+                  key={ticket.ticketId}
+                  className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+                  isPressable
+                  onPress={() => setSelectedTicket(ticket)}
+                >
+                  <CardBody className="p-0 overflow-hidden">
+                    {/* Card Top Accent */}
+                    <div className="h-1 bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700" />
 
-                  <div className="p-3 sm:p-4 md:p-5 lg:p-6 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
-                      {/* Ticket Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-2 sm:gap-3">
-                          <div className="flex items-center justify-center w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex-shrink-0 mt-0.5 sm:mt-1">
-                            <TicketIcon className="w-4 sm:w-5 h-4 sm:h-5 text-white" />
+                    <div className="p-3 sm:p-4 md:p-5 lg:p-6 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                        {/* Ticket Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start gap-2 sm:gap-3">
+                            <div className="flex items-center justify-center w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex-shrink-0 mt-0.5 sm:mt-1">
+                              <TicketIcon className="w-4 sm:w-5 h-4 sm:h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm sm:text-base md:text-lg font-bold line-clamp-2 text-gray-900">
+                                {ticket.eventTitle}
+                              </h3>
+                              <p className="text-xs text-gray-500 mt-0.5 sm:mt-1 font-mono truncate">
+                                ID:{" "}
+                                <span className="font-semibold text-purple-600">
+                                  {ticket.ticketId?.substring(0, 8)}...
+                                </span>
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-sm sm:text-base md:text-lg font-bold line-clamp-2 text-gray-900">
-                              {ticket.eventTitle}
-                            </h3>
-                            <p className="text-xs text-gray-500 mt-0.5 sm:mt-1 font-mono truncate">
-                              ID:{" "}
-                              <span className="font-semibold text-purple-600">
-                                {ticket.ticketId?.substring(0, 8)}...
+
+                          {/* Event Details Grid */}
+                          <div className="mt-3 sm:mt-4 space-y-1.5 sm:space-y-2 ml-6 sm:ml-8">
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                              <CalendarIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0 text-purple-500" />
+                              <span className="font-medium truncate">
+                                {new Date(ticket.date).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                  }
+                                )}
                               </span>
-                            </p>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                              <ClockIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0 text-purple-500" />
+                              <span className="font-medium">{ticket.time}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                              <MapPinIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0 text-purple-500" />
+                              <span className="line-clamp-1 font-medium">
+                                {ticket.location}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Event Details Grid */}
-                        <div className="mt-3 sm:mt-4 space-y-1.5 sm:space-y-2 ml-6 sm:ml-8">
-                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                            <CalendarIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0 text-purple-500" />
-                            <span className="font-medium truncate">
-                              {new Date(ticket.date).toLocaleDateString(
+                        {/* Status Badge & Registration Date */}
+                        <div className="flex flex-col gap-2 sm:items-end sm:justify-start sm:ml-3">
+                          <Chip
+                            startContent={<CheckCircle className="w-3.5 h-3.5" />}
+                            color="success"
+                            variant="flat"
+                            size="sm"
+                            className="font-semibold text-xs sm:text-sm w-fit"
+                          >
+                            Confirmed
+                          </Chip>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-500 font-semibold uppercase tracking-tight">
+                              Registered
+                            </p>
+                            <p className="text-xs sm:text-sm font-bold text-gray-700 mt-0.5">
+                              {new Date(ticket.registeredAt).toLocaleDateString(
                                 "en-US",
                                 {
-                                  year: "numeric",
                                   month: "short",
                                   day: "numeric",
                                 }
                               )}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                            <ClockIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0 text-purple-500" />
-                            <span className="font-medium">{ticket.time}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                            <MapPinIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 flex-shrink-0 text-purple-500" />
-                            <span className="line-clamp-1 font-medium">
-                              {ticket.location}
-                            </span>
+                            </p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Status Badge & Registration Date */}
-                      <div className="flex flex-col gap-2 sm:items-end sm:justify-start sm:ml-3">
-                        <Chip
-                          startContent={<CheckCircle className="w-3.5 h-3.5" />}
-                          color="success"
-                          variant="flat"
-                          size="sm"
-                          className="font-semibold text-xs sm:text-sm w-fit"
-                        >
-                          Confirmed
-                        </Chip>
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500 font-semibold uppercase tracking-tight">
-                            Registered
-                          </p>
-                          <p className="text-xs sm:text-sm font-bold text-gray-700 mt-0.5">
-                            {new Date(ticket.registeredAt).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                              }
-                            )}
-                          </p>
+                      {/* Action Buttons */}
+                      <Divider className="my-2 sm:my-3" />
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-3">
+                        <div className="flex gap-1.5 sm:gap-2 flex-1">
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            startContent={<DownloadIcon className="w-3.5 h-3.5" />}
+                            onPress={() => handleDownloadTicket(ticket)}
+                            className="flex-1 font-semibold text-xs sm:text-sm transition-all hover:bg-purple-100 active:scale-95"
+                            color="primary"
+                          >
+                            Download
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            startContent={<PrinterIcon className="w-4 h-4" />}
+                            onPress={() => handlePrintTicket(ticket)}
+                            className="flex-1 font-semibold transition-all hover:bg-purple-100"
+                            color="primary"
+                          >
+                            Print
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            startContent={<ShareIcon className="w-4 h-4" />}
+                            onPress={() => handleShareTicket(ticket)}
+                            className="flex-1 font-semibold transition-all hover:bg-purple-100"
+                            color="primary"
+                          >
+                            Share
+                          </Button>
                         </div>
-                      </div>
-                    </div>
 
-                    {/* Action Buttons */}
-                    <Divider className="my-2 sm:my-3" />
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-3">
-                      <div className="flex gap-1.5 sm:gap-2 flex-1">
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          startContent={<DownloadIcon className="w-3.5 h-3.5" />}
-                          onPress={() => handleDownloadTicket(ticket)}
-                          className="flex-1 font-semibold text-xs sm:text-sm transition-all hover:bg-purple-100 active:scale-95"
-                          color="primary"
-                        >
-                          Download
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          startContent={<PrinterIcon className="w-4 h-4" />}
-                          onPress={() => handlePrintTicket(ticket)}
-                          className="flex-1 font-semibold transition-all hover:bg-purple-100"
-                          color="primary"
-                        >
-                          Print
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          startContent={<ShareIcon className="w-4 h-4" />}
-                          onPress={() => handleShareTicket(ticket)}
-                          className="flex-1 font-semibold transition-all hover:bg-purple-100"
-                          color="primary"
-                        >
-                          Share
-                        </Button>
-                      </div>
-                      
-                      {/* QR Code Preview */}
-                      {getQRCodeUrl(ticket) && (
-                        <div className="flex items-center justify-center p-2 bg-default-100 rounded-lg border border-default-200">
-                          <img
-                            src={getQRCodeUrl(ticket)}
-                            alt="Ticket QR Code"
-                            className="w-12 h-12 sm:w-14 sm:h-14"
-                            title="Your check-in QR code"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Ticket Detail Modal */}
-      {selectedTicket && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-2 sm:p-3 md:p-4 overflow-y-auto"
-          onClick={() => setSelectedTicket(null)}
-        >
-          <Card className="w-full max-w-lg sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto my-4 sm:my-auto">
-            <CardHeader className="flex flex-col gap-1 items-start px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 pb-0">
-              <div className="flex items-center justify-between w-full gap-2">
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold break-words">
-                  Ticket Details
-                </h2>
-                <Button
-                  isIconOnly
-                  variant="light"
-                  size="sm"
-                  onPress={() => setSelectedTicket(null)}
-                  className="flex-shrink-0"
-                >
-                  ✕
-                </Button>
-              </div>
-            </CardHeader>
-
-            <CardBody className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6">
-              {/* Ticket ID */}
-              <div className="bg-default/50 p-3 sm:p-4 md:p-6 rounded-lg">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <QrCodeIcon className="w-5 sm:w-6 h-5 sm:h-6 text-primary flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-small text-default-500">
-                      Ticket ID
-                    </p>
-                    <p className="text-xs sm:text-sm md:text-lg font-mono font-semibold text-primary break-all">
-                      {selectedTicket.ticketId}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <Divider />
-
-              {/* QR Code Display */}
-              {getQRCodeUrl(selectedTicket) && (
-                <>
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 p-4 sm:p-6 md:p-8 rounded-xl border border-purple-200/50 dark:border-purple-800/50">
-                    <div className="flex flex-col gap-4">
-                      <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-center mb-2 text-default-700">
-                          📱 Your Check-In QR Code
-                        </h3>
-                        <p className="text-xs sm:text-small text-center text-default-500 mb-4">
-                          Show this to staff when checking in at the venue
-                        </p>
-                      </div>
-                      
-                      {/* QR Code and Data Side-by-Side */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                        {/* QR Code */}
-                        <div className="flex justify-center">
-                          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-default-200">
+                        {/* QR Code Preview */}
+                        {getQRCodeUrl(ticket) && (
+                          <div className="flex items-center justify-center p-2 bg-default-100 rounded-lg border border-default-200">
                             <img
-                              src={getQRCodeUrl(selectedTicket)}
+                              src={getQRCodeUrl(ticket)}
                               alt="Ticket QR Code"
-                              className="w-48 h-48 sm:w-56 sm:h-56"
-                              title="Scan this QR code for check-in"
+                              className="w-12 h-12 sm:w-14 sm:h-14"
+                              title="Your check-in QR code"
                             />
                           </div>
-                        </div>
-                        
-                        {/* QR Data */}
-                        {(() => {
-                          const qrData = selectedTicket.ticketQRData || `TICKET|${selectedTicket.ticketId}|${selectedTicket.userName}|${selectedTicket.eventTitle}`;
-                          return (
-                            <div className="flex flex-col justify-center">
-                              <div className="bg-white dark:bg-default-900 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-                                <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-3">QR Data (Text Format):</p>
-                                <p className="text-xs font-mono text-purple-600 dark:text-purple-400 break-all leading-relaxed bg-purple-50 dark:bg-purple-950/50 p-3 rounded border border-purple-200 dark:border-purple-800">
-                                  {qrData}
-                                </p>
-                                <p className="text-xs text-default-500 mt-3">
-                                  ✅ This is the unique data encoded in your QR code. Save it for your records.
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })()}
+                        )}
                       </div>
-                      
-                      <p className="text-xs text-center text-default-500 max-w-full">
-                        💡 <strong>Tip:</strong> You can take a screenshot, download, or print this QR code and present it at the event.
+                    </div>
+                  </CardBody>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Ticket Detail Modal */}
+        {selectedTicket && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-2 sm:p-3 md:p-4 overflow-y-auto"
+            onClick={() => setSelectedTicket(null)}
+          >
+            <Card className="w-full max-w-lg sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto my-4 sm:my-auto">
+              <CardHeader className="flex flex-col gap-1 items-start px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 pb-0">
+                <div className="flex items-center justify-between w-full gap-2">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold break-words">
+                    Ticket Details
+                  </h2>
+                  <Button
+                    isIconOnly
+                    variant="light"
+                    size="sm"
+                    onPress={() => setSelectedTicket(null)}
+                    className="flex-shrink-0"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </CardHeader>
+
+              <CardBody className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6">
+                {/* Ticket ID */}
+                <div className="bg-default/50 p-3 sm:p-4 md:p-6 rounded-lg">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <QrCodeIcon className="w-5 sm:w-6 h-5 sm:h-6 text-primary flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-small text-default-500">
+                        Ticket ID
+                      </p>
+                      <p className="text-xs sm:text-sm md:text-lg font-mono font-semibold text-primary break-all">
+                        {selectedTicket.ticketId}
                       </p>
                     </div>
                   </div>
+                </div>
 
-                  <Divider />
-                </>
-              )}
+                <Divider />
 
-              {/* Event Details */}
-              <div>
-                <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-3 sm:mb-4">
-                  Event Information
-                </h3>
-                <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                  <div>
-                    <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
-                      Event Title
-                    </p>
-                    <p className="text-sm md:text-base">
-                      {selectedTicket.eventTitle}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
-                      Date
-                    </p>
-                    <p className="text-sm md:text-base">
-                      {new Date(selectedTicket.date).toLocaleDateString(
-                        "en-US",
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        }
-                      )}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
-                      Time
-                    </p>
-                    <p className="text-sm md:text-base">
-                      {selectedTicket.time}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
-                      Venue
-                    </p>
-                    <p className="text-sm md:text-base">
-                      {selectedTicket.venue}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
-                      Location
-                    </p>
-                    <p className="text-sm md:text-base">
-                      {selectedTicket.location}
-                    </p>
+                {/* QR Code Display */}
+                {getQRCodeUrl(selectedTicket) && (
+                  <>
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 p-4 sm:p-6 md:p-8 rounded-xl border border-purple-200/50 dark:border-purple-800/50">
+                      <div className="flex flex-col gap-4">
+                        <div>
+                          <h3 className="text-sm sm:text-base font-semibold text-center mb-2 text-default-700">
+                            📱 Your Check-In QR Code
+                          </h3>
+                          <p className="text-xs sm:text-small text-center text-default-500 mb-4">
+                            Show this to staff when checking in at the venue
+                          </p>
+                        </div>
+
+                        {/* QR Code and Data Side-by-Side */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                          {/* QR Code */}
+                          <div className="flex justify-center">
+                            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-default-200">
+                              <img
+                                src={getQRCodeUrl(selectedTicket)}
+                                alt="Ticket QR Code"
+                                className="w-48 h-48 sm:w-56 sm:h-56"
+                                title="Scan this QR code for check-in"
+                              />
+                            </div>
+                          </div>
+
+                          {/* QR Data */}
+                          {(() => {
+                            const qrData = selectedTicket.ticketQRData || `TICKET|${selectedTicket.ticketId}|${selectedTicket.userName}|${selectedTicket.eventTitle}`;
+                            return (
+                              <div className="flex flex-col justify-center">
+                                <div className="bg-white dark:bg-default-900 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                                  <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-3">QR Data (Text Format):</p>
+                                  <p className="text-xs font-mono text-purple-600 dark:text-purple-400 break-all leading-relaxed bg-purple-50 dark:bg-purple-950/50 p-3 rounded border border-purple-200 dark:border-purple-800">
+                                    {qrData}
+                                  </p>
+                                  <p className="text-xs text-default-500 mt-3">
+                                    ✅ This is the unique data encoded in your QR code. Save it for your records.
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        <p className="text-xs text-center text-default-500 max-w-full">
+                          💡 <strong>Tip:</strong> You can take a screenshot, download, or print this QR code and present it at the event.
+                        </p>
+                      </div>
+                    </div>
+
+                    <Divider />
+                  </>
+                )}
+
+                {/* Event Details */}
+                <div>
+                  <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-3 sm:mb-4">
+                    Event Information
+                  </h3>
+                  <div className="space-y-2 sm:space-y-3 md:space-y-4">
+                    <div>
+                      <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
+                        Event Title
+                      </p>
+                      <p className="text-sm md:text-base">
+                        {selectedTicket.eventTitle}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
+                        Date
+                      </p>
+                      <p className="text-sm md:text-base">
+                        {new Date(selectedTicket.date).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
+                        Time
+                      </p>
+                      <p className="text-sm md:text-base">
+                        {selectedTicket.time}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
+                        Venue
+                      </p>
+                      <p className="text-sm md:text-base">
+                        {selectedTicket.venue}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
+                        Location
+                      </p>
+                      <p className="text-sm md:text-base">
+                        {selectedTicket.location}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <Divider />
+                <Divider />
 
-              {/* Attendee Details */}
-              <div>
-                <h3 className="text-base md:text-lg font-semibold mb-4">
-                  Attendee Information
-                </h3>
-                <div className="space-y-3 md:space-y-4">
-                  <div>
-                    <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
-                      Name
-                    </p>
-                    <p className="text-sm md:text-base">
-                      {selectedTicket.userName}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
-                      Email
-                    </p>
-                    <p className="text-sm md:text-base break-all">
-                      {selectedTicket.userEmail}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
-                      Registered At
-                    </p>
-                    <p className="text-sm md:text-base">
-                      {new Date(selectedTicket.registeredAt).toLocaleDateString(
-                        "en-US",
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }
-                      )}
-                    </p>
+                {/* Attendee Details */}
+                <div>
+                  <h3 className="text-base md:text-lg font-semibold mb-4">
+                    Attendee Information
+                  </h3>
+                  <div className="space-y-3 md:space-y-4">
+                    <div>
+                      <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
+                        Name
+                      </p>
+                      <p className="text-sm md:text-base">
+                        {selectedTicket.userName}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
+                        Email
+                      </p>
+                      <p className="text-sm md:text-base break-all">
+                        {selectedTicket.userEmail}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs md:text-small font-semibold text-default-500 mb-1">
+                        Registered At
+                      </p>
+                      <p className="text-sm md:text-base">
+                        {new Date(selectedTicket.registeredAt).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <Divider />
+                <Divider />
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 md:gap-4 pt-2">
-                <Button
-                  color="primary"
-                  startContent={<DownloadIcon className="w-4 h-4" />}
-                  size="lg"
-                  className="flex-1"
-                  onPress={() => {
-                    handleDownloadTicket(selectedTicket);
-                    setSelectedTicket(null);
-                  }}
-                >
-                  Download Ticket
-                </Button>
-                <Button
-                  variant="flat"
-                  startContent={<PrinterIcon className="w-4 h-4" />}
-                  size="lg"
-                  className="flex-1"
-                  onPress={() => {
-                    handlePrintTicket(selectedTicket);
-                    setSelectedTicket(null);
-                  }}
-                >
-                  Print Ticket
-                </Button>
-                <Button
-                  variant="flat"
-                  startContent={<ShareIcon className="w-4 h-4" />}
-                  size="lg"
-                  className="flex-1"
-                  onPress={() => {
-                    handleShareTicket(selectedTicket);
-                    setSelectedTicket(null);
-                  }}
-                >
-                  Share
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
-        </div>
-      )}
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 md:gap-4 pt-2">
+                  <Button
+                    color="primary"
+                    startContent={<DownloadIcon className="w-4 h-4" />}
+                    size="lg"
+                    className="flex-1"
+                    onPress={() => {
+                      handleDownloadTicket(selectedTicket);
+                      setSelectedTicket(null);
+                    }}
+                  >
+                    Download Ticket
+                  </Button>
+                  <Button
+                    variant="flat"
+                    startContent={<PrinterIcon className="w-4 h-4" />}
+                    size="lg"
+                    className="flex-1"
+                    onPress={() => {
+                      handlePrintTicket(selectedTicket);
+                      setSelectedTicket(null);
+                    }}
+                  >
+                    Print Ticket
+                  </Button>
+                  <Button
+                    variant="flat"
+                    startContent={<ShareIcon className="w-4 h-4" />}
+                    size="lg"
+                    className="flex-1"
+                    onPress={() => {
+                      handleShareTicket(selectedTicket);
+                      setSelectedTicket(null);
+                    }}
+                  >
+                    Share
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

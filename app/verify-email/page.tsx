@@ -1,13 +1,12 @@
-// app/verify-email/page.tsx
 "use client";
 
-import { Suspense } from "react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { account } from "@/lib/appwrite";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import NextLink from "next/link";
+import { logger } from "@/lib/logger";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -21,7 +20,7 @@ function VerifyEmailContent() {
         const userId = searchParams.get("userId");
         const secret = searchParams.get("secret");
 
-        console.log("Verification params:", { userId, secret: secret?.substring(0, 20) + "..." });
+        logger.log("Verification params:", { userId, secret: secret?.substring(0, 20) + "..." });
 
         if (!userId || !secret) {
           setStatus("error");
@@ -31,8 +30,8 @@ function VerifyEmailContent() {
 
         // Call Appwrite verification
         await account.updateVerification(userId, secret);
-        
-        console.log("Verification successful!");
+
+        logger.log("Verification successful!");
         setStatus("success");
 
         // Redirect to profile after 3 seconds
@@ -41,10 +40,10 @@ function VerifyEmailContent() {
         }, 3000);
 
       } catch (error) {
-        console.error("Verification error:", error);
+        logger.error("Verification error:", error);
         setStatus("error");
-        const errorMessage = error instanceof Error 
-          ? error.message 
+        const errorMessage = error instanceof Error
+          ? error.message
           : "Verification failed. The link may have expired.";
         setErrorMessage(errorMessage);
       }
@@ -76,14 +75,14 @@ function VerifyEmailContent() {
             </>
           )}
         </CardHeader>
-        
+
         <CardBody className="text-center gap-4 px-6 sm:px-8 pb-6 sm:pb-8">
           {status === "loading" && (
             <p className="text-default-500 text-xs sm:text-small">
               Please wait while we verify your email address...
             </p>
           )}
-          
+
           {status === "success" && (
             <>
               <p className="text-default-500 text-xs sm:text-small">
@@ -100,7 +99,7 @@ function VerifyEmailContent() {
               </Button>
             </>
           )}
-          
+
           {status === "error" && (
             <>
               <p className="text-danger text-xs sm:text-small">
