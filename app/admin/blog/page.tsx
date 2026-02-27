@@ -13,6 +13,7 @@ import { useAuth } from "@/context/AuthContext";
 import { blogService, Blog } from "@/lib/blog";
 import AdminPageWrapper from "@/components/AdminPageWrapper";
 import { getErrorMessage } from "@/lib/errorHandler";
+import { isUserAdminByEmail } from "@/lib/adminConfig";
 import {
   CheckIcon,
   XIcon,
@@ -50,7 +51,7 @@ export default function AdminBlogsPage() {
   useEffect(() => {
     if (!authLoading && user) {
       // Check if user is admin
-      const isAdmin = user.email && ["sahilmanecode@gmail.com", "mane50205@gmail.com", "gauravramyadav@gmail.com"].includes(user.email);
+      const isAdmin = user.email && isUserAdminByEmail(user.email);
       setIsAuthorized(!!isAdmin);
       if (isAdmin) {
         loadBlogs();
@@ -114,7 +115,6 @@ export default function AdminBlogsPage() {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "x-user-email": user.email,
         },
         credentials: "same-origin",
       });
@@ -160,7 +160,6 @@ export default function AdminBlogsPage() {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "x-user-email": user.email,
         },
         credentials: "same-origin",
         body: JSON.stringify({ reason: rejectionReason }),
@@ -194,9 +193,6 @@ export default function AdminBlogsPage() {
       const res = await fetch(`/api/blog/${blogId}`, { 
         method: "DELETE", 
         credentials: "same-origin",
-        headers: {
-          "x-user-email": user.email,
-        },
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result?.error || `Failed to delete blog: ${res.statusText}`);
@@ -222,7 +218,6 @@ export default function AdminBlogsPage() {
         credentials: "same-origin",
         headers: { 
           "Content-Type": "application/json",
-          "x-user-email": user.email,
         },
         body: JSON.stringify({ isFeatured: !blog.featured }),
       });
@@ -463,7 +458,7 @@ export default function AdminBlogsPage() {
                   <div className="md:col-span-3 flex flex-wrap md:flex-col gap-2">
                     <Button
                       as="a"
-                      href={`/Blog/${blog.slug}?admin=true`}
+                      href={`/blog/${blog.slug}?admin=true`}
                       target="_blank"
                       size="sm"
                       variant="flat"
