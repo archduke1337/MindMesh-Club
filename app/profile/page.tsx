@@ -61,7 +61,7 @@ export default function ProfilePage() {
         setProfilePicture(urlString);
       } catch (error) {
         logger.error("Error loading profile picture:", error);
-        setProfilePicture(getAvatarUrl(user.name));
+        setProfilePicture(getAvatarUrl(user?.name || "User"));
       }
     } else {
       setProfilePicture(getAvatarUrl(user?.name || "User"));
