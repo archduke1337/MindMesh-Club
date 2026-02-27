@@ -6,7 +6,7 @@ import { DATABASE_ID } from "./database";
 // Re-export BLOGS_COLLECTION_ID from database.ts for consistency
 import { BLOGS_COLLECTION_ID } from "./database";
 export { BLOGS_COLLECTION_ID };
-export const BLOG_IMAGES_BUCKET_ID = process.env.NEXT_PUBLIC_BLOG_IMAGES_BUCKET_ID || "6917a084000157e9e8f9";
+export const BLOG_IMAGES_BUCKET_ID = process.env.NEXT_PUBLIC_BLOG_IMAGES_BUCKET_ID || "";
 
 // Helper to delete documents using admin API
 const deleteDocumentAdmin = async (databaseId: string, collectionId: string, documentId: string) => {
@@ -69,7 +69,7 @@ const updateDocumentAdmin = async (databaseId: string, collectionId: string, doc
       "X-Appwrite-Key": apiKey,
       "X-Appwrite-Project": projectId,
     },
-    body: JSON.stringify({ data }),
+    body: JSON.stringify(data),
   });
   
   if (!response.ok) {

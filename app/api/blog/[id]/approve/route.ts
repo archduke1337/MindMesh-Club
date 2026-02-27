@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { blogService } from "@/lib/blog";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { isUserAdminByEmail } from "@/lib/adminConfig";
-import { account } from "@/lib/appwrite";
 
 // Helper to verify admin via server-side session + cookie forwarding
 async function verifyAdmin(request: NextRequest): Promise<{ isAdmin: boolean; email?: string; error?: string }> {
@@ -29,11 +28,7 @@ async function verifyAdmin(request: NextRequest): Promise<{ isAdmin: boolean; em
         }
       }
     }
-    // Fallback: use x-user-email header (less secure, for backward compatibility)
-    const userEmail = request.headers.get("x-user-email");
-    if (userEmail && isUserAdminByEmail(userEmail)) {
-      return { isAdmin: true, email: userEmail };
-    }
+    // x-user-email header is no longer trusted for admin auth (spoofable)
     return { isAdmin: false, error: "Not authenticated" };
   } catch {
     return { isAdmin: false, error: "Authentication failed" };
@@ -42,9 +37,10 @@ async function verifyAdmin(request: NextRequest): Promise<{ isAdmin: boolean; em
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { isAdmin, email, error } = await verifyAdmin(request);
     
     if (!isAdmin) {
@@ -54,8 +50,8 @@ export async function POST(
       );
     }
 
-    console.log("[Approve] Admin verified! Approving blog:", params.id);
-    const blog = await blogService.approveBlog(params.id);
+    console.log("[Approve] Admin verified! Approving blog:", id);
+    const blog = await blogService.approveBlog(id);
 
     return NextResponse.json({
       success: true,

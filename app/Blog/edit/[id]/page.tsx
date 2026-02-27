@@ -1,4 +1,4 @@
-// app/Blog/edit/[id]/page.tsx
+// app/blog/edit/[id]/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -48,13 +48,7 @@ export default function EditBlogPage() {
     }
   }, [user, authLoading, router, showToast]);
 
-  useEffect(() => {
-    if (user && blogId) {
-      loadBlog();
-    }
-  }, [user, blogId]);
-
-  const loadBlog = async () => {
+  const loadBlog = useCallback(async () => {
     try {
       setLoading(true);
       const blog = await blogService.getBlogById(blogId);
@@ -62,7 +56,7 @@ export default function EditBlogPage() {
       // Verify user owns this blog
       if (blog.authorId !== user?.$id) {
         setError("You can only edit your own blogs");
-        setTimeout(() => router.push("/Blog"), 2000);
+        setTimeout(() => router.push("/blog"), 2000);
         return;
       }
 
@@ -81,7 +75,14 @@ export default function EditBlogPage() {
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blogId, user?.$id, router]);
+
+  useEffect(() => {
+    if (user && blogId) {
+      loadBlog();
+    }
+  }, [user, blogId, loadBlog]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -151,7 +152,7 @@ export default function EditBlogPage() {
 
       await blogService.updateBlog(blogId, updateData);
       showToast("Blog updated successfully!", "success");
-      setTimeout(() => router.push(`/Blog/${blogService.generateSlug(formData.title)}`), 1500);
+      setTimeout(() => router.push(`/blog/${blogService.generateSlug(formData.title)}`), 1500);
     } catch (err) {
       const message = getErrorMessage(err);
       console.error("Error updating blog:", message);

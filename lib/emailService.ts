@@ -62,9 +62,9 @@ const sendEmailWithEmailJS = async (
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        service_id: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "service_uv7h9yv",
-        template_id: process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "template_6zxg3vk",
-        user_id: process.env.NEXT_PUBLIC_EMAILJS_USER_ID || "XDzUiPBDF_TLck0Ds",
+        service_id: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "",
+        template_id: process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "",
+        user_id: process.env.NEXT_PUBLIC_EMAILJS_USER_ID || "",
         template_params: {
           to_email: toEmail,
           to_name: toName,

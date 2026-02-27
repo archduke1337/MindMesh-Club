@@ -1,4 +1,4 @@
-// app/Blog/page.tsx
+// app/blog/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -160,7 +160,7 @@ export default function BlogPage() {
             color="primary"
             size="lg"
             startContent={<PenIcon className="w-3 sm:w-3.5 md:w-4 lg:w-5 h-3 sm:h-3.5 md:h-4 lg:h-5" />}
-            onPress={() => router.push("/Blog/write")}
+            onPress={() => router.push("/blog/write")}
             className="mt-2 sm:mt-3 md:mt-4 lg:mt-5 text-xs sm:text-sm md:text-base"
           >
             Write a Blog
@@ -220,7 +220,7 @@ export default function BlogPage() {
                 <Button
                   color="primary"
                   startContent={<PenIcon className="w-3 sm:w-3.5 md:w-4 h-3 sm:h-3.5 md:h-4" />}
-                  onPress={() => router.push("/Blog/write")}
+                  onPress={() => router.push("/blog/write")}
                   size="lg"
                   className="text-xs sm:text-sm md:text-base"
                 >
@@ -236,7 +236,7 @@ export default function BlogPage() {
                   className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
                   shadow="lg"
                   isPressable
-                  onPress={() => router.push(`/Blog/${blog.slug}`)}
+                  onPress={() => router.push(`/blog/${blog.slug}`)}
                 >
                   <CardBody className="p-0">
                     {/* Cover Image */}
@@ -319,7 +319,7 @@ export default function BlogPage() {
                           size="sm"
                           variant="light"
                           onPress={() => {
-                            router.push(`/Blog/edit/${blog.$id}`);
+                            router.push(`/blog/edit/${blog.$id}`);
                           }}
                           className="text-xs"
                         >

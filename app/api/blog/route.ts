@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `Rate limit exceeded. You can submit ${5} blogs per 24 hours. Try again later.`,
+          error: `Rate limit exceeded. You have ${remaining} submissions remaining. Try again later.`,
         },
         { status: 429 }
       );

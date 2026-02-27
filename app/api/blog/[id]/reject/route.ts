@@ -21,8 +21,6 @@ async function verifyAdmin(request: NextRequest): Promise<{ isAdmin: boolean; em
         }
       }
     }
-    const userEmail = request.headers.get("x-user-email");
-    if (userEmail && isUserAdminByEmail(userEmail)) return { isAdmin: true, email: userEmail };
     return { isAdmin: false, error: "Not authenticated" };
   } catch {
     return { isAdmin: false, error: "Authentication failed" };
@@ -31,9 +29,10 @@ async function verifyAdmin(request: NextRequest): Promise<{ isAdmin: boolean; em
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { isAdmin, email, error } = await verifyAdmin(request);
     if (!isAdmin) {
       return NextResponse.json(
@@ -45,7 +44,7 @@ export async function POST(
     const data = await request.json();
     const reason = data.reason || "No reason provided";
 
-    const blog = await blogService.rejectBlog(params.id, reason);
+    const blog = await blogService.rejectBlog(id, reason);
 
     return NextResponse.json({
       success: true,

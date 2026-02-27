@@ -125,11 +125,13 @@ export const eventStorageManager = {
   // ============ Batch Operations ============
   clearAllEventData(): void {
     try {
+      // Read registered events BEFORE clearing keys so we can remove their tickets
+      const registered = this.getRegisteredEvents();
+
       localStorage.removeItem(SAVED_EVENTS_KEY);
       localStorage.removeItem(REGISTERED_EVENTS_KEY);
       
       // Clear all tickets
-      const registered = this.getRegisteredEvents();
       registered.forEach(eventId => {
         this.deleteTicket(eventId);
       });

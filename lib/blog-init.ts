@@ -11,10 +11,10 @@ import { ID, Permission, Role } from "appwrite";
 
 export const blogCollectionInit = {
   /**
-   * Create the blogs collection with proper schema and permissions
-   * Only call this once during setup!
+   * Print setup instructions for the blogs collection.
+   * NOTE: This does NOT actually create the collection — Appwrite admin console is required.
    */
-  async createBlogsCollection() {
+  async printSetupInstructions() {
     try {
       console.log("🔄 Creating blogs collection...");
       
@@ -69,7 +69,7 @@ export const blogCollectionInit = {
     } catch (error: any) {
       if (error?.message?.includes("Collection with the requested ID could not be found")) {
         console.error("❌ Blogs collection not found!");
-        console.error("💡 Run: await blogCollectionInit.createBlogsCollection() in browser console");
+        console.error("💡 Run: await blogCollectionInit.printSetupInstructions() in browser console");
         return false;
       }
       console.error("❌ Error accessing blogs collection:", error);

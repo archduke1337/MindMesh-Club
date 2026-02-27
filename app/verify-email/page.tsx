@@ -20,7 +20,7 @@ function VerifyEmailContent() {
         const userId = searchParams.get("userId");
         const secret = searchParams.get("secret");
 
-        logger.log("Verification params:", { userId, secret: secret?.substring(0, 20) + "..." });
+        logger.log("Verification params:", { userId, hasSecret: !!secret });
 
         if (!userId || !secret) {
           setStatus("error");

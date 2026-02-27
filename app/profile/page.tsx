@@ -134,7 +134,7 @@ export default function ProfilePage() {
       setUpdateError("Profile picture updated successfully!");
 
       setTimeout(() => {
-        window.location.reload();
+        router.refresh();
       }, 2000);
     } catch (err: any) {
       logger.error("Upload error:", err);
@@ -176,7 +176,7 @@ export default function ProfilePage() {
       setIsEditing(false);
 
       setTimeout(() => {
-        window.location.reload();
+        router.refresh();
       }, 2000);
     } catch (err: any) {
       logger.error("Update error:", err);

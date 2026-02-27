@@ -1,4 +1,4 @@
-// app/Blog/write/page.tsx
+// app/blog/write/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

@@ -58,7 +58,7 @@ export default function GalleryPage() {
     ? galleryImages
     : galleryImages.filter((img) => img.category === selectedCategory);
 
-  if (error && loading) {
+  if (error && !loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="border-none" shadow="lg">

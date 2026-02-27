@@ -1,7 +1,7 @@
 // app/api/events/register/route.ts
 // Server-side endpoint for atomic event registration to prevent race conditions
 import { NextRequest, NextResponse } from 'next/server';
-import { Client, Databases, ID, Query } from 'appwrite';
+import { ID } from 'appwrite';
 import { ZodError } from 'zod';
 import { sendRegistrationEmail } from '@/lib/emailService';
 import { DATABASE_ID, REGISTRATIONS_COLLECTION_ID, EVENTS_COLLECTION_ID } from '@/lib/database';
@@ -56,117 +56,123 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
 
     console.log(`[API] Registering user ${userId} for event ${eventId}`);
 
-    // Initialize Appwrite client
-    // Note: This endpoint should work with public read access or use admin API key
-    const client = new Client()
-      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+    // Use REST API with admin API key for server-side database operations
+    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
+    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!;
+    const apiKey = process.env.APPWRITE_API_KEY;
 
-    // If API key is available, use it for admin access
-    if (process.env.APPWRITE_API_KEY) {
-      // For admin operations, we can use the API key as a custom header
-      // However, since setHeader is not supported, we'll try with public permissions
-      console.log('[API] API key available, attempting admin operations');
+    // Helper for admin REST API calls
+    const adminHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      "X-Appwrite-Project": projectId,
+    };
+    if (apiKey) {
+      adminHeaders["X-Appwrite-Key"] = apiKey;
     }
 
-    const databases = new Databases(client);
+    const adminFetch = async (path: string, options: RequestInit = {}) => {
+      const res = await fetch(`${endpoint}${path}`, {
+        ...options,
+        headers: { ...adminHeaders, ...(options.headers || {}) },
+      });
+      return res;
+    };
+
     const databaseId = DATABASE_ID;
     const registrationsCollectionId = REGISTRATIONS_COLLECTION_ID;
 
     // Check if already registered
     try {
-      const existingRegistrations = await databases.listDocuments(
-        databaseId,
-        registrationsCollectionId,
-        [
-          Query.equal("eventId", eventId),
-          Query.equal("userId", userId),
-          Query.limit(1)
-        ]
+      const listRes = await adminFetch(
+        `/databases/${databaseId}/collections/${registrationsCollectionId}/documents?queries[]=${encodeURIComponent(`equal("eventId", ["${eventId})"]`)}&queries[]=${encodeURIComponent(`equal("userId", ["${userId}"])`)}&queries[]=${encodeURIComponent('limit(1)')}`
       );
 
-      if (existingRegistrations.documents.length > 0) {
-        const existingRegistration = existingRegistrations.documents[0];
-        console.log(`[API] Found existing registration: ${existingRegistration.$id}`);
-
-        // Check if this is a valid active registration or a stale one
-        // If found, return the existing ticket ID instead of error
-        return NextResponse.json(
-          {
-            success: true,
-            message: 'Already registered for this event',
-            ticketId: existingRegistration.$id,
-          },
-          { status: 200 }
-        );
+      if (listRes.ok) {
+        const existingRegistrations = await listRes.json();
+        if (existingRegistrations.documents?.length > 0) {
+          const existingRegistration = existingRegistrations.documents[0];
+          console.log(`[API] Found existing registration: ${existingRegistration.$id}`);
+          return NextResponse.json(
+            {
+              success: true,
+              message: 'Already registered for this event',
+              ticketId: existingRegistration.$id,
+            },
+            { status: 200 }
+          );
+        }
       }
     } catch (listError) {
       console.error('[API] Error checking existing registrations:', listError);
-      // If we can't check, proceed with registration attempt
-      // This allows re-registration if the query fails
     }
 
     // Get event to check capacity
-    let event;
+    let event: any;
     try {
-      event = await databases.getDocument(
-        databaseId,
-        EVENTS_COLLECTION_ID,
-        eventId
+      const eventRes = await adminFetch(
+        `/databases/${databaseId}/collections/${EVENTS_COLLECTION_ID}/documents/${eventId}`
       );
+      if (!eventRes.ok) {
+        return NextResponse.json(
+          { success: false, message: 'Event not found', error: 'The event does not exist' },
+          { status: 404 }
+        );
+      }
+      event = await eventRes.json();
     } catch (getError) {
       console.error('[API] Error fetching event:', getError);
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Event not found',
-          error: 'The event does not exist',
-        },
+        { success: false, message: 'Event not found', error: 'The event does not exist' },
         { status: 404 }
       );
     }
 
-    const eventData = event as any;
-    if (eventData.capacity && eventData.registered >= eventData.capacity) {
+    if (event.capacity && event.registered >= event.capacity) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Event is full',
-          error: 'Event is full',
-        },
+        { success: false, message: 'Event is full', error: 'Event is full' },
         { status: 409 }
       );
     }
 
     // Create registration document with QR code data
-    let registration;
+    let registration: any;
     try {
-      // Generate QR code data format: TICKET|{ticketId}|{userName}|{eventTitle}
-      // Note: ticketId will be the registration document ID, so we use a placeholder
-      const eventTitle = (event as any).title;
-      const ticketQRData = `TICKET|{TICKET_ID}|${userName}|${eventTitle}`;
+      const ticketDocId = ID.unique();
+      const eventTitle = event.title;
+      const ticketQRData = `TICKET|${ticketDocId}|${userName}|${eventTitle}`;
 
-      registration = await databases.createDocument(
-        databaseId,
-        registrationsCollectionId,
-        ID.unique(),
+      const createRes = await adminFetch(
+        `/databases/${databaseId}/collections/${registrationsCollectionId}/documents`,
         {
-          eventId,
-          userId,
-          userName,
-          userEmail,
-          registeredAt: new Date().toISOString(),
-          ticketQRData: ticketQRData,
+          method: "POST",
+          body: JSON.stringify({
+            documentId: ticketDocId,
+            data: {
+              eventId,
+              userId,
+              userName,
+              userEmail,
+              registeredAt: new Date().toISOString(),
+              ticketQRData,
+            },
+          }),
         }
       );
+
+      if (!createRes.ok) {
+        const errorText = await createRes.text();
+        console.error('[API] Error creating registration:', errorText);
+        return NextResponse.json(
+          { success: false, message: 'Failed to create registration', error: errorText },
+          { status: 500 }
+        );
+      }
+
+      registration = await createRes.json();
     } catch (createError) {
       console.error('[API] Error creating registration:', createError);
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Failed to create registration',
-          error: getErrorMessage(createError),
-        },
+        { success: false, message: 'Failed to create registration', error: getErrorMessage(createError) },
         { status: 500 }
       );
     }
@@ -177,50 +183,37 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       throw new Error('Registration created but no ticket ID returned');
     }
 
-    // Update the QR code data with actual ticket ID
-    try {
-      const eventTitle = (event as any).title;
-      const actualQRData = `TICKET|${ticketId}|${userName}|${eventTitle}`;
-      await databases.updateDocument(
-        databaseId,
-        registrationsCollectionId,
-        ticketId,
-        {
-          ticketQRData: actualQRData,
-        }
-      );
-      console.log(`[API] Updated QR code data for ticket ${ticketId}`);
-    } catch (updateError) {
-      console.warn(`[API] Warning: failed to update QR code data:`, updateError);
-      // Don't fail registration if QR update fails
-    }
-
     console.log(`[API] Registration successful: ${ticketId}`);
 
-    // Update event registered count
+    // Update event registered count - re-read to minimize race condition window
     try {
-      await databases.updateDocument(
-        databaseId,
-        EVENTS_COLLECTION_ID,
-        eventId,
+      const freshEventRes = await adminFetch(
+        `/databases/${databaseId}/collections/${EVENTS_COLLECTION_ID}/documents/${eventId}`
+      );
+      const freshEvent = freshEventRes.ok ? await freshEventRes.json() : event;
+      
+      await adminFetch(
+        `/databases/${databaseId}/collections/${EVENTS_COLLECTION_ID}/documents/${eventId}`,
         {
-          registered: (eventData.registered || 0) + 1
+          method: "PATCH",
+          body: JSON.stringify({
+            data: { registered: (freshEvent.registered || 0) + 1 },
+          }),
         }
       );
-      console.log(`[API] Updated event registered count to ${(eventData.registered || 0) + 1}`);
+      console.log(`[API] Updated event registered count`);
     } catch (updateError) {
       console.warn(`[API] Warning: failed to update event registered count:`, updateError);
-      // Don't fail registration if count update fails
     }
 
     // Try to send email in the background (don't block if it fails)
     try {
       await sendRegistrationEmail(userEmail, userName, ticketId, {
-        title: eventData.title,
-        date: eventData.date,
-        time: eventData.time,
-        venue: eventData.venue,
-        location: eventData.location,
+        title: event.title,
+        date: event.date,
+        time: event.time,
+        venue: event.venue,
+        location: event.location,
         image: event.image,
         organizerName: event.organizerName,
         price: event.price,

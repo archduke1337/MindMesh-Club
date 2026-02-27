@@ -41,14 +41,28 @@ export async function DELETE(request: NextRequest) {
     const user = await userRes.json();
     const apiKey = process.env.APPWRITE_API_KEY;
     
-    if (apiKey) {
-      await fetch(`${endpoint}/users/${user.$id}`, {
-        method: "DELETE",
-        headers: {
-          "X-Appwrite-Project": projectId,
-          "X-Appwrite-Key": apiKey,
-        },
-      });
+    if (!apiKey) {
+      return NextResponse.json(
+        { success: false, error: "Server configuration error: cannot delete account. Contact support." },
+        { status: 500 }
+      );
+    }
+
+    const deleteRes = await fetch(`${endpoint}/users/${user.$id}`, {
+      method: "DELETE",
+      headers: {
+        "X-Appwrite-Project": projectId,
+        "X-Appwrite-Key": apiKey,
+      },
+    });
+
+    if (!deleteRes.ok && deleteRes.status !== 404) {
+      const errorText = await deleteRes.text();
+      console.error("Failed to delete user account:", errorText);
+      return NextResponse.json(
+        { success: false, error: "Failed to delete account" },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(

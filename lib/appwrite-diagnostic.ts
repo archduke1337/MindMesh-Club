@@ -58,12 +58,24 @@ export async function testAppwriteProject() {
   console.log("\n📍 Test 2: Checking project access...");
 
   try {
+    // Only test project access from server-side API routes, not client-side
+    // The API key should never be sent from the browser
+    if (typeof window !== "undefined") {
+      console.warn("\u26a0\ufe0f testAppwriteProject should only run server-side. Skipping API key check.");
+      return { status: "skipped", message: "Cannot test project access from browser" };
+    }
+
+    const apiKey = process.env.APPWRITE_API_KEY;
+    if (!apiKey) {
+      console.warn("\u26a0\ufe0f APPWRITE_API_KEY not set - cannot test project access");
+      return { status: "skipped", message: "API key not configured" };
+    }
+
     const projectResponse = await fetch(`${endpoint}/projects/${projectId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        // NOTE: API key should only be used server-side. This diagnostic should be run from an API route.
-        "X-Appwrite-Key": process.env.APPWRITE_API_KEY || "",
+        "X-Appwrite-Key": apiKey,
       },
     });
 

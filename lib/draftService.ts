@@ -66,8 +66,9 @@ export const draftService = {
   getAllDrafts(): BlogDraftData[] {
     try {
       const drafts = [];
-      for (let key in localStorage) {
-        if (key.startsWith(DRAFT_KEY_PREFIX) && key !== DRAFT_KEY_PREFIX + "current") {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(DRAFT_KEY_PREFIX) && key !== DRAFT_KEY_PREFIX + "current") {
           const draft = localStorage.getItem(key);
           if (draft) {
             drafts.push(JSON.parse(draft));

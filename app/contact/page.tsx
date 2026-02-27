@@ -33,9 +33,9 @@ export default function ContactPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          service_id: "service_uv7h9yv", // Replace with your EmailJS service ID
-          template_id: "template_5jqtexq", // Replace with your EmailJS template ID
-          user_id: "XDzUiPBDF_TLck0Ds", // Replace with your EmailJS public key
+          service_id: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "",
+          template_id: process.env.NEXT_PUBLIC_EMAILJS_CONTACT_TEMPLATE_ID || "",
+          user_id: process.env.NEXT_PUBLIC_EMAILJS_USER_ID || "",
           template_params: {
             from_name: formData.name,
             from_email: formData.email,
@@ -65,49 +65,7 @@ export default function ContactPage() {
     }
   };
 
-  // Method 2: Using Appwrite
-  const handleSubmitWithAppwrite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitStatus({ type: null, message: "" });
-
-    try {
-      const { databases } = await import("@/lib/appwrite");
-      const { ID } = await import("appwrite");
-
-      // Create contact document in Appwrite
-      // Note: You need to set up a "contacts" collection in your Appwrite database
-      await databases.createDocument(
-        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "",
-        "contacts", // Your collection ID for contacts
-        ID.unique(),
-        {
-          name: formData.name,
-          email: formData.email,
-          subject: formData.subject,
-          message: formData.message,
-          createdAt: new Date().toISOString(),
-          status: "unread",
-        }
-      );
-
-      setSubmitStatus({
-        type: "success",
-        message: "Message sent successfully! We'll get back to you soon.",
-      });
-      setFormData({ name: "", email: "", subject: "", message: "" });
-    } catch (error) {
-      console.error("Error:", error);
-      setSubmitStatus({
-        type: "error",
-        message: "Failed to send message. Please try again or email us directly.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSubmit = handleSubmitWithEmailJS; // Change to handleSubmitWithAppwrite if using Appwrite
+  const handleSubmit = handleSubmitWithEmailJS;
 
   const contactMethods = [
     {

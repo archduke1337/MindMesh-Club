@@ -22,7 +22,9 @@ async function verifyAdmin(request: NextRequest): Promise<{ isAdmin: boolean; em
       }
     }
     const userEmail = request.headers.get("x-user-email");
-    if (userEmail && isUserAdminByEmail(userEmail)) return { isAdmin: true, email: userEmail };
+    if (userEmail) {
+      console.warn("[Security] x-user-email header is deprecated for admin auth. Use session cookies.");
+    }
     return { isAdmin: false, error: "Not authenticated" };
   } catch {
     return { isAdmin: false, error: "Authentication failed" };
@@ -54,11 +56,12 @@ async function verifyUser(request: NextRequest): Promise<{ authenticated: boolea
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Check if it's a slug request (contains no hyphens at start) or ID
-    const blog = await blogService.getBlogBySlug(params.id).catch(async () => {
+    const blog = await blogService.getBlogBySlug(id).catch(async () => {
       // If slug doesn't work, try to fetch by ID but this is limited
       throw new Error("Blog not found");
     });
@@ -96,9 +99,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Verify user is authenticated before allowing updates
     const { authenticated } = await verifyUser(request);
     if (!authenticated) {
@@ -110,7 +114,7 @@ export async function PATCH(
 
     const data = await request.json();
 
-    const blog = await blogService.updateBlog(params.id, data);
+    const blog = await blogService.updateBlog(id, data);
 
     return NextResponse.json({
       success: true,
@@ -131,9 +135,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { isAdmin, email, error } = await verifyAdmin(request);
     if (!isAdmin) {
       return NextResponse.json(
@@ -142,8 +147,8 @@ export async function DELETE(
       );
     }
 
-    console.log("[Delete] Admin verified! Deleting blog:", params.id);
-    await blogService.deleteBlog(params.id);
+    console.log("[Delete] Admin verified! Deleting blog:", id);
+    await blogService.deleteBlog(id);
 
     return NextResponse.json({
       success: true,

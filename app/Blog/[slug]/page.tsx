@@ -234,7 +234,7 @@ export default function BlogPostPage() {
                   <Card
                     key={relatedBlog.$id}
                     isPressable
-                    onPress={() => router.push(`/Blog/${relatedBlog.slug}`)}
+                    onPress={() => router.push(`/blog/${relatedBlog.slug}`)}
                     className="hover:shadow-xl transition-all"
                   >
                     <CardBody className="p-0">
