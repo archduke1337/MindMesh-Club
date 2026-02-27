@@ -9,10 +9,12 @@ import NextLink from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { loginSchema } from "@/lib/validation/schemas";
 import { z } from "zod";
+import { EyeIcon, EyeOffIcon, MailIcon, LockIcon } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
@@ -68,7 +70,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-      <Card className="w-full max-w-sm md:max-w-md">
+      <Card className="w-full max-w-sm md:max-w-md shadow-lg">
         <CardHeader className="flex flex-col gap-1 items-start px-4 sm:px-6 md:px-8 pt-6 sm:pt-8 pb-0">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Welcome Back</h1>
           <p className="text-xs sm:text-small text-default-500">Login to your Mind Mesh account</p>
@@ -84,6 +86,7 @@ export default function LoginPage() {
               required
               isDisabled={loading}
               size="lg"
+              startContent={<MailIcon className="w-4 h-4 text-default-400 flex-shrink-0" />}
               classNames={{
                 input: "text-sm md:text-base",
                 label: "text-xs md:text-small"
@@ -94,12 +97,18 @@ export default function LoginPage() {
             <Input
               label="Password"
               placeholder="Enter your password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               isDisabled={loading}
               size="lg"
+              startContent={<LockIcon className="w-4 h-4 text-default-400 flex-shrink-0" />}
+              endContent={
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="focus:outline-none" tabIndex={-1}>
+                  {showPassword ? <EyeOffIcon className="w-4 h-4 text-default-400" /> : <EyeIcon className="w-4 h-4 text-default-400" />}
+                </button>
+              }
               classNames={{
                 input: "text-sm md:text-base",
                 label: "text-xs md:text-small"

@@ -5,6 +5,9 @@ import {
   NavbarContent,
   NavbarBrand,
   NavbarItem,
+  NavbarMenuToggle,
+  NavbarMenu,
+  NavbarMenuItem,
 } from "@heroui/navbar";
 import {
   Dropdown,
@@ -14,31 +17,31 @@ import {
 } from "@heroui/dropdown";
 import { Button } from "@heroui/button";
 import { Avatar } from "@heroui/avatar";
+import { Divider } from "@heroui/divider";
 import NextLink from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useState } from "react";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Logo } from "@/components/icons";
 import { useAuth } from "@/context/AuthContext";
+import { isUserAdminByEmail } from "@/lib/adminConfig";
+import {
+  ShieldIcon,
+  UserIcon,
+  SettingsIcon,
+  LogOutIcon,
+  TicketIcon,
+} from "lucide-react";
 
 export const Navbar = () => {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const isAdmin = !loading && user && isUserAdminByEmail(user.email);
 
   const handleLogout = async () => {
     try {
@@ -49,65 +52,78 @@ export const Navbar = () => {
     }
   };
 
-  // Generate avatar from user's name
   const getAvatarUrl = (name: string) => {
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=64`;
   };
 
-  const handleMouseEnter = () => {
-    if (!isMobile) {
-      setIsMenuOpen(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (!isMobile) {
-      setIsMenuOpen(false);
-    }
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+    return pathname.startsWith(href);
   };
 
   return (
-    <HeroUINavbar maxWidth="xl" position="sticky">
-      <NavbarContent justify="start">
-        <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-1" href="/">
-            <Logo />
-            <p className="font-bold text-inherit">Mind Mesh</p>
+    <HeroUINavbar
+      maxWidth="xl"
+      position="sticky"
+      isMenuOpen={isMenuOpen}
+      onMenuOpenChange={setIsMenuOpen}
+      classNames={{
+        base: "bg-background/80 backdrop-blur-lg border-b border-divider/50",
+        wrapper: "px-4 sm:px-6",
+      }}
+    >
+      {/* Left: Brand + Mobile toggle */}
+      <NavbarContent justify="start" className="gap-2">
+        <NavbarMenuToggle
+          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+          className="lg:hidden"
+        />
+        <NavbarBrand as="li" className="gap-2 max-w-fit">
+          <NextLink className="flex items-center gap-2" href="/">
+            <Logo size={32} />
+            <span className="font-bold text-lg bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent hidden sm:inline">
+              Mind Mesh
+            </span>
           </NextLink>
         </NavbarBrand>
       </NavbarContent>
 
-      <NavbarContent justify="end">
-        <NavbarItem>
-          <Dropdown isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <DropdownTrigger>
-              <Button 
-                variant="light"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-              >
-                Menu
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu 
-              aria-label="Navigation menu"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onAction={() => setIsMenuOpen(false)}
+      {/* Center: Desktop nav links */}
+      <NavbarContent justify="center" className="hidden lg:flex gap-1">
+        {siteConfig.navItems.map((item) => (
+          <NavbarItem key={item.href} isActive={isActive(item.href)}>
+            <NextLink
+              href={item.href}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive(item.href)
+                  ? "text-primary bg-primary/10"
+                  : "text-default-600 hover:text-foreground hover:bg-default-100"
+              }`}
             >
-              {siteConfig.navItems.map((item) => (
-                <DropdownItem 
-                  key={item.href} 
-                  href={item.href}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.label}
-                </DropdownItem>
-              ))}
-            </DropdownMenu>
-          </Dropdown>
-        </NavbarItem>
-        <NavbarItem>
+              {item.label}
+            </NextLink>
+          </NavbarItem>
+        ))}
+        {isAdmin && (
+          <NavbarItem isActive={isActive("/admin")}>
+            <NextLink
+              href="/admin"
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1.5 ${
+                isActive("/admin")
+                  ? "text-warning bg-warning/10"
+                  : "text-warning-600 hover:text-warning hover:bg-warning/10"
+              }`}
+            >
+              <ShieldIcon className="w-3.5 h-3.5" />
+              Admin
+            </NextLink>
+          </NavbarItem>
+        )}
+      </NavbarContent>
+
+      {/* Right: Theme switch + Auth */}
+      <NavbarContent justify="end" className="gap-2">
+        <NavbarItem className="flex">
           <ThemeSwitch />
         </NavbarItem>
 
@@ -120,25 +136,67 @@ export const Navbar = () => {
                     <Avatar
                       isBordered
                       as="button"
-                      className="transition-transform"
+                      className="transition-transform hover:scale-105"
                       color="primary"
                       name={user.name}
                       size="sm"
                       src={getAvatarUrl(user.name)}
                     />
                   </DropdownTrigger>
-                  <DropdownMenu aria-label="Profile Actions" variant="flat">
-                    <DropdownItem key="profile" className="h-14 gap-2">
-                      <p className="font-semibold">Signed in as</p>
-                      <p className="font-semibold">{user.email}</p>
+                  <DropdownMenu
+                    aria-label="User menu"
+                    variant="flat"
+                    className="w-56"
+                  >
+                    <DropdownItem
+                      key="user-info"
+                      isReadOnly
+                      className="h-auto py-3 cursor-default"
+                      textValue={user.email}
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-sm">{user.name}</span>
+                        <span className="text-xs text-default-500">{user.email}</span>
+                      </div>
                     </DropdownItem>
-                    <DropdownItem key="my-profile" href="/profile">
+                    <DropdownItem
+                      key="profile"
+                      href="/profile"
+                      startContent={<UserIcon className="w-4 h-4 text-default-500" />}
+                    >
                       My Profile
                     </DropdownItem>
-                    <DropdownItem key="settings" href="/settings">
+                    <DropdownItem
+                      key="tickets"
+                      href="/tickets"
+                      startContent={<TicketIcon className="w-4 h-4 text-default-500" />}
+                    >
+                      My Tickets
+                    </DropdownItem>
+                    <DropdownItem
+                      key="settings"
+                      href="/settings"
+                      startContent={<SettingsIcon className="w-4 h-4 text-default-500" />}
+                    >
                       Settings
                     </DropdownItem>
-                    <DropdownItem key="logout" color="danger" onPress={handleLogout}>
+                    {isAdmin && (
+                      <DropdownItem
+                        key="admin"
+                        href="/admin"
+                        startContent={<ShieldIcon className="w-4 h-4 text-warning" />}
+                        className="text-warning"
+                        color="warning"
+                      >
+                        Admin Dashboard
+                      </DropdownItem>
+                    )}
+                    <DropdownItem
+                      key="logout"
+                      color="danger"
+                      startContent={<LogOutIcon className="w-4 h-4" />}
+                      onPress={handleLogout}
+                    >
                       Log Out
                     </DropdownItem>
                   </DropdownMenu>
@@ -146,7 +204,14 @@ export const Navbar = () => {
               </NavbarItem>
             ) : (
               <NavbarItem>
-                <Button as={NextLink} color="primary" href="/login" variant="flat">
+                <Button
+                  as={NextLink}
+                  href="/login"
+                  color="primary"
+                  variant="flat"
+                  size="sm"
+                  className="font-medium"
+                >
                   Login
                 </Button>
               </NavbarItem>
@@ -154,6 +219,74 @@ export const Navbar = () => {
           </>
         )}
       </NavbarContent>
+
+      {/* Mobile Menu */}
+      <NavbarMenu className="pt-4 pb-6 bg-background/95 backdrop-blur-lg">
+        <div className="flex flex-col gap-1">
+          {siteConfig.navItems.map((item) => (
+            <NavbarMenuItem key={item.href}>
+              <NextLink
+                href={item.href}
+                className={`block w-full px-4 py-2.5 rounded-lg text-base font-medium transition-colors ${
+                  isActive(item.href)
+                    ? "text-primary bg-primary/10"
+                    : "text-default-600 hover:text-foreground hover:bg-default-100"
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {item.label}
+              </NextLink>
+            </NavbarMenuItem>
+          ))}
+
+          {isAdmin && (
+            <>
+              <Divider className="my-2" />
+              <NavbarMenuItem>
+                <NextLink
+                  href="/admin"
+                  className={`w-full px-4 py-2.5 rounded-lg text-base font-medium transition-colors flex items-center gap-2 ${
+                    isActive("/admin")
+                      ? "text-warning bg-warning/10"
+                      : "text-warning-600 hover:text-warning hover:bg-warning/10"
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <ShieldIcon className="w-4 h-4" />
+                  Admin Dashboard
+                </NextLink>
+              </NavbarMenuItem>
+            </>
+          )}
+        </div>
+
+        {!loading && !user && (
+          <>
+            <Divider className="my-3" />
+            <div className="flex flex-col gap-2 px-4">
+              <Button
+                as={NextLink}
+                href="/login"
+                color="primary"
+                variant="flat"
+                className="w-full font-medium"
+                onPress={() => setIsMenuOpen(false)}
+              >
+                Login
+              </Button>
+              <Button
+                as={NextLink}
+                href="/register"
+                color="primary"
+                className="w-full font-medium"
+                onPress={() => setIsMenuOpen(false)}
+              >
+                Sign Up
+              </Button>
+            </div>
+          </>
+        )}
+      </NavbarMenu>
     </HeroUINavbar>
   );
 };
