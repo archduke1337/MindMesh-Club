@@ -147,6 +147,7 @@ export const Navbar = () => {
                     aria-label="User menu"
                     variant="flat"
                     className="w-56"
+                    disabledKeys={["user-info"]}
                   >
                     <DropdownItem
                       key="user-info"
@@ -180,17 +181,15 @@ export const Navbar = () => {
                     >
                       Settings
                     </DropdownItem>
-                    {isAdmin && (
-                      <DropdownItem
-                        key="admin"
-                        href="/admin"
-                        startContent={<ShieldIcon className="w-4 h-4 text-warning" />}
-                        className="text-warning"
-                        color="warning"
-                      >
-                        Admin Dashboard
-                      </DropdownItem>
-                    )}
+                    <DropdownItem
+                      key="admin"
+                      href="/admin"
+                      startContent={<ShieldIcon className="w-4 h-4 text-warning" />}
+                      className={isAdmin ? "text-warning" : "hidden"}
+                      color="warning"
+                    >
+                      Admin Dashboard
+                    </DropdownItem>
                     <DropdownItem
                       key="logout"
                       color="danger"
