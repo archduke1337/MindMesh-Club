@@ -3,6 +3,55 @@ import { blogService } from "@/lib/blog";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { isUserAdminByEmail } from "@/lib/adminConfig";
 
+// Helper to verify admin via server-side session
+async function verifyAdmin(request: NextRequest): Promise<{ isAdmin: boolean; email?: string; error?: string }> {
+  try {
+    const cookieHeader = request.headers.get("cookie");
+    if (cookieHeader) {
+      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+      if (endpoint && projectId) {
+        const res = await fetch(`${endpoint}/account`, {
+          headers: { "X-Appwrite-Project": projectId, "Cookie": cookieHeader },
+        });
+        if (res.ok) {
+          const user = await res.json();
+          if (isUserAdminByEmail(user.email)) return { isAdmin: true, email: user.email };
+          return { isAdmin: false, error: "Not authorized - admin access required" };
+        }
+      }
+    }
+    const userEmail = request.headers.get("x-user-email");
+    if (userEmail && isUserAdminByEmail(userEmail)) return { isAdmin: true, email: userEmail };
+    return { isAdmin: false, error: "Not authenticated" };
+  } catch {
+    return { isAdmin: false, error: "Authentication failed" };
+  }
+}
+
+// Helper to verify authenticated user via session
+async function verifyUser(request: NextRequest): Promise<{ authenticated: boolean; email?: string }> {
+  try {
+    const cookieHeader = request.headers.get("cookie");
+    if (cookieHeader) {
+      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+      if (endpoint && projectId) {
+        const res = await fetch(`${endpoint}/account`, {
+          headers: { "X-Appwrite-Project": projectId, "Cookie": cookieHeader },
+        });
+        if (res.ok) {
+          const user = await res.json();
+          return { authenticated: true, email: user.email };
+        }
+      }
+    }
+    return { authenticated: false };
+  } catch {
+    return { authenticated: false };
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -50,6 +99,15 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verify user is authenticated before allowing updates
+    const { authenticated } = await verifyUser(request);
+    if (!authenticated) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
     const data = await request.json();
 
     const blog = await blogService.updateBlog(params.id, data);
@@ -76,33 +134,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Get user email from request headers (sent by client)
-    const userEmail = request.headers.get("x-user-email");
-    
-    console.log("[Delete] Received email header:", userEmail ? `${userEmail.substring(0, 3)}***` : "MISSING");
-    
-    if (!userEmail) {
-      console.error("[Delete] No email header provided");
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: "Not authenticated - missing user email. Please ensure you're logged in."
-        },
-        { status: 401 }
-      );
-    }
-
-    // Check if user is admin
-    const isAdmin = isUserAdminByEmail(userEmail);
-    console.log("[Delete] Admin check result:", isAdmin);
-    
+    const { isAdmin, email, error } = await verifyAdmin(request);
     if (!isAdmin) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Not authorized - only admins can delete blogs.`
-        },
-        { status: 403 }
+        { success: false, error: error || "Not authorized" },
+        { status: email ? 403 : 401 }
       );
     }
 

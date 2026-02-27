@@ -2,7 +2,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isUserAdminByEmail, ADMIN_EMAILS } from "@/lib/adminConfig";
+import { isUserAdminByEmail } from "@/lib/adminConfig";
 
 export default function AdminLayout({
   children,

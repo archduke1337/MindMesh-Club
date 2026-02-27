@@ -4,15 +4,15 @@ import { databases, storage } from "./appwrite";
 import { getErrorMessage } from "./errorHandler";
 
 // Database and Collection IDs
-export const DATABASE_ID = "68ee09da002cce9f7e39";
+export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "68ee09da002cce9f7e39";
 export const EVENTS_COLLECTION_ID = "events";
 export const REGISTRATIONS_COLLECTION_ID = "registrations";
 export const PROJECTS_COLLECTION_ID = "projects";
 export const GALLERY_COLLECTION_ID = "gallery";
 export const TEAM_COLLECTION_ID = "team";
 export const BLOGS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_BLOGS_COLLECTION_ID || "blog";
-export const EVENT_IMAGES_BUCKET_ID = "68ed50100010aa893cf8";
-export const GALLERY_IMAGES_BUCKET_ID = "69126ef7000269c07764";
+export const EVENT_IMAGES_BUCKET_ID = process.env.NEXT_PUBLIC_EVENT_IMAGES_BUCKET_ID || "68ed50100010aa893cf8";
+export const GALLERY_IMAGES_BUCKET_ID = process.env.NEXT_PUBLIC_GALLERY_IMAGES_BUCKET_ID || "69126ef7000269c07764";
 
 // Event Interface - status is optional
 export interface Event {
@@ -192,10 +192,10 @@ export const eventService = {
   // Update event
   async updateEvent(eventId: string, eventData: Partial<Event>) {
     try {
-      // Ensure status has default value if provided
+      // Only include status if explicitly provided to avoid overriding existing status
       const dataWithDefaults = {
         ...eventData,
-        status: eventData.status || "upcoming",
+        ...(eventData.status !== undefined ? { status: eventData.status } : {}),
       };
       
       const response = await databases.updateDocument(
@@ -615,10 +615,10 @@ export const projectService = {
   // Update project (Admin only)
   async updateProject(projectId: string, projectData: Partial<Project>) {
     try {
-      // Ensure status has a default value if provided
+      // Only include status if explicitly provided to avoid overriding existing status
       const dataWithStatus = {
         ...projectData,
-        status: projectData.status || "planning",
+        ...(projectData.status !== undefined ? { status: projectData.status } : {}),
       };
       
       const response = await databases.updateDocument(

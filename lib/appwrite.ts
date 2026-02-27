@@ -155,68 +155,50 @@ export { ID };
 export const authService = {
   // Create a new account
   async createAccount(email: string, password: string, name: string) {
-    try {
-      const userAccount = await account.create(ID.unique(), email, password, name);
-      if (userAccount) {
-        return this.login(email, password);
-      }
-      return userAccount;
-    } catch (error) {
-      throw error;
+    const userAccount = await account.create(ID.unique(), email, password, name);
+    if (userAccount) {
+      return this.login(email, password);
     }
+    return userAccount;
   },
 
   // Login
   async login(email: string, password: string) {
-    try {
-      return await account.createEmailSession(email, password);
-    } catch (error) {
-      throw error;
-    }
+    return await account.createEmailSession(email, password);
   },
 
   // Google OAuth Login
   loginWithGoogle() {
-    try {
-      const successUrl = typeof window !== 'undefined' 
-        ? `${window.location.origin}/auth/callback`
-        : '/auth/callback';
-      
-      const failureUrl = typeof window !== 'undefined'
-        ? `${window.location.origin}/login`
-        : '/login';
+    const successUrl = typeof window !== 'undefined' 
+      ? `${window.location.origin}/auth/callback`
+      : '/auth/callback';
+    
+    const failureUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/login`
+      : '/login';
 
-      account.createOAuth2Session(
-        "google" as any,
-        successUrl,
-        failureUrl
-      );
-    } catch (error) {
-      console.error("Google OAuth error:", error);
-      throw error;
-    }
+    account.createOAuth2Session(
+      "google" as any,
+      successUrl,
+      failureUrl
+    );
   },
 
   // GitHub OAuth Login
   loginWithGitHub() {
-    try {
-      const successUrl = typeof window !== 'undefined' 
-        ? `${window.location.origin}/auth/callback`
-        : '/auth/callback';
-      
-      const failureUrl = typeof window !== 'undefined'
-        ? `${window.location.origin}/login`
-        : '/login';
+    const successUrl = typeof window !== 'undefined' 
+      ? `${window.location.origin}/auth/callback`
+      : '/auth/callback';
+    
+    const failureUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/login`
+      : '/login';
 
-      account.createOAuth2Session(
-        "github" as any,
-        successUrl,
-        failureUrl
-      );
-    } catch (error) {
-      console.error("GitHub OAuth error:", error);
-      throw error;
-    }
+    account.createOAuth2Session(
+      "github" as any,
+      successUrl,
+      failureUrl
+    );
   },
 
   // Get current user
@@ -230,35 +212,19 @@ export const authService = {
 
   // Logout
   async logout() {
-    try {
-      return await account.deleteSession("current");
-    } catch (error) {
-      throw error;
-    }
+    return await account.deleteSession("current");
   },
 
   // Phone verification
   async createPhoneVerification() {
-    try {
-      return await account.createPhoneVerification();
-    } catch (error) {
-      throw error;
-    }
+    return await account.createPhoneVerification();
   },
 
   async updatePhoneVerification(userId: string, secret: string) {
-    try {
-      return await account.updatePhoneVerification(userId, secret);
-    } catch (error) {
-      throw error;
-    }
+    return await account.updatePhoneVerification(userId, secret);
   },
 
   async updatePhone(phone: string, password: string) {
-    try {
-      return await account.updatePhone(phone, password);
-    } catch (error) {
-      throw error;
-    }
+    return await account.updatePhone(phone, password);
   },
 };

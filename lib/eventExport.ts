@@ -128,9 +128,6 @@ export function downloadRegistrationListPDF(
 
 /**
  * Generate CSV content for event statistics
-
-/**
- * Generate CSV content for event statistics
  */
 export function generateEventStatsCSV(
   event: Event,

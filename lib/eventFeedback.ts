@@ -186,7 +186,7 @@ export function generateFeedbackEmailContent(
       </div>
       
       <div style="padding: 20px; background: #f0f0f0; border-radius: 0 0 8px 8px; font-size: 12px; color: #666; text-align: center;">
-        <p>© 2024 MindMesh Events. All rights reserved.</p>
+        <p>© ${new Date().getFullYear()} MindMesh Events. All rights reserved.</p>
       </div>
     </div>
   `;

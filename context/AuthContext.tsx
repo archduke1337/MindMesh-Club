@@ -17,11 +17,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  login: async () => {},
-  register: async () => {},
-  loginWithGoogle: () => {},
-  loginWithGitHub: () => {},
-  logout: async () => {},
+  login: async () => { throw new Error("AuthContext not initialized - wrap your component with AuthProvider"); },
+  register: async () => { throw new Error("AuthContext not initialized - wrap your component with AuthProvider"); },
+  loginWithGoogle: () => { throw new Error("AuthContext not initialized - wrap your component with AuthProvider"); },
+  loginWithGitHub: () => { throw new Error("AuthContext not initialized - wrap your component with AuthProvider"); },
+  logout: async () => { throw new Error("AuthContext not initialized - wrap your component with AuthProvider"); },
 });
 
 export const useAuth = () => useContext(AuthContext);

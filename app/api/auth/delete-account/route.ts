@@ -1,14 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
-import { account } from "@/lib/appwrite";
 
 export async function DELETE(request: NextRequest) {
   try {
-    // Get the authorization session (Appwrite will verify the user)
-    // Delete the user account
-    await account.deleteIdentity("password");
+    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+    const cookieHeader = request.headers.get("cookie");
+
+    if (!endpoint || !projectId || !cookieHeader) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    // Get the current user via session cookie
+    const userRes = await fetch(`${endpoint}/account`, {
+      headers: {
+        "X-Appwrite-Project": projectId,
+        "Cookie": cookieHeader,
+      },
+    });
+
+    if (!userRes.ok) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    // Delete the user's current session (log them out)
+    await fetch(`${endpoint}/account/sessions/current`, {
+      method: "DELETE",
+      headers: {
+        "X-Appwrite-Project": projectId,
+        "Cookie": cookieHeader,
+      },
+    });
+
+    // Use the admin API key to delete the user account
+    const user = await userRes.json();
+    const apiKey = process.env.APPWRITE_API_KEY;
     
-    // Invalidate the session
-    await account.deleteSession("current");
+    if (apiKey) {
+      await fetch(`${endpoint}/users/${user.$id}`, {
+        method: "DELETE",
+        headers: {
+          "X-Appwrite-Project": projectId,
+          "X-Appwrite-Key": apiKey,
+        },
+      });
+    }
 
     return NextResponse.json(
       {

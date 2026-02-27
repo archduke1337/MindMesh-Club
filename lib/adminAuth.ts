@@ -31,7 +31,7 @@ export function isUserAdmin(user: Models.User<Models.Preferences> | null): boole
 export function getUserRole(user: Models.User<Models.Preferences> | null): string {
   if (!user || !user.prefs) return "user";
   
-  const prefs = user.prefs as any;
+  const prefs = user.prefs as Record<string, string>;
   return prefs.role || "user";
 }
 

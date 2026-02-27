@@ -4,11 +4,13 @@
  * Used by both layout and AdminPageWrapper for consistent auth
  */
 
-export const ADMIN_EMAILS = [
-  "sahilmanecode@gmail.com",
-  "mane50205@gmail.com",
-  "gauravramyadav@gmail.com",
-];
+export const ADMIN_EMAILS: string[] = process.env.NEXT_PUBLIC_ADMIN_EMAILS
+  ? process.env.NEXT_PUBLIC_ADMIN_EMAILS.split(",").map(e => e.trim())
+  : [
+      "sahilmanecode@gmail.com",
+      "mane50205@gmail.com",
+      "gauravramyadav@gmail.com",
+    ];
 
 export function isUserAdminByEmail(email: string | undefined): boolean {
   if (!email) return false;

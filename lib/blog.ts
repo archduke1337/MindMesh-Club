@@ -3,8 +3,10 @@ import { ID, Query } from "appwrite";
 import { databases, storage } from "./appwrite";
 import { DATABASE_ID } from "./database";
 
-export const BLOGS_COLLECTION_ID = "blog";
-export const BLOG_IMAGES_BUCKET_ID = "6917a084000157e9e8f9";
+// Re-export BLOGS_COLLECTION_ID from database.ts for consistency
+import { BLOGS_COLLECTION_ID } from "./database";
+export { BLOGS_COLLECTION_ID };
+export const BLOG_IMAGES_BUCKET_ID = process.env.NEXT_PUBLIC_BLOG_IMAGES_BUCKET_ID || "6917a084000157e9e8f9";
 
 // Helper to delete documents using admin API
 const deleteDocumentAdmin = async (databaseId: string, collectionId: string, documentId: string) => {
@@ -350,8 +352,8 @@ export const blogService = {
           // Allow the owner (creator) to read and write
           Permission.read(Role.user(blogData.authorId)),
           Permission.write(Role.user(blogData.authorId)),
-          // Allow anyone with the API key to update (for admin operations)
-          Permission.write(Role.any()),
+          // Allow any authenticated user to read approved blogs
+          Permission.read(Role.users()),
         ]
       );
       return response as unknown as Blog;

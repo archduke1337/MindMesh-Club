@@ -133,7 +133,7 @@ Done! Your blog system is ready.
   }
 };
 
-// For browser console debugging
-if (typeof window !== "undefined") {
+// For browser console debugging (development only)
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
   (window as any).blogCollectionInit = blogCollectionInit;
 }

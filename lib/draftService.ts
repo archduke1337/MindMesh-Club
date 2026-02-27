@@ -1,15 +1,19 @@
 // lib/draftService.ts
 import { Blog } from "./blog";
 
+type BlogDraftData = Partial<Omit<Blog, "$id" | "$createdAt" | "$updatedAt">> & {
+  savedAt?: string;
+};
+
 const DRAFT_KEY_PREFIX = "blog_draft_";
 const DRAFT_AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
 export const draftService = {
   // Save draft to localStorage
-  saveDraft(formData: any): void {
+  saveDraft(formData: BlogDraftData): void {
     try {
       const timestamp = new Date().toISOString();
-      const draft = {
+      const draft: BlogDraftData = {
         ...formData,
         savedAt: timestamp,
       };
@@ -20,7 +24,7 @@ export const draftService = {
   },
 
   // Load draft from localStorage
-  loadDraft(): any | null {
+  loadDraft(): BlogDraftData | null {
     try {
       const draft = localStorage.getItem(DRAFT_KEY_PREFIX + "current");
       return draft ? JSON.parse(draft) : null;
@@ -59,7 +63,7 @@ export const draftService = {
   },
 
   // Get all drafts (for future recovery interface)
-  getAllDrafts(): any[] {
+  getAllDrafts(): BlogDraftData[] {
     try {
       const drafts = [];
       for (let key in localStorage) {

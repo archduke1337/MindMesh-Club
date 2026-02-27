@@ -62,7 +62,8 @@ export async function testAppwriteProject() {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "X-Appwrite-Key": process.env.NEXT_PUBLIC_APPWRITE_API_KEY || "",
+        // NOTE: API key should only be used server-side. This diagnostic should be run from an API route.
+        "X-Appwrite-Key": process.env.APPWRITE_API_KEY || "",
       },
     });
 
@@ -82,8 +83,8 @@ export async function testAppwriteProject() {
   }
 }
 
-// Export for browser console
-if (typeof window !== "undefined") {
+// Export for browser console (development only)
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
   (window as any).testAppwriteConnectivity = testAppwriteConnectivity;
   (window as any).testAppwriteProject = testAppwriteProject;
 }

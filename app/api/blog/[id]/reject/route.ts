@@ -3,26 +3,42 @@ import { blogService } from "@/lib/blog";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { isUserAdminByEmail } from "@/lib/adminConfig";
 
+// Helper to verify admin via server-side session
+async function verifyAdmin(request: NextRequest): Promise<{ isAdmin: boolean; email?: string; error?: string }> {
+  try {
+    const cookieHeader = request.headers.get("cookie");
+    if (cookieHeader) {
+      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+      if (endpoint && projectId) {
+        const res = await fetch(`${endpoint}/account`, {
+          headers: { "X-Appwrite-Project": projectId, "Cookie": cookieHeader },
+        });
+        if (res.ok) {
+          const user = await res.json();
+          if (isUserAdminByEmail(user.email)) return { isAdmin: true, email: user.email };
+          return { isAdmin: false, error: "Not authorized - admin access required" };
+        }
+      }
+    }
+    const userEmail = request.headers.get("x-user-email");
+    if (userEmail && isUserAdminByEmail(userEmail)) return { isAdmin: true, email: userEmail };
+    return { isAdmin: false, error: "Not authenticated" };
+  } catch {
+    return { isAdmin: false, error: "Authentication failed" };
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Get user email from request headers (sent by client)
-    const userEmail = request.headers.get("x-user-email");
-    
-    if (!userEmail) {
+    const { isAdmin, email, error } = await verifyAdmin(request);
+    if (!isAdmin) {
       return NextResponse.json(
-        { success: false, error: "Not authenticated - missing user email" },
-        { status: 401 }
-      );
-    }
-
-    // Check if user is admin
-    if (!isUserAdminByEmail(userEmail)) {
-      return NextResponse.json(
-        { success: false, error: "Not authorized - admin access required" },
-        { status: 403 }
+        { success: false, error: error || "Not authorized" },
+        { status: email ? 403 : 401 }
       );
     }
 

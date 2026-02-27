@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { galleryService } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
+import { isUserAdminByEmail } from "@/lib/adminConfig";
+
+// Helper to verify authenticated user via session
+async function verifyUser(request: NextRequest): Promise<{ authenticated: boolean; email?: string }> {
+  try {
+    const cookieHeader = request.headers.get("cookie");
+    if (cookieHeader) {
+      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+      if (endpoint && projectId) {
+        const res = await fetch(`${endpoint}/account`, {
+          headers: { "X-Appwrite-Project": projectId, "Cookie": cookieHeader },
+        });
+        if (res.ok) {
+          const user = await res.json();
+          return { authenticated: true, email: user.email };
+        }
+      }
+    }
+    return { authenticated: false };
+  } catch {
+    return { authenticated: false };
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,6 +61,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify authentication before allowing upload
+    const { authenticated } = await verifyUser(request);
+    if (!authenticated) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required to upload gallery images" },
+        { status: 401 }
+      );
+    }
+
     const data = await request.json();
 
     // Validate required fields
