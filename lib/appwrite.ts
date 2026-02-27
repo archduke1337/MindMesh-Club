@@ -1,5 +1,5 @@
 // lib/appwrite.ts
-import { Client, Account, Databases, Storage, ID } from "appwrite";
+import { Client, Account, Databases, Storage, ID, OAuthProvider } from "appwrite";
 
 const client = new Client()
   .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
@@ -164,7 +164,7 @@ export const authService = {
 
   // Login
   async login(email: string, password: string) {
-    return await account.createEmailSession(email, password);
+    return await account.createEmailPasswordSession(email, password);
   },
 
   // Google OAuth Login
@@ -177,8 +177,8 @@ export const authService = {
       ? `${window.location.origin}/login`
       : '/login';
 
-    account.createOAuth2Session(
-      "google" as any,
+    account.createOAuth2Token(
+      OAuthProvider.Google,
       successUrl,
       failureUrl
     );
@@ -194,8 +194,8 @@ export const authService = {
       ? `${window.location.origin}/login`
       : '/login';
 
-    account.createOAuth2Session(
-      "github" as any,
+    account.createOAuth2Token(
+      OAuthProvider.Github,
       successUrl,
       failureUrl
     );
@@ -217,11 +217,11 @@ export const authService = {
 
   // Phone verification
   async createPhoneVerification() {
-    return await account.createPhoneVerification();
+    return await account.createPhoneToken(ID.unique(), "");
   },
 
   async updatePhoneVerification(userId: string, secret: string) {
-    return await account.updatePhoneVerification(userId, secret);
+    return await account.updatePhoneSession(userId, secret);
   },
 
   async updatePhone(phone: string, password: string) {
