@@ -33,7 +33,12 @@ import {
   SettingsIcon,
   LogOutIcon,
   TicketIcon,
+  ChevronDownIcon,
+  MenuIcon,
 } from "lucide-react";
+
+// Split nav items: primary shown directly, rest go in "More" dropdown
+const PRIMARY_NAV = ["/about", "/events", "/blog", "/gallery", "/contact"];
 
 export const Navbar = () => {
   const { user, loading, logout } = useAuth();
@@ -42,6 +47,13 @@ export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isAdmin = !loading && user && isUserAdminByEmail(user.email);
+
+  const primaryItems = siteConfig.navItems.filter((item) =>
+    PRIMARY_NAV.includes(item.href)
+  );
+  const moreItems = siteConfig.navItems.filter(
+    (item) => !PRIMARY_NAV.includes(item.href)
+  );
 
   const handleLogout = async () => {
     try {
@@ -60,6 +72,8 @@ export const Navbar = () => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
+
+  const isMoreActive = moreItems.some((item) => isActive(item.href));
 
   return (
     <HeroUINavbar
@@ -88,9 +102,9 @@ export const Navbar = () => {
         </NavbarBrand>
       </NavbarContent>
 
-      {/* Center: Desktop nav links */}
+      {/* Center: Desktop nav links + More dropdown */}
       <NavbarContent justify="center" className="hidden lg:flex gap-1">
-        {siteConfig.navItems.map((item) => (
+        {primaryItems.map((item) => (
           <NavbarItem key={item.href} isActive={isActive(item.href)}>
             <NextLink
               href={item.href}
@@ -104,6 +118,46 @@ export const Navbar = () => {
             </NextLink>
           </NavbarItem>
         ))}
+
+        {/* "More" dropdown for remaining nav items */}
+        {moreItems.length > 0 && (
+          <NavbarItem>
+            <Dropdown placement="bottom-start">
+              <DropdownTrigger>
+                <Button
+                  variant="light"
+                  size="sm"
+                  className={`px-3 py-2 text-sm font-medium gap-1 ${
+                    isMoreActive
+                      ? "text-primary bg-primary/10"
+                      : "text-default-600 hover:text-foreground"
+                  }`}
+                  endContent={<ChevronDownIcon className="w-3.5 h-3.5" />}
+                >
+                  More
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu
+                aria-label="More navigation"
+                variant="flat"
+                className="w-48"
+              >
+                {moreItems.map((item) => (
+                  <DropdownItem
+                    key={item.href}
+                    href={item.href}
+                    className={
+                      isActive(item.href) ? "text-primary bg-primary/10" : ""
+                    }
+                  >
+                    {item.label}
+                  </DropdownItem>
+                ))}
+              </DropdownMenu>
+            </Dropdown>
+          </NavbarItem>
+        )}
+
         {isAdmin && (
           <NavbarItem isActive={isActive("/admin")}>
             <NextLink
