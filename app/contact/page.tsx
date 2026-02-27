@@ -6,6 +6,7 @@ import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
 import { title, subtitle } from "@/components/primitives";
 import { useState } from "react";
+import { UserIcon, MailIcon, MessageSquareIcon, TagIcon } from "lucide-react";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -171,6 +172,7 @@ export default function ContactPage() {
                     variant="bordered"
                     size="lg"
                     isDisabled={isSubmitting}
+                    startContent={<UserIcon className="w-4 h-4 text-default-400" />}
                     classNames={{
                       input: "text-sm md:text-base",
                       label: "text-xs md:text-small font-semibold"
@@ -186,6 +188,7 @@ export default function ContactPage() {
                     variant="bordered"
                     size="lg"
                     isDisabled={isSubmitting}
+                    startContent={<MailIcon className="w-4 h-4 text-default-400" />}
                     classNames={{
                       input: "text-sm md:text-base",
                       label: "text-xs md:text-small font-semibold"
@@ -201,6 +204,7 @@ export default function ContactPage() {
                   variant="bordered"
                   size="lg"
                   isDisabled={isSubmitting}
+                  startContent={<TagIcon className="w-4 h-4 text-default-400" />}
                   classNames={{
                     input: "text-sm md:text-base",
                     label: "text-xs md:text-small font-semibold"
