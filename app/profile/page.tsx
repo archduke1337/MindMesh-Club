@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 import { account, storage, ID } from "@/lib/appwrite";
+import { ImageGravity } from "appwrite";
 import { logger } from "@/lib/logger";
 import { userProfileSchema } from "@/lib/validation/schemas";
 import { z } from "zod";
@@ -43,14 +44,15 @@ export default function ProfilePage() {
   }, [user, loading, router]);
 
   const loadProfilePicture = () => {
-    if (user?.prefs?.profilePictureId) {
+    const prefs = user?.prefs as Record<string, any> | undefined;
+    if (prefs?.profilePictureId) {
       try {
         const fileUrl = storage.getFilePreview(
           PROFILE_BUCKET_ID,
-          user.prefs.profilePictureId,
+          prefs.profilePictureId,
           400, // width
           400, // height
-          "center", // gravity
+          ImageGravity.Center, // gravity
           100 // quality
         );
 
@@ -92,9 +94,10 @@ export default function ProfilePage() {
     setUpdateError("");
 
     try {
-      if (user?.prefs?.profilePictureId) {
+      const prefs = user?.prefs as Record<string, any> | undefined;
+      if (prefs?.profilePictureId) {
         try {
-          await storage.deleteFile(PROFILE_BUCKET_ID, user.prefs.profilePictureId);
+          await storage.deleteFile(PROFILE_BUCKET_ID, prefs.profilePictureId);
           logger.log("Old profile picture deleted");
         } catch (error) {
           logger.log("No old picture to delete or error:", error);
@@ -119,7 +122,7 @@ export default function ProfilePage() {
         response.$id,
         400,
         400,
-        "center",
+        ImageGravity.Center,
         100
       );
 

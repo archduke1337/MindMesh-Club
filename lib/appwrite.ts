@@ -215,9 +215,11 @@ export const authService = {
     return await account.deleteSession("current");
   },
 
-  // Phone verification
-  async createPhoneVerification() {
-    return await account.createPhoneToken(ID.unique(), "");
+  // Phone verification (Appwrite SDK v22+: uses createPhoneToken + updatePhoneSession)
+  async createPhoneVerification(phone?: string) {
+    // createPhoneToken creates a token that sends an SMS verification code
+    // The phone param should be in E.164 format (e.g., +911234567890)
+    return await account.createPhoneToken(ID.unique(), phone || "");
   },
 
   async updatePhoneVerification(userId: string, secret: string) {

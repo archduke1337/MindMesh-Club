@@ -263,9 +263,9 @@ export const eventService = {
 
       console.log("Image uploaded successfully:", response.$id);
 
-      // Get file view URL - convert to string safely
+      // Get file view URL - returns string in Appwrite SDK v22+
       const fileUrl = storage.getFileView(EVENT_IMAGES_BUCKET_ID, response.$id);
-      const urlString = typeof fileUrl === 'string' ? fileUrl : fileUrl.toString();
+      const urlString = String(fileUrl);
       
       if (!urlString || typeof urlString !== 'string') {
         throw new Error("Failed to generate image URL");

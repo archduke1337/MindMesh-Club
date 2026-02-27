@@ -149,7 +149,7 @@ export default function WriteBlogPage() {
         authorId: user.$id,
         authorName: user.name,
         authorEmail: user.email,
-        authorAvatar: user.prefs?.avatar,
+        authorAvatar: (user.prefs as Record<string, any>)?.avatar,
         slug,
         readTime,
       };
