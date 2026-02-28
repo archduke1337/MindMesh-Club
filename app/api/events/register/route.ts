@@ -45,7 +45,7 @@ interface RegisterResponseBody {
  * 
  * Uses admin credentials to bypass user permissions and ensure registration succeeds.
  */
-export async function POST(request: NextRequest): Promise<NextResponse<RegisterResponseBody>> {
+export async function POST(request: NextRequest) {
   try {
     // Verify authentication via session cookie
     const { authenticated, user: authUser } = await verifyAuth(request);
