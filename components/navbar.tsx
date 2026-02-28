@@ -58,6 +58,7 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
   "/gallery": <ImageIcon className="w-4 h-4" />,
   "/sponsors": <HeartHandshakeIcon className="w-4 h-4" />,
   "/docs": <BookOpenIcon className="w-4 h-4" />,
+  "/resources": <BookOpenIcon className="w-4 h-4" />,
   "/contact": <MailIcon className="w-4 h-4" />,
 };
 
@@ -71,7 +72,9 @@ export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  const isAdmin = !loading && user && isUserAdminByEmail(user.email);
+  const isAdmin = !loading && user && (
+    isUserAdminByEmail(user.email) || user.labels?.includes("admin")
+  );
 
   const primaryItems = siteConfig.navItems.filter((item) =>
     PRIMARY_NAV.includes(item.href)

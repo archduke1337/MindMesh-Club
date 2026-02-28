@@ -37,6 +37,10 @@ export const siteConfig = {
       href: "/docs",
     },
     {
+      label: "Resources",
+      href: "/resources",
+    },
+    {
       label: "Contact",
       href: "/contact",
     },

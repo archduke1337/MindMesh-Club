@@ -18,7 +18,7 @@ import { z } from "zod";
 const PROFILE_BUCKET_ID = "profile-pictures";
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -424,11 +424,61 @@ export default function ProfilePage() {
                 </div>
               </form>
             ) : (
-              <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                <div className="flex flex-col gap-1.5 sm:gap-2">
-                  <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Name</label>
-                  <p className="text-[10px] sm:text-xs md:text-small p-2">{user.name}</p>
+              <div className="space-y-4 sm:space-y-5 md:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="flex flex-col gap-1.5 sm:gap-2 border border-divider p-3 sm:p-4 rounded-xl bg-default-50/50">
+                    <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Name</label>
+                    <p className="text-xs sm:text-sm md:text-base font-semibold">{user.name}</p>
+                  </div>
+                  {profile && (
+                    <>
+                      <div className="flex flex-col gap-1.5 sm:gap-2 border border-divider p-3 sm:p-4 rounded-xl bg-default-50/50">
+                        <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">College/Institution</label>
+                        <p className="text-xs sm:text-sm md:text-base font-semibold">{profile.college}</p>
+                      </div>
+                      <div className="flex flex-col gap-1.5 sm:gap-2 border border-divider p-3 sm:p-4 rounded-xl bg-default-50/50">
+                        <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Branch / Stream</label>
+                        <p className="text-xs sm:text-sm md:text-base font-semibold">{profile.branch}</p>
+                      </div>
+                      <div className="flex flex-col gap-1.5 sm:gap-2 border border-divider p-3 sm:p-4 rounded-xl bg-default-50/50">
+                        <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Year of Study</label>
+                        <p className="text-xs sm:text-sm md:text-base font-semibold">{profile.year}</p>
+                      </div>
+                      <div className="flex flex-col gap-1.5 sm:gap-2 border border-divider p-3 sm:p-4 rounded-xl bg-default-50/50">
+                        <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Program</label>
+                        <p className="text-xs sm:text-sm md:text-base font-semibold">{profile.program}</p>
+                      </div>
+                    </>
+                  )}
                 </div>
+                {profile && profile.skills && profile.skills.length > 0 && (
+                  <div className="flex flex-col gap-2 p-3 sm:p-4">
+                    <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Skills</label>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.skills.map((skill: string) => (
+                        <Chip key={skill} variant="flat" color="secondary" size="sm">{skill}</Chip>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {!profile && (
+                  <div className="bg-warning/10 border border-warning/20 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-warning-600 dark:text-warning-500">Incomplete Profile</h3>
+                      <p className="text-xs text-default-500 mt-1">Complete your member profile to unlock all features like hackathon team creation.</p>
+                    </div>
+                    <Button
+                      as={NextLink}
+                      href="/complete-profile"
+                      color="warning"
+                      variant="flat"
+                      size="sm"
+                      className="shrink-0"
+                    >
+                      Complete Profile
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>

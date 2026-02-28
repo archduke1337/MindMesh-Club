@@ -79,6 +79,30 @@ const adminSections = [
     color: "danger" as const,
     gradient: "from-red-500 to-rose-400",
   },
+  {
+    title: "Member Profiles",
+    description: "View, approve, and manage member registrations and profiles.",
+    href: "/admin/members",
+    icon: UsersIcon,
+    color: "primary" as const,
+    gradient: "from-indigo-500 to-blue-400",
+  },
+  {
+    title: "Announcements",
+    description: "Create and manage announcements shown across the platform.",
+    href: "/admin/announcements",
+    icon: ActivityIcon,
+    color: "warning" as const,
+    gradient: "from-amber-500 to-yellow-400",
+  },
+  {
+    title: "Club Members",
+    description: "Manage club team members, designations, departments, and display order.",
+    href: "/admin/club-members",
+    icon: ShieldCheckIcon,
+    color: "secondary" as const,
+    gradient: "from-violet-500 to-purple-400",
+  },
 ];
 
 export default function AdminDashboardPage() {
@@ -92,7 +116,9 @@ export default function AdminDashboardPage() {
     error: null,
   });
 
-  const isAdmin = !authLoading && user && isUserAdminByEmail(user.email);
+  const isAdmin = !authLoading && user && (
+    isUserAdminByEmail(user.email) || user.labels?.includes("admin")
+  );
 
   const fetchStats = useCallback(async () => {
     setStats((prev) => ({ ...prev, loading: true, error: null }));

@@ -11,6 +11,7 @@ import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import AnnouncementsBanner from "@/components/AnnouncementsBanner";
 
 export const metadata: Metadata = {
   title: {
@@ -49,6 +50,7 @@ export default function RootLayout({
             <AuthProvider>
               <div className="relative flex flex-col min-h-screen">
                 {/* <CustomCursor /> */}
+                <AnnouncementsBanner />
                 <Navbar />
                 <main className="flex-grow w-full">
                   {children}

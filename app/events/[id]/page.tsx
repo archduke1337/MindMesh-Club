@@ -594,6 +594,67 @@ export default function EventDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Hackathon Actions — only for hackathon events */}
+      {(event.category?.toLowerCase() === "hackathon" || (event as any).eventType === "hackathon") && (
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pb-8">
+          <Card className="border-none shadow-lg bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20">
+            <CardBody className="p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold mb-1">🚀 Hackathon Zone</h3>
+                  <p className="text-sm text-default-500">
+                    Form teams, view problem statements, submit your project, and check results.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    color="primary"
+                    variant="flat"
+                    onPress={() => router.push(`/events/${eventId}/teams`)}
+                  >
+                    👥 Teams
+                  </Button>
+                  <Button
+                    color="secondary"
+                    variant="flat"
+                    onPress={() => router.push(`/events/${eventId}/submit`)}
+                  >
+                    📤 Submit Project
+                  </Button>
+                  <Button
+                    color="warning"
+                    variant="flat"
+                    onPress={() => router.push(`/events/${eventId}/results`)}
+                  >
+                    🏆 Results
+                  </Button>
+                  <Button
+                    variant="flat"
+                    onPress={() => router.push(`/events/${eventId}/feedback`)}
+                  >
+                    💬 Feedback
+                  </Button>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        </div>
+      )}
+
+      {/* Feedback CTA — for all events */}
+      {isRegistered && (
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pb-8">
+          <Button
+            variant="flat"
+            size="lg"
+            className="w-full"
+            onPress={() => router.push(`/events/${eventId}/feedback`)}
+          >
+            💬 Share Your Feedback About This Event
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

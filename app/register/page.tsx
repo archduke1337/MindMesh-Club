@@ -52,7 +52,7 @@ export default function RegisterPage() {
       }
 
       await register(email, password, name);
-      router.push("/");
+      router.push("/complete-profile");
     } catch (err: any) {
       setError(err.message || "Failed to create account. Please try again.");
     } finally {

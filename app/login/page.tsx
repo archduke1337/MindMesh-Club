@@ -44,6 +44,27 @@ export default function LoginPage() {
       }
 
       await login(email, password);
+      
+      // Check if profile exists; if not, redirect to complete-profile
+      try {
+        const currentUser = await import("@/lib/appwrite").then(m => m.authService.getCurrentUser());
+        if (currentUser) {
+          const res = await fetch(`/api/members/profile?userId=${currentUser.$id}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (!data.profile) {
+              router.push("/complete-profile");
+              return;
+            }
+          } else {
+             router.push("/complete-profile");
+             return;
+          }
+        }
+      } catch (err) {
+         console.warn("Could not fetch profile during login", err);
+      }
+      
       router.push("/");
     } catch (err: any) {
       setError(err.message || "Failed to login. Please check your credentials.");
