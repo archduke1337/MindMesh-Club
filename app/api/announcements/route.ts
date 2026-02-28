@@ -93,25 +93,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Build document data — only include optional fields if they have values
+    // to avoid Appwrite schema errors for attributes that may not exist
+    const docData: Record<string, any> = {
+      title,
+      content,
+      type: type || "info",
+      priority: priority || "normal",
+      isPinned: isPinned || false,
+      isActive: true,
+      createdBy,
+    };
+    if (eventId) docData.eventId = eventId;
+    if (link) docData.link = link;
+    if (linkText) docData.linkText = linkText;
+    if (expiresAt) docData.expiresAt = expiresAt;
+
     const res = await adminFetch(
       `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`,
       {
         method: "POST",
         body: JSON.stringify({
           documentId: "unique()",
-          data: {
-            title,
-            content,
-            type: type || "info",
-            priority: priority || "normal",
-            isPinned: isPinned || false,
-            isActive: true,
-            eventId: eventId || null,
-            link: link || null,
-            linkText: linkText || null,
-            createdBy,
-            expiresAt: expiresAt || null,
-          },
+          data: docData,
         }),
       }
     );

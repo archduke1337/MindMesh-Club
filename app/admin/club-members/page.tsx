@@ -52,6 +52,7 @@ export default function AdminClubMembersPage() {
   const [saving, setSaving] = useState(false);
   const [editingMember, setEditingMember] = useState<ClubMember | null>(null);
   const [filter, setFilter] = useState<string>("all");
+  const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -74,14 +75,18 @@ export default function AdminClubMembersPage() {
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/admin/club-members");
       if (res.ok) {
         const data = await res.json();
         setMembers((data.members || []).sort((a: ClubMember, b: ClubMember) => (a.displayOrder || 0) - (b.displayOrder || 0)));
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setError(errData.error || `Failed to load members (${res.status})`);
       }
-    } catch {
-      // silent
+    } catch (err: any) {
+      setError(err.message || "Network error loading members");
     } finally {
       setLoading(false);
     }
@@ -223,6 +228,14 @@ export default function AdminClubMembersPage() {
           </Button>
         ))}
       </div>
+
+      {error && (
+        <Card className="mb-4 border border-danger/30 bg-danger/5">
+          <CardBody className="p-3">
+            <p className="text-sm text-danger">⚠️ {error}</p>
+          </CardBody>
+        </Card>
+      )}
 
       {loading ? (
         <div className="text-center py-12"><Spinner size="lg" /></div>

@@ -58,6 +58,7 @@ export default function AdminMembersPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string>("all");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedProfile, setSelectedProfile] = useState<MemberProfile | null>(null);
@@ -68,6 +69,7 @@ export default function AdminMembersPage() {
 
   const loadProfiles = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const listRes = await fetch(
         `/api/admin/members`,
@@ -76,9 +78,12 @@ export default function AdminMembersPage() {
       if (listRes.ok) {
         const data = await listRes.json();
         setProfiles(data.profiles || []);
+      } else {
+        const errData = await listRes.json().catch(() => ({}));
+        setError(errData.error || `Failed to load profiles (${listRes.status})`);
       }
-    } catch (err) {
-      console.error("Error loading profiles:", err);
+    } catch (err: any) {
+      setError(err.message || "Network error loading profiles");
     } finally {
       setLoading(false);
     }
@@ -182,6 +187,14 @@ export default function AdminMembersPage() {
         variant="bordered"
         className="mb-6"
       />
+
+      {error && (
+        <Card className="mb-4 border border-danger/30 bg-danger/5">
+          <CardBody className="p-3">
+            <p className="text-sm text-danger">⚠️ {error}</p>
+          </CardBody>
+        </Card>
+      )}
 
       {loading ? (
         <div className="text-center py-12">

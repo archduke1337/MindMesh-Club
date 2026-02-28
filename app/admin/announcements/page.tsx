@@ -74,6 +74,7 @@ export default function AdminAnnouncementsPage() {
   const [editingAnn, setEditingAnn] = useState<Announcement | null>(null);
 
   const [form, setForm] = useState({ ...defaultForm });
+  const [error, setError] = useState<string | null>(null);
 
   const isAdmin = !authLoading && user && (
     isUserAdminByEmail(user.email) || user.labels?.includes("admin")
@@ -81,12 +82,16 @@ export default function AdminAnnouncementsPage() {
 
   const loadAnnouncements = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/announcements?all=true");
       const data = await res.json();
       setAnnouncements(data.announcements || []);
-    } catch {
-      // silent
+      if (data.error) {
+        setError(data.error);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to load announcements");
     } finally {
       setLoading(false);
     }
@@ -143,20 +148,30 @@ export default function AdminAnnouncementsPage() {
             expiresAt: form.expiresAt || null,
           }),
         });
-        if (!res.ok) throw new Error("Update failed");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Update failed (${res.status})`);
+        }
       } else {
         const res = await fetch("/api/announcements", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...form,
+            title: form.title,
+            content: form.content,
+            type: form.type,
+            priority: form.priority,
+            isPinned: form.isPinned,
             link: form.link || null,
             linkText: form.linkText || null,
             expiresAt: form.expiresAt || null,
             createdBy: user?.name || "Admin",
           }),
         });
-        if (!res.ok) throw new Error("Create failed");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Create failed (${res.status})`);
+        }
       }
       modal.onClose();
       setForm({ ...defaultForm });
@@ -235,6 +250,14 @@ export default function AdminAnnouncementsPage() {
           New Announcement
         </Button>
       </div>
+
+      {error && (
+        <Card className="mb-4 border border-danger/30 bg-danger/5">
+          <CardBody className="p-3">
+            <p className="text-sm text-danger">⚠️ {error}</p>
+          </CardBody>
+        </Card>
+      )}
 
       {loading ? (
         <div className="text-center py-12">

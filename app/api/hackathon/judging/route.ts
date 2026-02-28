@@ -245,12 +245,76 @@ export async function POST(request: NextRequest) {
 
       const results = [];
       for (const s of scores) {
-        const innerRes = await fetch(request.url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "submit_score", ...s }),
-        });
-        results.push(await innerRes.json());
+        const {
+          eventId: sEventId, judgeId, judgeName, submissionId, teamId,
+          criteriaId, criteriaName, score, comment,
+        } = s;
+
+        if (!sEventId || !judgeId || !submissionId || !criteriaId || score == null) {
+          results.push({ error: "Missing required fields for score" });
+          continue;
+        }
+
+        try {
+          // Check for existing score (upsert)
+          const existRes = await adminFetch(
+            `/databases/${DATABASE_ID}/collections/judge_scores/documents`
+          );
+          let upserted = false;
+          if (existRes.ok) {
+            const existData = await existRes.json();
+            const existing = (existData.documents || []).find(
+              (d: any) =>
+                d.judgeId === judgeId && d.submissionId === submissionId && d.criteriaId === criteriaId
+            );
+            if (existing) {
+              const updateRes = await adminFetch(
+                `/databases/${DATABASE_ID}/collections/judge_scores/documents/${existing.$id}`,
+                {
+                  method: "PATCH",
+                  body: JSON.stringify({
+                    data: { score, comment: comment || null, scoredAt: new Date().toISOString() },
+                  }),
+                }
+              );
+              if (updateRes.ok) {
+                results.push({ score: await updateRes.json() });
+                upserted = true;
+              }
+            }
+          }
+
+          if (!upserted) {
+            const createRes = await adminFetch(
+              `/databases/${DATABASE_ID}/collections/judge_scores/documents`,
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  documentId: "unique()",
+                  data: {
+                    eventId: sEventId,
+                    judgeId,
+                    judgeName: judgeName || "",
+                    submissionId,
+                    teamId: teamId || null,
+                    criteriaId,
+                    criteriaName: criteriaName || "",
+                    score,
+                    comment: comment || null,
+                    scoredAt: new Date().toISOString(),
+                  },
+                }),
+              }
+            );
+            if (createRes.ok) {
+              results.push({ score: await createRes.json() });
+            } else {
+              results.push({ error: await createRes.text() });
+            }
+          }
+        } catch (err: any) {
+          results.push({ error: err.message });
+        }
       }
 
       return NextResponse.json({ results }, { status: 201 });
