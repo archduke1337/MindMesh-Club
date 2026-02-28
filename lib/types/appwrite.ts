@@ -13,57 +13,22 @@ export interface AppwriteDocument {
   $collectionId: string;
 }
 
-// ── Collection IDs ──
-export const COLLECTION_IDS = {
-  EVENTS: "events",
-  REGISTRATIONS: "registrations",
-  PROJECTS: "projects",
-  GALLERY: "gallery",
-  TEAM: "team",
-  BLOG: "blog",
-  SPONSORS: "sponsors",
-  EVENT_TYPES: "event_types",
-  MEMBER_PROFILES: "member_profiles",
-  ANNOUNCEMENTS: "announcements",
-  EVENT_DOCUMENTS: "event_documents",
-  RESOURCES: "resources",
-  FEEDBACK: "feedback",
-  HACKATHON_TEAMS: "hackathon_teams",
-  TEAM_MEMBERS: "team_members",
-  PROBLEM_STATEMENTS: "problem_statements",
-  SUBMISSIONS: "submissions",
-  EVENT_RESULTS: "event_results",
-  PROJECT_UPDATES: "project_updates",
-  ROADMAPS: "roadmaps",
-  JUDGES: "judges",
-  JUDGING_CRITERIA: "judging_criteria",
-  JUDGE_SCORES: "judge_scores",
-  COUPONS: "coupons",
-  COUPON_USAGE: "coupon_usage",
-} as const;
+// ── Re-export IDs from the single source of truth ──
+// All IDs are now defined in config/appwrite.ts.
+// These aliases preserve backward compatibility for existing consumers.
+import {
+  DATABASE_ID as _DATABASE_ID,
+  COLLECTIONS,
+  BUCKETS,
+} from "@/config/appwrite";
 
-// ── Bucket IDs ──
-export const BUCKET_IDS = {
-  EVENT_IMAGES: "event-images",
-  GALLERY_IMAGES: "gallery-images",
-  BLOG_IMAGES: "blog-images",
-  SPONSOR_LOGOS: "sponsor-logos",
-  PROJECT_FILES: "project-files",
-  SUBMISSION_FILES: "submission-files",
-  DOCUMENTS: "documents",
-} as const;
+export const DATABASE_ID = _DATABASE_ID;
 
-// ── Database ID ──
-export const DATABASE_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "";
+/** @deprecated Use `COLLECTIONS` from `@/config/appwrite` instead */
+export const COLLECTION_IDS = COLLECTIONS;
 
-// Runtime guard — warn early if DATABASE_ID is not set
-if (!DATABASE_ID && typeof process !== "undefined" && process.env.NODE_ENV === "development") {
-  console.warn(
-    "⚠️  NEXT_PUBLIC_APPWRITE_DATABASE_ID is not set. " +
-    "Database operations will fail. Check your .env.local file."
-  );
-}
+/** @deprecated Use `BUCKETS` from `@/config/appwrite` instead */
+export const BUCKET_IDS = BUCKETS;
 
 // ═══════════════════════════════════════════
 // 1. EVENTS

@@ -1,37 +1,14 @@
 // app/api/appwrite-test/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
-
-// Helper to verify admin via server-side session cookie forwarding
-async function verifyAdmin(request: NextRequest): Promise<boolean> {
-  try {
-    const cookieHeader = request.headers.get("cookie");
-    if (cookieHeader) {
-      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-      if (endpoint && projectId) {
-        const res = await fetch(`${endpoint}/account`, {
-          headers: { "X-Appwrite-Project": projectId, "Cookie": cookieHeader },
-        });
-        if (res.ok) {
-          const user = await res.json();
-          return isUserAdminByEmail(user.email);
-        }
-      }
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
+import { verifyAdminAuth } from "@/lib/apiAuth";
 
 export async function GET(request: NextRequest) {
   try {
     // Only allow admin access to diagnostic endpoint
-    const isAdmin = await verifyAdmin(request);
+    const { isAdmin, error } = await verifyAdminAuth(request);
     if (!isAdmin) {
       return NextResponse.json(
-        { status: "error", message: "Not authorized" },
+        { status: "error", message: error || "Not authorized" },
         { status: 403 }
       );
     }

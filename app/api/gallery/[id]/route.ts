@@ -33,11 +33,11 @@ export async function PATCH(
 ) {
   try {
     // Verify admin authorization
-    const { isAdmin, email, error: authError } = await verifyAdmin(request);
+    const { isAdmin, user: adminUser, error: authError } = await verifyAdminAuth(request);
     if (!isAdmin) {
       return NextResponse.json(
         { success: false, error: authError || "Not authorized" },
-        { status: email ? 403 : 401 }
+        { status: adminUser ? 403 : 401 }
       );
     }
 
@@ -69,11 +69,11 @@ export async function DELETE(
 ) {
   try {
     // Verify admin authorization
-    const { isAdmin, email, error: authError } = await verifyAdmin(request);
-    if (!isAdmin) {
+    const { isAdmin: isAdminDel, user: adminUserDel, error: authErrorDel } = await verifyAdminAuth(request);
+    if (!isAdminDel) {
       return NextResponse.json(
-        { success: false, error: authError || "Not authorized" },
-        { status: email ? 403 : 401 }
+        { success: false, error: authErrorDel || "Not authorized" },
+        { status: adminUserDel ? 403 : 401 }
       );
     }
 
