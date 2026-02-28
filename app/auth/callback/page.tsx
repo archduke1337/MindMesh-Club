@@ -21,7 +21,15 @@ function AuthCallbackContent() {
 
       if (userId && secret && !sessionCreated) {
         try {
-          await account.createSession(userId, secret);
+          const session = await account.createSession(userId, secret);
+          // Sync session secret to our domain cookie so middleware can read it
+          if (session?.secret) {
+            await fetch("/api/auth/session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ secret: session.secret }),
+            });
+          }
           setSessionCreated(true);
           // Reload to update auth context with the new session
           window.location.href = "/";

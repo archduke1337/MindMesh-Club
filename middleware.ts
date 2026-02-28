@@ -13,18 +13,21 @@ import { NextRequest, NextResponse } from "next/server";
 // ── Helpers ─────────────────────────────────────────────
 
 async function getSessionUser(request: NextRequest) {
-  const cookie = request.headers.get("cookie");
-  if (!cookie) return null;
-
   const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
   const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   if (!endpoint || !projectId) return null;
 
+  // Read our own-domain session cookie (set after login via /api/auth/session)
+  const sessionSecret = request.cookies.get("appwrite-session")?.value;
+  if (!sessionSecret) return null;
+
   try {
+    // Build the Appwrite session cookie that the API expects
+    const appwriteCookie = `a_session_${projectId}=${sessionSecret}`;
     const res = await fetch(`${endpoint}/account`, {
       headers: {
         "X-Appwrite-Project": projectId,
-        Cookie: cookie,
+        Cookie: appwriteCookie,
       },
     });
     if (!res.ok) return null;

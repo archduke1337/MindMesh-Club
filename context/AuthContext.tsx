@@ -133,7 +133,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [checkUser]);
 
   const login = useCallback(async (email: string, password: string) => {
-    await authService.login(email, password);
+    const session = await authService.login(email, password);
+    // Sync session secret to our domain cookie so middleware can read it
+    if (session?.secret) {
+      await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ secret: session.secret }),
+      });
+    }
     await checkUser();
   }, [checkUser]);
 
@@ -142,7 +150,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     password: string,
     name: string
   ) => {
-    await authService.createAccount(email, password, name);
+    const session = await authService.createAccount(email, password, name);
+    // Sync session secret to our domain cookie so middleware can read it
+    if (session?.secret) {
+      await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ secret: session.secret }),
+      });
+    }
     await checkUser();
   }, [checkUser]);
 
@@ -156,6 +172,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(async () => {
     await authService.logout();
+    // Clear session cookie from our domain
+    await fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
     setUser(null);
     setProfile(null);
   }, []);
