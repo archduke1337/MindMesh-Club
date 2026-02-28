@@ -52,9 +52,6 @@ const sendEmailWithEmailJS = async (
     const formattedDate = formatEventDate(eventDate);
     
     console.log('📧 Sending email with EmailJS...');
-    console.log('To:', toEmail);
-    console.log('Event:', eventTitle);
-    console.log('Ticket ID:', ticketId);
     
     const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
       method: "POST",
@@ -83,7 +80,6 @@ const sendEmailWithEmailJS = async (
 
     if (response.ok) {
       console.log('✅ Email sent successfully!');
-      console.log('Response:', await response.text());
       return true;
     } else {
       const errorText = await response.text();
@@ -119,10 +115,6 @@ export const sendRegistrationEmail = async (
     const actualPrice = eventData.discountPrice || eventData.price;
 
     console.log('📧 Starting email registration process...');
-    console.log('User:', userName, '(', userEmail, ')');
-    console.log('Event:', eventData.title);
-    console.log('Generated Ticket ID:', ticketId);
-    console.log('QR Code URL:', qrCodeUrl);
 
     // Send the email
     const sent = await sendEmailWithEmailJS(
@@ -141,10 +133,8 @@ export const sendRegistrationEmail = async (
 
     if (sent) {
       console.log('✅ Registration email sent successfully!');
-      console.log('Ticket ID:', ticketId);
     } else {
       console.warn('⚠️ Email failed to send, but ticket was generated');
-      console.log('Ticket ID:', ticketId);
     }
 
     return {

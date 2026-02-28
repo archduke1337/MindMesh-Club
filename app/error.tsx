@@ -25,7 +25,9 @@ export default function Error({
         </CardHeader>
         <CardBody className="flex flex-col items-center gap-4 pb-6">
           <p className="text-default-500 text-center text-sm">
-            {error.message || "An unexpected error occurred. Please try again."}
+            {process.env.NODE_ENV === "development"
+              ? error.message || "An unexpected error occurred."
+              : "An unexpected error occurred. Please try again."}
           </p>
           <Button color="primary" variant="shadow" onPress={() => reset()}>
             Try again
