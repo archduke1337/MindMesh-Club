@@ -28,6 +28,8 @@ import {
   ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
+  GavelIcon,
+  TicketPercentIcon,
 } from "lucide-react";
 
 interface AdminStats {
@@ -102,6 +104,22 @@ const adminSections = [
     icon: ShieldCheckIcon,
     color: "secondary" as const,
     gradient: "from-violet-500 to-purple-400",
+  },
+  {
+    title: "Hackathon Judging",
+    description: "Manage judges, evaluation criteria, and scoring for hackathon events.",
+    href: "/admin/judging",
+    icon: GavelIcon,
+    color: "warning" as const,
+    gradient: "from-yellow-500 to-amber-400",
+  },
+  {
+    title: "Discount Coupons",
+    description: "Create and manage discount codes for events. Track usage and set limits.",
+    href: "/admin/coupons",
+    icon: TicketPercentIcon,
+    color: "success" as const,
+    gradient: "from-emerald-500 to-green-400",
   },
 ];
 

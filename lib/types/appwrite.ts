@@ -35,6 +35,11 @@ export const COLLECTION_IDS = {
   EVENT_RESULTS: "event_results",
   PROJECT_UPDATES: "project_updates",
   ROADMAPS: "roadmaps",
+  JUDGES: "judges",
+  JUDGING_CRITERIA: "judging_criteria",
+  JUDGE_SCORES: "judge_scores",
+  COUPONS: "coupons",
+  COUPON_USAGE: "coupon_usage",
 } as const;
 
 // ── Bucket IDs ──
@@ -628,6 +633,98 @@ export interface BlogPost extends AppwriteDocument {
 }
 
 // ═══════════════════════════════════════════
+// 21. JUDGES
+// ═══════════════════════════════════════════
+export type JudgeStatus = "invited" | "accepted" | "declined";
+
+export interface Judge extends AppwriteDocument {
+  eventId: string;
+  userId: string | null;        // Appwrite user ID (if registered)
+  name: string;
+  email: string;
+  avatar: string | null;
+  bio: string | null;
+  expertise: string[];          // ["AI/ML", "Web Dev", "Design"]
+  organization: string | null;  // Company/University
+  designation: string | null;   // "CTO", "Professor"
+  linkedin: string | null;
+  status: JudgeStatus;
+  inviteCode: string;           // Unique code for judge to access scoring
+  assignedTeams: string[];      // teamIds assigned for evaluation (empty = all)
+  isLead: boolean;              // Lead judge can finalize scores
+  order: number;                // Display order
+}
+
+// ═══════════════════════════════════════════
+// 22. JUDGING CRITERIA
+// ═══════════════════════════════════════════
+export interface JudgingCriteria extends AppwriteDocument {
+  eventId: string;
+  name: string;                 // "Innovation", "Technical Complexity"
+  description: string | null;   // Explain what to evaluate
+  maxScore: number;             // e.g. 10
+  weight: number;               // e.g. 0.3 (30%)
+  order: number;                // Display order
+}
+
+// ═══════════════════════════════════════════
+// 23. JUDGE SCORES
+// ═══════════════════════════════════════════
+export interface JudgeScore extends AppwriteDocument {
+  eventId: string;
+  judgeId: string;              // FK → judges.$id
+  judgeName: string;
+  submissionId: string;         // FK → submissions.$id
+  teamId: string | null;        // FK → hackathon_teams.$id
+  criteriaId: string;           // FK → judging_criteria.$id
+  criteriaName: string;
+  score: number;                // 0 to maxScore
+  comment: string | null;       // Optional feedback per criterion
+  scoredAt: string;             // ISO timestamp
+}
+
+// ═══════════════════════════════════════════
+// 24. COUPONS
+// ═══════════════════════════════════════════
+export type CouponType = "percentage" | "fixed";
+export type CouponScope = "global" | "event";
+
+export interface Coupon extends AppwriteDocument {
+  code: string;                 // e.g. "EARLYBIRD50"
+  description: string | null;
+  type: CouponType;             // "percentage" or "fixed"
+  value: number;                // 50 (means 50% or ₹50 depending on type)
+  minPurchase: number;          // Minimum event price to apply
+  maxDiscount: number | null;   // Cap for percentage type (e.g. max ₹200 off)
+  scope: CouponScope;           // "global" = all events, "event" = specific
+  eventId: string | null;       // FK → events (if scope is "event")
+  eventName: string | null;     // For display
+  usageLimit: number;           // Max total uses (0 = unlimited)
+  usedCount: number;            // Current usage count
+  perUserLimit: number;         // Max uses per user (0 = unlimited)
+  validFrom: string;            // ISO datetime
+  validUntil: string;           // ISO datetime
+  isActive: boolean;
+  createdBy: string;            // Admin userId
+}
+
+// ═══════════════════════════════════════════
+// 25. COUPON USAGE (tracking)
+// ═══════════════════════════════════════════
+export interface CouponUsage extends AppwriteDocument {
+  couponId: string;             // FK → coupons.$id
+  couponCode: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  eventId: string;
+  originalPrice: number;
+  discountAmount: number;
+  finalPrice: number;
+  usedAt: string;               // ISO timestamp
+}
+
+// ═══════════════════════════════════════════
 // FORM INPUT TYPES (for creating/updating)
 // ═══════════════════════════════════════════
 
@@ -659,3 +756,13 @@ export type UpdateClubMember = Partial<CreateClubMember>;
 export type CreateFeedback = Omit<Feedback, keyof AppwriteDocument>;
 export type CreateRoadmap = Omit<Roadmap, keyof AppwriteDocument>;
 export type UpdateRoadmap = Partial<CreateRoadmap>;
+
+export type CreateJudge = Omit<Judge, keyof AppwriteDocument>;
+export type UpdateJudge = Partial<CreateJudge>;
+
+export type CreateJudgingCriteria = Omit<JudgingCriteria, keyof AppwriteDocument>;
+export type CreateJudgeScore = Omit<JudgeScore, keyof AppwriteDocument>;
+
+export type CreateCoupon = Omit<Coupon, keyof AppwriteDocument>;
+export type UpdateCoupon = Partial<CreateCoupon>;
+

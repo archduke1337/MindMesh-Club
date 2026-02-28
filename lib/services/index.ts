@@ -35,6 +35,11 @@ export type {
   Roadmap,
   BlogPost,
   Organizer,
+  Judge,
+  JudgingCriteria,
+  JudgeScore,
+  Coupon,
+  CouponUsage,
 } from "../types/appwrite";
 
 export {
