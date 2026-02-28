@@ -87,7 +87,7 @@ export interface GalleryImage {
   title: string;
   description: string;
   imageUrl: string;
-  category: "events" | "workshops" | "hackathons" | "team" | "projects";
+  category: "events" | "workshops" | "hackathons" | "team" | "projects" | "campus" | "achievements";
   date: string;
   attendees: number;
   uploadedBy: string;
@@ -95,6 +95,8 @@ export interface GalleryImage {
   isFeatured: boolean;
   tags: string[];
   eventId?: string;
+  eventName?: string;
+  photographer?: string;
   $createdAt?: string;
   $updatedAt?: string;
 }

@@ -39,8 +39,12 @@ export default function AdminPageWrapper({
         return;
       }
 
-      // Check admin status using email
-      if (!isUserAdminByEmail(user.email)) {
+      // Check admin status using email or Appwrite labels
+      const hasAdminAccess =
+        isUserAdminByEmail(user.email) ||
+        (user as any).labels?.includes("admin");
+
+      if (!hasAdminAccess) {
         setError("You do not have permission to access this page.");
         setTimeout(() => router.push("/"), 3000);
         return;

@@ -483,6 +483,7 @@ export type GalleryCategory =
   | "workshops"
   | "hackathons"
   | "team"
+  | "projects"
   | "campus"
   | "achievements";
 

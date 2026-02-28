@@ -1,38 +1,42 @@
 // app/admin/sponsors/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Textarea } from "@heroui/input";
+import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Switch } from "@heroui/switch";
 import { Chip } from "@heroui/chip";
+import { Spinner } from "@heroui/spinner";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { useAuth } from "@/context/AuthContext";
-import AdminPageWrapper from "@/components/AdminPageWrapper";
+import { useRouter } from "next/navigation";
+import { isUserAdminByEmail } from "@/lib/adminConfig";
+import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { 
-  PlusIcon, 
-  EditIcon, 
-  TrashIcon, 
+import {
+  ArrowLeftIcon,
+  PlusIcon,
+  EditIcon,
+  TrashIcon,
   ExternalLinkIcon,
   CheckIcon,
   XIcon,
-  AlertCircle
+  HeartHandshakeIcon,
 } from "lucide-react";
-import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 
 export default function AdminSponsorsPage() {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const modal = useDisclosure();
+
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingSponsor, setEditingSponsor] = useState<Sponsor | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingSponsor, setEditingSponsor] = useState<Sponsor | null>(null);
 
-  // Form state
   const [formData, setFormData] = useState<Sponsor>({
     name: "",
     logo: "",
@@ -43,445 +47,305 @@ export default function AdminSponsorsPage() {
     isActive: true,
     displayOrder: 0,
     featured: false,
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: new Date().toISOString().split("T")[0],
     endDate: "",
   });
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      loadSponsors();
-    }
-  }, [user, authLoading]);
+  const isAdmin =
+    !authLoading &&
+    user &&
+    (isUserAdminByEmail(user.email) || user.labels?.includes("admin"));
 
-  const loadSponsors = async () => {
+  const loadSponsors = useCallback(async () => {
+    setLoading(true);
     try {
       setError(null);
-      setLoading(true);
-      const allSponsors = await sponsorService.getAllSponsors();
-      setSponsors(allSponsors);
+      const data = await sponsorService.getAllSponsors();
+      setSponsors(data);
     } catch (err) {
-      const errorMsg = getErrorMessage(err);
-      console.error("Error loading sponsors:", errorMsg);
-      setError(`Failed to load sponsors: ${errorMsg}`);
+      setError(`Failed to load: ${getErrorMessage(err)}`);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      router.push("/unauthorized");
+      return;
+    }
+    if (isAdmin) loadSponsors();
+  }, [authLoading, isAdmin, loadSponsors]);
+
+  const resetForm = () => {
+    setFormData({
+      name: "", logo: "", website: "", tier: "partner",
+      description: "", category: "", isActive: true,
+      displayOrder: sponsors.length, featured: false,
+      startDate: new Date().toISOString().split("T")[0], endDate: "",
+    });
+    setEditingSponsor(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const openCreate = () => { resetForm(); modal.onOpen(); };
+
+  const openEdit = (sponsor: Sponsor) => {
+    setEditingSponsor(sponsor);
+    setFormData({ ...sponsor });
+    modal.onOpen();
+  };
+
+  const handleSave = async () => {
+    if (!formData.name || !formData.logo || !formData.website) {
+      setError("Name, Logo URL, and Website are required");
+      return;
+    }
     setSaving(true);
-
+    setError(null);
     try {
-      // Validate URL
-      if (!formData.logo) {
-        alert("Logo URL is required");
-        setSaving(false);
-        return;
-      }
-
-      if (!formData.website) {
-        alert("Website URL is required");
-        setSaving(false);
-        return;
-      }
-
-      // Validate logo URL format
-      if (!sponsorService.validateLogoUrl(formData.logo)) {
-        const confirm = window.confirm(
-          "The logo URL might not be a valid image. Continue anyway?"
-        );
-        if (!confirm) {
-          setSaving(false);
-          return;
-        }
-      }
-
       if (editingSponsor) {
-        // Update existing sponsor
         await sponsorService.updateSponsor(editingSponsor.$id!, formData);
-        alert("Sponsor updated successfully!");
       } else {
-        // Create new sponsor
         await sponsorService.createSponsor(formData as any);
-        alert("Sponsor created successfully!");
       }
-
-      // Reset form and reload
-      resetForm();
+      modal.onClose();
       await loadSponsors();
-    } catch (error) {
-      const message = getErrorMessage(error);
-      console.error("Error saving sponsor:", message);
-      alert(message || "Failed to save sponsor");
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleEdit = (sponsor: Sponsor) => {
-    setEditingSponsor(sponsor);
-    setFormData({
-      name: sponsor.name,
-      logo: sponsor.logo,
-      website: sponsor.website,
-      tier: sponsor.tier,
-      description: sponsor.description || "",
-      category: sponsor.category || "",
-      isActive: sponsor.isActive,
-      displayOrder: sponsor.displayOrder,
-      featured: sponsor.featured,
-      startDate: sponsor.startDate,
-      endDate: sponsor.endDate || "",
-    });
-    setShowForm(true);
-  };
-
-  const handleDelete = async (sponsorId: string) => {
-    if (!confirm("Are you sure you want to delete this sponsor?")) return;
-
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this sponsor?")) return;
     try {
-      await sponsorService.deleteSponsor(sponsorId);
-      alert("Sponsor deleted successfully!");
+      await sponsorService.deleteSponsor(id);
       await loadSponsors();
-    } catch (error) {
-      console.error("Error deleting sponsor:", error);
-      alert("Failed to delete sponsor");
+    } catch (err) {
+      setError(getErrorMessage(err));
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      logo: "",
-      website: "",
-      tier: "partner",
-      description: "",
-      category: "",
-      isActive: true,
-      displayOrder: 0,
-      featured: false,
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: "",
-    });
-    setEditingSponsor(null);
-    setShowForm(false);
-  };
-
-  if (loading) {
-    return (
-      <AdminPageWrapper 
-        title="Sponsors Management" 
-        description="Loading..."
-      >
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-            <p className="mt-4">Loading sponsors...</p>
-          </div>
-        </div>
-      </AdminPageWrapper>
-    );
+  if (authLoading) {
+    return <div className="flex items-center justify-center min-h-[60vh]"><Spinner size="lg" /></div>;
   }
+  if (!isAdmin) return null;
 
   return (
-    <AdminPageWrapper 
-      title="Sponsors Management" 
-      description="Manage your club sponsors and partners"
-    >
-      {error && (
-        <Card className="mb-6 border-l-4 border-danger">
-          <CardBody className="gap-2">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-danger">Error</p>
-                <p className="text-sm text-default-500">{error}</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      )}
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Button
+        variant="light"
+        startContent={<ArrowLeftIcon className="w-4 h-4" />}
+        onPress={() => router.push("/admin")}
+        className="mb-6"
+      >
+        Back to Admin
+      </Button>
 
-      {/* Controls */}
-      <div className="flex justify-between items-center mb-8">
-        <Button
-          color="primary"
-          size="lg"
-          startContent={<PlusIcon className="w-5 h-5" />}
-          onPress={() => setShowForm(!showForm)}
-        >
-          {showForm ? "Cancel" : "Add Sponsor"}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
+            <HeartHandshakeIcon className="w-7 h-7 text-primary" />
+            Sponsors Management
+          </h1>
+          <p className="text-default-500 mt-1">
+            {sponsors.length} sponsors &bull; {sponsors.filter((s) => s.isActive).length} active
+          </p>
+        </div>
+        <Button color="primary" startContent={<PlusIcon className="w-4 h-4" />} onPress={openCreate}>
+          Add Sponsor
         </Button>
       </div>
 
-      {/* Form */}
-      {showForm && (
-        <Card className="mb-8 border-2 border-primary">
-          <CardHeader className="bg-primary/10">
-            <h2 className="text-xl font-bold">
-              {editingSponsor ? "Edit Sponsor" : "Add New Sponsor"}
-            </h2>
-          </CardHeader>
-          <CardBody>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Basic Info */}
-                <Input
-                  label="Company Name"
-                  placeholder="e.g., Google"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  isRequired
-                />
-
-                <Input
-                  label="Logo URL"
-                  placeholder="https://example.com/logo.png"
-                  value={formData.logo}
-                  onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-                  required
-                  isRequired
-                  description="Direct link to logo image (PNG, JPG, SVG)"
-                />
-
-                <Input
-                  label="Website URL"
-                  placeholder="https://example.com"
-                  value={formData.website}
-                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                  required
-                  isRequired
-                />
-
-                <Select
-                  label="Tier"
-                  selectedKeys={[formData.tier]}
-                  onChange={(e) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
-                  isRequired
-                >
-                  <SelectItem key="platinum">Platinum Partner</SelectItem>
-                  <SelectItem key="gold">Gold Sponsor</SelectItem>
-                  <SelectItem key="silver">Silver Sponsor</SelectItem>
-                  <SelectItem key="bronze">Bronze Sponsor</SelectItem>
-                  <SelectItem key="partner">Community Partner</SelectItem>
-                </Select>
-
-                <Select
-                  label="Category"
-                  selectedKeys={formData.category ? [formData.category] : []}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                >
-                  <SelectItem key="tech">Technology</SelectItem>
-                  <SelectItem key="education">Education</SelectItem>
-                  <SelectItem key="finance">Finance</SelectItem>
-                  <SelectItem key="healthcare">Healthcare</SelectItem>
-                  <SelectItem key="other">Other</SelectItem>
-                </Select>
-
-                <Input
-                  type="number"
-                  label="Display Order"
-                  placeholder="0"
-                  value={formData.displayOrder.toString()}
-                  onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                  description="Lower numbers appear first"
-                />
-
-                <Input
-                  type="date"
-                  label="Start Date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  required
-                  isRequired
-                />
-
-                <Input
-                  type="date"
-                  label="End Date (Optional)"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  description="Leave empty for ongoing sponsorship"
-                />
-              </div>
-
-              <Textarea
-                label="Description (Optional)"
-                placeholder="Brief description of the sponsor..."
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-              />
-
-              <div className="flex gap-8">
-                <Switch
-                  isSelected={formData.isActive}
-                  onValueChange={(value) => setFormData({ ...formData, isActive: value })}
-                >
-                  Active
-                </Switch>
-
-                <Switch
-                  isSelected={formData.featured}
-                  onValueChange={(value) => setFormData({ ...formData, featured: value })}
-                >
-                  Featured (Show in footer & homepage)
-                </Switch>
-              </div>
-
-              {/* Logo Preview */}
-              {formData.logo && (
-                <div className="border-2 border-dashed border-default-300 rounded-lg p-4">
-                  <p className="text-sm font-semibold mb-2">Logo Preview:</p>
-                  <img 
-                    src={formData.logo} 
-                    alt="Logo preview" 
-                    className="max-h-32 object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                      alert("Invalid image URL. Please check the logo URL.");
-                    }}
-                  />
-                </div>
-              )}
-
-              <div className="flex gap-4 justify-end">
-                <Button
-                  variant="flat"
-                  onPress={resetForm}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  color="primary"
-                  isLoading={saving}
-                >
-                  {editingSponsor ? "Update Sponsor" : "Create Sponsor"}
-                </Button>
-              </div>
-            </form>
-          </CardBody>
+      {error && (
+        <Card className="mb-4 border-none bg-danger-50 dark:bg-danger-950/30">
+          <CardBody className="text-danger text-sm py-3">{error}</CardBody>
         </Card>
       )}
 
-      {/* Sponsors List */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold">
-          All Sponsors ({sponsors.length})
-        </h2>
+      {/* Sponsors Grid */}
+      {loading ? (
+        <div className="text-center py-12"><Spinner size="lg" /></div>
+      ) : sponsors.length === 0 ? (
+        <div className="text-center py-12 text-default-400">
+          <HeartHandshakeIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          <p className="text-lg font-medium">No sponsors yet</p>
+          <Button color="primary" className="mt-4" onPress={openCreate}>
+            Add First Sponsor
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {sponsors.map((sponsor) => {
+            const tierInfo = sponsorTiers[sponsor.tier as keyof typeof sponsorTiers];
 
-        {sponsors.length === 0 ? (
-          <Card>
-            <CardBody className="text-center py-12">
-              <p className="text-lg text-default-600 mb-4">No sponsors yet</p>
-              <Button
-                color="primary"
-                startContent={<PlusIcon className="w-5 h-5" />}
-                onPress={() => setShowForm(true)}
-              >
-                Add Your First Sponsor
-              </Button>
-            </CardBody>
-          </Card>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sponsors.map((sponsor) => {
-              const tierInfo = sponsorTiers[sponsor.tier as keyof typeof sponsorTiers];
-              
-              return (
-                <Card key={sponsor.$id} className="relative">
-                  <CardBody className="space-y-4">
-                    {/* Status Badges */}
-                    <div className="flex gap-2 flex-wrap">
-                      <Chip
-                        className={`bg-gradient-to-r ${tierInfo.color} text-white`}
-                        size="sm"
-                      >
-                        {tierInfo.label}
-                      </Chip>
-                      {sponsor.featured && (
-                        <Chip color="warning" size="sm">Featured</Chip>
-                      )}
-                      {sponsor.isActive ? (
-                        <Chip color="success" size="sm" startContent={<CheckIcon className="w-3 h-3" />}>
-                          Active
-                        </Chip>
-                      ) : (
-                        <Chip color="danger" size="sm" startContent={<XIcon className="w-3 h-3" />}>
-                          Inactive
-                        </Chip>
-                      )}
-                    </div>
+            return (
+              <Card key={sponsor.$id} className={`border-none shadow-md ${!sponsor.isActive ? "opacity-60" : ""}`}>
+                <CardBody className="p-4 space-y-3">
+                  {/* Badges */}
+                  <div className="flex gap-1.5 flex-wrap">
+                    <Chip
+                      className={`bg-gradient-to-r ${tierInfo?.color || "from-gray-400 to-gray-500"} text-white`}
+                      size="sm"
+                    >
+                      {tierInfo?.label || sponsor.tier}
+                    </Chip>
+                    {sponsor.featured && (
+                      <Chip color="warning" size="sm" variant="flat">Featured</Chip>
+                    )}
+                    <Chip color={sponsor.isActive ? "success" : "danger"} size="sm" variant="flat"
+                      startContent={sponsor.isActive ? <CheckIcon className="w-3 h-3" /> : <XIcon className="w-3 h-3" />}
+                    >
+                      {sponsor.isActive ? "Active" : "Inactive"}
+                    </Chip>
+                  </div>
 
-                    {/* Logo */}
-                    <div className="flex items-center justify-center h-24 bg-default-100 rounded-lg">
-                      <img
-                        src={sponsor.logo}
-                        alt={sponsor.name}
-                        className="max-h-20 max-w-full object-contain"
+                  {/* Logo */}
+                  <div className="flex items-center justify-center h-20 bg-default-100 rounded-lg p-2">
+                    <img
+                      src={sponsor.logo}
+                      alt={sponsor.name}
+                      className="max-h-16 max-w-full object-contain"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                  </div>
+
+                  {/* Info */}
+                  <div>
+                    <h3 className="font-bold text-base">{sponsor.name}</h3>
+                    {sponsor.category && (
+                      <p className="text-xs text-default-500 capitalize">{sponsor.category}</p>
+                    )}
+                    {sponsor.description && (
+                      <p className="text-xs text-default-400 mt-1 line-clamp-2">{sponsor.description}</p>
+                    )}
+                    <p className="text-xs text-default-400 mt-1">Order: {sponsor.displayOrder}</p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-1">
+                    <Button as="a" href={sponsor.website} target="_blank"
+                      size="sm" variant="flat" className="flex-1"
+                      startContent={<ExternalLinkIcon className="w-3.5 h-3.5" />}
+                    >
+                      Visit
+                    </Button>
+                    <Button size="sm" color="primary" variant="flat" isIconOnly
+                      onPress={() => openEdit(sponsor)}
+                    >
+                      <EditIcon className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button size="sm" color="danger" variant="flat" isIconOnly
+                      onPress={() => handleDelete(sponsor.$id!)}
+                    >
+                      <TrashIcon className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </CardBody>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Create/Edit Modal */}
+      <Modal isOpen={modal.isOpen} onOpenChange={modal.onOpenChange} size="2xl" scrollBehavior="inside">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader>{editingSponsor ? "Edit Sponsor" : "Add Sponsor"}</ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input label="Company Name" value={formData.name} isRequired variant="bordered"
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                    <Select label="Tier" selectedKeys={[formData.tier]} variant="bordered"
+                      onChange={(e) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
+                    >
+                      <SelectItem key="platinum">Platinum Partner</SelectItem>
+                      <SelectItem key="gold">Gold Sponsor</SelectItem>
+                      <SelectItem key="silver">Silver Sponsor</SelectItem>
+                      <SelectItem key="bronze">Bronze Sponsor</SelectItem>
+                      <SelectItem key="partner">Community Partner</SelectItem>
+                    </Select>
+                  </div>
+
+                  <Input label="Logo URL" value={formData.logo} isRequired variant="bordered"
+                    onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
+                    description="Direct link to logo image (PNG, JPG, SVG)"
+                  />
+
+                  {formData.logo && (
+                    <div className="border-2 border-dashed rounded-lg p-3 text-center">
+                      <p className="text-xs text-default-400 mb-2">Logo Preview</p>
+                      <img src={formData.logo} alt="Preview" className="max-h-20 mx-auto object-contain"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                       />
                     </div>
+                  )}
 
-                    {/* Info */}
-                    <div>
-                      <h3 className="font-bold text-lg">{sponsor.name}</h3>
-                      {sponsor.category && (
-                        <p className="text-sm text-default-600 capitalize">{sponsor.category}</p>
-                      )}
-                      {sponsor.description && (
-                        <p className="text-sm text-default-600 mt-2 line-clamp-2">
-                          {sponsor.description}
-                        </p>
-                      )}
-                    </div>
+                  <Input label="Website URL" value={formData.website} isRequired variant="bordered"
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  />
 
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <Button
-                        as="a"
-                        href={sponsor.website}
-                        target="_blank"
-                        size="sm"
-                        variant="flat"
-                        className="flex-1"
-                        startContent={<ExternalLinkIcon className="w-4 h-4" />}
-                      >
-                        Visit
-                      </Button>
-                      <Button
-                        size="sm"
-                        color="primary"
-                        variant="flat"
-                        isIconOnly
-                        onPress={() => handleEdit(sponsor)}
-                      >
-                        <EditIcon className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        color="danger"
-                        variant="flat"
-                        isIconOnly
-                        onPress={() => handleDelete(sponsor.$id!)}
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                      </Button>
-                    </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Select label="Category" selectedKeys={formData.category ? [formData.category] : []} variant="bordered"
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    >
+                      <SelectItem key="tech">Technology</SelectItem>
+                      <SelectItem key="education">Education</SelectItem>
+                      <SelectItem key="finance">Finance</SelectItem>
+                      <SelectItem key="healthcare">Healthcare</SelectItem>
+                      <SelectItem key="other">Other</SelectItem>
+                    </Select>
+                    <Input type="number" label="Display Order" value={String(formData.displayOrder)} variant="bordered"
+                      onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+                      description="Lower = first"
+                    />
+                  </div>
 
-                    {/* Order */}
-                    <div className="text-xs text-default-400">
-                      Display Order: {sponsor.displayOrder}
-                    </div>
-                  </CardBody>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </AdminPageWrapper>
+                  <Textarea label="Description" value={formData.description || ""} variant="bordered"
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    minRows={2}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input type="date" label="Start Date" value={formData.startDate} variant="bordered"
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    />
+                    <Input type="date" label="End Date (optional)" value={formData.endDate || ""} variant="bordered"
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="flex gap-6">
+                    <Switch isSelected={formData.isActive}
+                      onValueChange={(v) => setFormData({ ...formData, isActive: v })}
+                    >
+                      Active
+                    </Switch>
+                    <Switch isSelected={formData.featured}
+                      onValueChange={(v) => setFormData({ ...formData, featured: v })}
+                    >
+                      Featured
+                    </Switch>
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={onClose}>Cancel</Button>
+                <Button color="primary" onPress={handleSave} isLoading={saving}
+                  isDisabled={!formData.name || !formData.logo || !formData.website}
+                >
+                  {editingSponsor ? "Update" : "Create"}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+    </div>
   );
 }

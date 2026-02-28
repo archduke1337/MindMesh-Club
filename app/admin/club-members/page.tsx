@@ -18,8 +18,9 @@ import {
   ArrowLeftIcon,
   EditIcon,
   TrashIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
+  LinkedinIcon,
+  GithubIcon,
+  StarIcon,
 } from "lucide-react";
 
 interface ClubMember {
@@ -50,9 +51,11 @@ export default function AdminClubMembersPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingMember, setEditingMember] = useState<ClubMember | null>(null);
+  const [filter, setFilter] = useState<string>("all");
 
   const [form, setForm] = useState({
     name: "",
+    avatar: "",
     designation: "",
     memberType: "core",
     department: "",
@@ -75,7 +78,7 @@ export default function AdminClubMembersPage() {
       const res = await fetch("/api/admin/club-members");
       if (res.ok) {
         const data = await res.json();
-        setMembers((data.members || []).sort((a: ClubMember, b: ClubMember) => a.displayOrder - b.displayOrder));
+        setMembers((data.members || []).sort((a: ClubMember, b: ClubMember) => (a.displayOrder || 0) - (b.displayOrder || 0)));
       }
     } catch {
       // silent
@@ -95,17 +98,9 @@ export default function AdminClubMembersPage() {
   const openCreateModal = () => {
     setEditingMember(null);
     setForm({
-      name: "",
-      designation: "",
-      memberType: "core",
-      department: "",
-      bio: "",
-      tagline: "",
-      institution: "",
-      linkedin: "",
-      github: "",
-      isActive: true,
-      isFeatured: false,
+      name: "", avatar: "", designation: "", memberType: "core",
+      department: "", bio: "", tagline: "", institution: "",
+      linkedin: "", github: "", isActive: true, isFeatured: false,
     });
     modal.onOpen();
   };
@@ -114,8 +109,9 @@ export default function AdminClubMembersPage() {
     setEditingMember(member);
     setForm({
       name: member.name,
-      designation: member.designation,
-      memberType: member.memberType,
+      avatar: member.avatar || "",
+      designation: member.designation || "",
+      memberType: member.memberType || "core",
       department: member.department || "",
       bio: member.bio || "",
       tagline: member.tagline || "",
@@ -157,15 +153,30 @@ export default function AdminClubMembersPage() {
     }
   };
 
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to remove this team member?")) return;
+    try {
+      const res = await fetch(`/api/admin/club-members?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        await loadMembers();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete");
+      }
+    } catch {
+      alert("Error deleting member");
+    }
+  };
 
+  if (authLoading) {
+    return <div className="flex items-center justify-center min-h-[60vh]"><Spinner size="lg" /></div>;
+  }
   if (!isAdmin) return null;
+
+  const filtered = filter === "all" ? members
+    : filter === "active" ? members.filter((m) => m.isActive)
+    : filter === "featured" ? members.filter((m) => m.isFeatured)
+    : members.filter((m) => m.memberType === filter);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -184,59 +195,99 @@ export default function AdminClubMembersPage() {
             <UsersIcon className="w-7 h-7 text-secondary" />
             Club Team Members
           </h1>
-          <p className="text-default-500 mt-1">{members.length} members</p>
+          <p className="text-default-500 mt-1">
+            {members.length} members &bull; {members.filter((m) => m.isActive).length} active
+          </p>
         </div>
-        <Button
-          color="primary"
-          startContent={<PlusIcon className="w-4 h-4" />}
-          onPress={openCreateModal}
-        >
+        <Button color="primary" startContent={<PlusIcon className="w-4 h-4" />} onPress={openCreateModal}>
           Add Member
         </Button>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {[
+          { key: "all", label: "All" },
+          { key: "active", label: "Active" },
+          { key: "featured", label: "Featured" },
+          ...MEMBER_TYPES.map((t) => ({ key: t, label: t.charAt(0).toUpperCase() + t.slice(1) })),
+        ].map((f) => (
+          <Button
+            key={f.key}
+            size="sm"
+            variant={filter === f.key ? "solid" : "flat"}
+            color={filter === f.key ? "primary" : "default"}
+            onPress={() => setFilter(f.key)}
+          >
+            {f.label}
+          </Button>
+        ))}
       </div>
 
       {loading ? (
         <div className="text-center py-12"><Spinner size="lg" /></div>
       ) : (
         <div className="space-y-3">
-          {members.map((member, idx) => (
-            <Card key={member.$id} className="border-none shadow-md">
+          {filtered.map((member, idx) => (
+            <Card key={member.$id} className={`border-none shadow-md ${!member.isActive ? "opacity-60" : ""}`}>
               <CardBody className="p-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold flex-shrink-0 text-lg">
-                    {member.name.charAt(0).toUpperCase()}
-                  </div>
+                  {/* Avatar */}
+                  {member.avatar ? (
+                    <img
+                      src={member.avatar}
+                      alt={member.name}
+                      className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold flex-shrink-0 text-lg">
+                      {member.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                       <p className="font-bold text-sm">{member.name}</p>
                       <Chip size="sm" variant="flat" className="capitalize text-xs">
-                        {member.memberType}
+                        {member.memberType || "core"}
                       </Chip>
                       {!member.isActive && (
-                        <Chip size="sm" color="danger" variant="flat" className="text-xs">
-                          Inactive
-                        </Chip>
+                        <Chip size="sm" color="danger" variant="flat" className="text-xs">Inactive</Chip>
                       )}
                       {member.isFeatured && (
                         <Chip size="sm" color="warning" variant="flat" className="text-xs">
-                          ⭐ Featured
+                          <StarIcon className="w-3 h-3 mr-0.5 inline" /> Featured
                         </Chip>
                       )}
                     </div>
-                    <p className="text-xs text-default-500">{member.designation}</p>
+                    <p className="text-xs text-default-500">{member.designation || "Member"}</p>
                     {member.department && (
                       <p className="text-xs text-default-400">{member.department}</p>
                     )}
+                    {/* Social links */}
+                    <div className="flex items-center gap-2 mt-1">
+                      {member.linkedin && (
+                        <a href={member.linkedin} target="_blank" rel="noopener noreferrer">
+                          <LinkedinIcon className="w-3 h-3 text-default-400 hover:text-primary" />
+                        </a>
+                      )}
+                      {member.github && (
+                        <a href={`https://github.com/${member.github}`} target="_blank" rel="noopener noreferrer">
+                          <GithubIcon className="w-3 h-3 text-default-400 hover:text-primary" />
+                        </a>
+                      )}
+                    </div>
                   </div>
+
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <span className="text-xs text-default-400 mr-2">#{idx + 1}</span>
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onPress={() => openEditModal(member)}
-                    >
+                    <Button isIconOnly size="sm" variant="light" onPress={() => openEditModal(member)}>
                       <EditIcon className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button isIconOnly size="sm" variant="light" color="danger"
+                      onPress={() => handleDelete(member.$id)}
+                    >
+                      <TrashIcon className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 </div>
@@ -244,10 +295,10 @@ export default function AdminClubMembersPage() {
             </Card>
           ))}
 
-          {members.length === 0 && (
+          {filtered.length === 0 && (
             <div className="text-center py-12 text-default-400">
               <UsersIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No team members yet</p>
+              <p>{filter === "all" ? "No team members yet" : "No matching members"}</p>
             </div>
           )}
         </div>
@@ -263,88 +314,67 @@ export default function AdminClubMembersPage() {
               </ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  <Input
-                    label="Name"
-                    value={form.name}
+                  <Input label="Name" value={form.name} isRequired variant="bordered"
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    isRequired
-                    variant="bordered"
                   />
-                  <Input
-                    label="Designation"
-                    value={form.designation}
+                  <Input label="Avatar URL" value={form.avatar} variant="bordered"
+                    onChange={(e) => setForm({ ...form, avatar: e.target.value })}
+                    placeholder="https://example.com/avatar.jpg"
+                    description="Leave empty for initials avatar"
+                  />
+                  {form.avatar && (
+                    <div className="flex justify-center">
+                      <img src={form.avatar} alt="Preview" className="w-16 h-16 rounded-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    </div>
+                  )}
+                  <Input label="Designation" value={form.designation} isRequired variant="bordered"
                     onChange={(e) => setForm({ ...form, designation: e.target.value })}
-                    isRequired
-                    variant="bordered"
                     placeholder="e.g. President, Tech Lead"
                   />
                   <div className="grid grid-cols-2 gap-4">
-                    <Select
-                      label="Member Type"
-                      selectedKeys={[form.memberType]}
+                    <Select label="Member Type" selectedKeys={[form.memberType]} variant="bordered"
                       onChange={(e) => setForm({ ...form, memberType: e.target.value })}
-                      variant="bordered"
                     >
                       {MEMBER_TYPES.map((t) => (
                         <SelectItem key={t} className="capitalize">{t}</SelectItem>
                       ))}
                     </Select>
-                    <Input
-                      label="Department"
-                      value={form.department}
+                    <Input label="Department" value={form.department} variant="bordered"
                       onChange={(e) => setForm({ ...form, department: e.target.value })}
-                      variant="bordered"
                       placeholder="e.g. Technology"
                     />
                   </div>
-                  <Input
-                    label="Institution"
-                    value={form.institution}
+                  <Input label="Institution" value={form.institution} variant="bordered"
                     onChange={(e) => setForm({ ...form, institution: e.target.value })}
-                    variant="bordered"
                   />
-                  <Input
-                    label="Tagline"
-                    value={form.tagline}
+                  <Input label="Tagline" value={form.tagline} variant="bordered"
                     onChange={(e) => setForm({ ...form, tagline: e.target.value })}
-                    variant="bordered"
                     placeholder="Short one-liner"
                   />
-                  <Textarea
-                    label="Bio"
-                    value={form.bio}
+                  <Textarea label="Bio" value={form.bio} variant="bordered"
                     onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                    variant="bordered"
                     minRows={2}
                   />
                   <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      label="LinkedIn URL"
-                      value={form.linkedin}
+                    <Input label="LinkedIn URL" value={form.linkedin} variant="bordered"
                       onChange={(e) => setForm({ ...form, linkedin: e.target.value })}
-                      variant="bordered"
                     />
-                    <Input
-                      label="GitHub username"
-                      value={form.github}
+                    <Input label="GitHub username" value={form.github} variant="bordered"
                       onChange={(e) => setForm({ ...form, github: e.target.value })}
-                      variant="bordered"
                     />
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="flex items-center gap-3">
-                      <Switch
-                        isSelected={form.isActive}
+                      <Switch isSelected={form.isActive} size="sm"
                         onValueChange={(val) => setForm({ ...form, isActive: val })}
-                        size="sm"
                       />
                       <span className="text-sm">Active</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Switch
-                        isSelected={form.isFeatured}
+                      <Switch isSelected={form.isFeatured} size="sm"
                         onValueChange={(val) => setForm({ ...form, isFeatured: val })}
-                        size="sm"
                       />
                       <span className="text-sm">Featured</span>
                     </div>
@@ -353,10 +383,7 @@ export default function AdminClubMembersPage() {
               </ModalBody>
               <ModalFooter>
                 <Button variant="flat" onPress={onClose}>Cancel</Button>
-                <Button
-                  color="primary"
-                  onPress={handleSave}
-                  isLoading={saving}
+                <Button color="primary" onPress={handleSave} isLoading={saving}
                   isDisabled={!form.name || !form.designation}
                 >
                   {editingMember ? "Update" : "Add Member"}

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const COLLECTION_ID = "club_members";
+const COLLECTION_ID = "team"; // The Appwrite collection for club/team members
 
 function getHeaders() {
   return {
@@ -45,12 +45,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       name, designation, memberType, department, bio,
-      tagline, institution, linkedin, github, isActive,
-      isFeatured, displayOrder,
+      tagline, institution, linkedin, github, avatar,
+      isActive, isFeatured, displayOrder,
     } = body;
 
-    if (!name || !designation) {
-      return NextResponse.json({ error: "Name and designation are required" }, { status: 400 });
+    if (!name) {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
     const res = await adminFetch(
@@ -61,18 +61,22 @@ export async function POST(request: NextRequest) {
           documentId: "unique()",
           data: {
             name,
-            designation,
-            memberType: memberType || "core",
-            department: department || null,
-            bio: bio || null,
-            tagline: tagline || null,
-            institution: institution || null,
+            role: designation || memberType || "Member",
+            avatar: avatar || null,
             linkedin: linkedin || null,
             github: github || null,
+            bio: bio || null,
+            achievements: [],
+            color: "primary",
+            position: displayOrder || 0,
             isActive: isActive !== undefined ? isActive : true,
+            memberType: memberType || "core",
+            designation: designation || null,
+            department: department || null,
+            tagline: tagline || null,
+            institution: institution || null,
             isFeatured: isFeatured || false,
             displayOrder: displayOrder || 0,
-            color: "primary",
           },
         }),
       }
@@ -100,6 +104,14 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "memberId is required" }, { status: 400 });
     }
 
+    // Map designation -> role if present
+    if (updateData.designation && !updateData.role) {
+      updateData.role = updateData.designation;
+    }
+    if (updateData.displayOrder !== undefined && updateData.position === undefined) {
+      updateData.position = updateData.displayOrder;
+    }
+
     // Clean undefined values
     const cleanData: Record<string, any> = {};
     for (const [key, value] of Object.entries(updateData)) {
@@ -125,6 +137,30 @@ export async function PATCH(request: NextRequest) {
 
     const doc = await res.json();
     return NextResponse.json({ member: doc });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// DELETE a club member
+export async function DELETE(request: NextRequest) {
+  try {
+    const memberId = request.nextUrl.searchParams.get("id");
+    if (!memberId) {
+      return NextResponse.json({ error: "id parameter required" }, { status: 400 });
+    }
+
+    const res = await adminFetch(
+      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents/${memberId}`,
+      { method: "DELETE" }
+    );
+
+    if (!res.ok) {
+      const errText = await res.text();
+      return NextResponse.json({ error: errText }, { status: res.status });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
