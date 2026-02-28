@@ -20,6 +20,7 @@ import {
   CopyIcon,
   CheckIcon,
   EditIcon,
+  TrashIcon,
 } from "lucide-react";
 
 interface CouponData {
@@ -53,6 +54,7 @@ export default function AdminCouponsPage() {
   const [saving, setSaving] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [editingCoupon, setEditingCoupon] = useState<CouponData | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     code: "",
@@ -191,6 +193,23 @@ export default function AdminCouponsPage() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
+  const handleDelete = async (couponId: string) => {
+    if (!confirm("Delete this coupon permanently?")) return;
+    setDeleting(couponId);
+    try {
+      await fetch("/api/coupons", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ couponId }),
+      });
+      await loadCoupons();
+    } catch {
+      alert("Failed to delete coupon");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   const isExpired = (coupon: CouponData) =>
     coupon.validUntil && new Date(coupon.validUntil) < new Date();
 
@@ -270,6 +289,16 @@ export default function AdminCouponsPage() {
                     />
                     <Button isIconOnly size="sm" variant="light" onPress={() => openEditModal(coupon)}>
                       <EditIcon className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      color="danger"
+                      isLoading={deleting === coupon.$id}
+                      onPress={() => handleDelete(coupon.$id)}
+                    >
+                      <TrashIcon className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 </div>

@@ -71,6 +71,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action } = body;
 
+    // Admin-only actions: add_judge, add_criteria, add_scores_bulk
+    if (["add_judge", "add_criteria", "add_scores_bulk"].includes(action)) {
+      const admin = await verifyAdminAuth(request);
+      if (!admin.isAdmin) {
+        return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+      }
+    }
+
+    // submit_score requires at least a logged-in user (the judge)
+    if (action === "submit_score") {
+      const auth = await verifyAuth(request);
+      if (!auth.authenticated) {
+        return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      }
+    }
+
     if (action === "add_judge") {
       const { eventId, name, email, bio, expertise, organization, designation, linkedin, isLead, assignedTeams } = body;
 
@@ -246,9 +262,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH — update judge status, criteria, etc.
+// PATCH — update judge status, criteria, etc. (admin only)
 export async function PATCH(request: NextRequest) {
   try {
+    const admin = await verifyAdminAuth(request);
+    if (!admin.isAdmin) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+    }
+
     const body = await request.json();
     const { type, id, ...updateData } = body;
 
@@ -274,6 +295,39 @@ export async function PATCH(request: NextRequest) {
 
     const doc = await res.json();
     return NextResponse.json({ item: doc });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// DELETE — remove judge or criteria (admin only)
+export async function DELETE(request: NextRequest) {
+  try {
+    const admin = await verifyAdminAuth(request);
+    if (!admin.isAdmin) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    const { type, id } = await request.json();
+
+    if (!type || !id) {
+      return NextResponse.json({ error: "type and id required" }, { status: 400 });
+    }
+
+    let collectionId = "judges";
+    if (type === "criteria") collectionId = "judging_criteria";
+
+    const res = await adminFetch(
+      `/databases/${DATABASE_ID}/collections/${collectionId}/documents/${id}`,
+      { method: "DELETE" }
+    );
+
+    if (!res.ok) {
+      const err = await res.text();
+      return NextResponse.json({ error: err }, { status: res.status });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

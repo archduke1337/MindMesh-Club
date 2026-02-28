@@ -111,3 +111,77 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+// PATCH /api/announcements — Update announcement (admin)
+export async function PATCH(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+  }
+  try {
+    const body = await request.json();
+    const { announcementId, ...updateFields } = body;
+
+    if (!announcementId) {
+      return NextResponse.json({ error: "announcementId is required" }, { status: 400 });
+    }
+
+    // Whitelist allowed fields
+    const allowed = ["title", "content", "type", "priority", "isPinned", "isActive", "link", "linkText", "expiresAt"];
+    const data: Record<string, any> = {};
+    for (const key of allowed) {
+      if (key in updateFields) {
+        data[key] = updateFields[key];
+      }
+    }
+
+    const res = await adminFetch(
+      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents/${announcementId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ data }),
+      }
+    );
+
+    if (!res.ok) {
+      const errText = await res.text();
+      return NextResponse.json({ error: errText }, { status: res.status });
+    }
+
+    const announcement = await res.json();
+    return NextResponse.json({ success: true, announcement });
+  } catch (error: any) {
+    console.error("[API] Announcements PATCH error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// DELETE /api/announcements — Delete announcement (admin)
+export async function DELETE(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+  }
+  try {
+    const { announcementId } = await request.json();
+
+    if (!announcementId) {
+      return NextResponse.json({ error: "announcementId is required" }, { status: 400 });
+    }
+
+    const res = await adminFetch(
+      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents/${announcementId}`,
+      { method: "DELETE" }
+    );
+
+    if (!res.ok) {
+      const errText = await res.text();
+      return NextResponse.json({ error: errText }, { status: res.status });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("[API] Announcements DELETE error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

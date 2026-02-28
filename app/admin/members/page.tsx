@@ -69,13 +69,6 @@ export default function AdminMembersPage() {
   const loadProfiles = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/members/profile?userId=__ALL__");
-      // Since our current API doesn't support listing all, we'll use the admin endpoint
-      // For now, fetch from Appwrite directly using admin REST
-      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-      const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
-
       const listRes = await fetch(
         `/api/admin/members`,
         { credentials: "same-origin" }

@@ -313,3 +313,32 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+// DELETE /api/coupons — Delete coupon (admin)
+export async function DELETE(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Admin access required" }, { status: 401 });
+  }
+  try {
+    const { couponId } = await request.json();
+
+    if (!couponId) {
+      return NextResponse.json({ error: "couponId required" }, { status: 400 });
+    }
+
+    const res = await adminFetch(
+      `/databases/${DATABASE_ID}/collections/coupons/documents/${couponId}`,
+      { method: "DELETE" }
+    );
+
+    if (!res.ok) {
+      const err = await res.text();
+      return NextResponse.json({ error: err }, { status: res.status });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

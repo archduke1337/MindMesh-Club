@@ -129,13 +129,6 @@ export default function AdminResourcesPage() {
     setSaving(true);
     setError(null);
     try {
-      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
-      const headers = {
-        "Content-Type": "application/json",
-        "X-Appwrite-Project": process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!,
-        "X-Appwrite-Key": process.env.APPWRITE_API_KEY || "",
-      };
-
       const body = {
         title: formData.title,
         description: formData.description || null,

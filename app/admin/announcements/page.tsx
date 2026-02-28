@@ -18,6 +18,7 @@ import {
   ArrowLeftIcon,
   TrashIcon,
   PinIcon,
+  EditIcon,
 } from "lucide-react";
 
 interface Announcement {
@@ -49,26 +50,30 @@ const PRIORITY_OPTIONS = [
   { value: "critical", label: "Critical" },
 ];
 
+const defaultForm = {
+  title: "",
+  content: "",
+  type: "info",
+  priority: "normal",
+  isPinned: false,
+  isActive: true,
+  link: "",
+  linkText: "",
+  expiresAt: "",
+};
+
 export default function AdminAnnouncementsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const createModal = useDisclosure();
+  const modal = useDisclosure();
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [editingAnn, setEditingAnn] = useState<Announcement | null>(null);
 
-  // Form state
-  const [form, setForm] = useState({
-    title: "",
-    content: "",
-    type: "info",
-    priority: "normal",
-    isPinned: false,
-    link: "",
-    linkText: "",
-    expiresAt: "",
-  });
+  const [form, setForm] = useState({ ...defaultForm });
 
   const isAdmin = !authLoading && user && (
     isUserAdminByEmail(user.email) || user.labels?.includes("admin")
@@ -95,39 +100,101 @@ export default function AdminAnnouncementsPage() {
     if (isAdmin) loadAnnouncements();
   }, [authLoading, isAdmin, loadAnnouncements]);
 
-  const handleCreate = async () => {
-    if (!user || !form.title || !form.content) return;
-    setCreating(true);
+  const openCreate = () => {
+    setEditingAnn(null);
+    setForm({ ...defaultForm });
+    modal.onOpen();
+  };
+
+  const openEdit = (ann: Announcement) => {
+    setEditingAnn(ann);
+    setForm({
+      title: ann.title,
+      content: ann.content,
+      type: ann.type,
+      priority: ann.priority,
+      isPinned: ann.isPinned,
+      isActive: ann.isActive,
+      link: ann.link || "",
+      linkText: ann.linkText || "",
+      expiresAt: ann.expiresAt ? ann.expiresAt.slice(0, 16) : "",
+    });
+    modal.onOpen();
+  };
+
+  const handleSave = async () => {
+    if (!form.title || !form.content) return;
+    setSaving(true);
     try {
-      const res = await fetch("/api/announcements", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          link: form.link || null,
-          linkText: form.linkText || null,
-          expiresAt: form.expiresAt || null,
-          createdBy: user.name,
-        }),
-      });
-      if (res.ok) {
-        createModal.onClose();
-        setForm({
-          title: "",
-          content: "",
-          type: "info",
-          priority: "normal",
-          isPinned: false,
-          link: "",
-          linkText: "",
-          expiresAt: "",
+      if (editingAnn) {
+        const res = await fetch("/api/announcements", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            announcementId: editingAnn.$id,
+            title: form.title,
+            content: form.content,
+            type: form.type,
+            priority: form.priority,
+            isPinned: form.isPinned,
+            isActive: form.isActive,
+            link: form.link || null,
+            linkText: form.linkText || null,
+            expiresAt: form.expiresAt || null,
+          }),
         });
-        await loadAnnouncements();
+        if (!res.ok) throw new Error("Update failed");
+      } else {
+        const res = await fetch("/api/announcements", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...form,
+            link: form.link || null,
+            linkText: form.linkText || null,
+            expiresAt: form.expiresAt || null,
+            createdBy: user?.name || "Admin",
+          }),
+        });
+        if (!res.ok) throw new Error("Create failed");
       }
+      modal.onClose();
+      setForm({ ...defaultForm });
+      await loadAnnouncements();
     } catch (err: any) {
-      alert(err.message || "Failed to create");
+      alert(err.message || "Failed to save");
     } finally {
-      setCreating(false);
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this announcement?")) return;
+    setDeleting(id);
+    try {
+      await fetch("/api/announcements", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ announcementId: id }),
+      });
+      await loadAnnouncements();
+    } catch {
+      alert("Failed to delete");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const toggleActive = async (ann: Announcement) => {
+    try {
+      await fetch("/api/announcements", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ announcementId: ann.$id, isActive: !ann.isActive }),
+      });
+      await loadAnnouncements();
+    } catch {
+      alert("Failed to update");
     }
   };
 
@@ -158,12 +225,12 @@ export default function AdminAnnouncementsPage() {
             <BellIcon className="w-7 h-7 text-warning" />
             Announcements
           </h1>
-          <p className="text-default-500 mt-1">{announcements.length} active announcements</p>
+          <p className="text-default-500 mt-1">{announcements.length} announcements</p>
         </div>
         <Button
           color="primary"
           startContent={<PlusIcon className="w-4 h-4" />}
-          onPress={createModal.onOpen}
+          onPress={openCreate}
         >
           New Announcement
         </Button>
@@ -176,11 +243,11 @@ export default function AdminAnnouncementsPage() {
       ) : (
         <div className="space-y-3">
           {announcements.map((ann) => (
-            <Card key={ann.$id} className="border-none shadow-md">
+            <Card key={ann.$id} className={`border-none shadow-md ${!ann.isActive ? "opacity-60" : ""}`}>
               <CardBody className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h3 className="font-bold">{ann.title}</h3>
                       {ann.isPinned && (
                         <PinIcon className="w-3.5 h-3.5 text-primary" />
@@ -199,6 +266,7 @@ export default function AdminAnnouncementsPage() {
                       <Chip size="sm" variant="flat">
                         {ann.type}
                       </Chip>
+                      {!ann.isActive && <Chip size="sm" color="danger" variant="flat">Inactive</Chip>}
                     </div>
                     <p className="text-sm text-default-600">{ann.content}</p>
                     {ann.link && (
@@ -218,6 +286,26 @@ export default function AdminAnnouncementsPage() {
                       )}
                     </div>
                   </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Switch
+                      size="sm"
+                      isSelected={ann.isActive}
+                      onValueChange={() => toggleActive(ann)}
+                    />
+                    <Button isIconOnly size="sm" variant="light" onPress={() => openEdit(ann)}>
+                      <EditIcon className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      color="danger"
+                      isLoading={deleting === ann.$id}
+                      onPress={() => handleDelete(ann.$id)}
+                    >
+                      <TrashIcon className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </CardBody>
             </Card>
@@ -232,12 +320,12 @@ export default function AdminAnnouncementsPage() {
         </div>
       )}
 
-      {/* Create Modal */}
-      <Modal isOpen={createModal.isOpen} onOpenChange={createModal.onOpenChange} size="2xl">
+      {/* Create/Edit Modal */}
+      <Modal isOpen={modal.isOpen} onOpenChange={modal.onOpenChange} size="2xl">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Create Announcement</ModalHeader>
+              <ModalHeader>{editingAnn ? "Edit Announcement" : "Create Announcement"}</ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
                   <Input
@@ -300,12 +388,23 @@ export default function AdminAnnouncementsPage() {
                     onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
                     variant="bordered"
                   />
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      isSelected={form.isPinned}
-                      onValueChange={(val) => setForm({ ...form, isPinned: val })}
-                    />
-                    <span className="text-sm">Pin this announcement (shows first)</span>
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        isSelected={form.isPinned}
+                        onValueChange={(val) => setForm({ ...form, isPinned: val })}
+                      />
+                      <span className="text-sm">Pin this announcement</span>
+                    </div>
+                    {editingAnn && (
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          isSelected={form.isActive}
+                          onValueChange={(val) => setForm({ ...form, isActive: val })}
+                        />
+                        <span className="text-sm">Active</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </ModalBody>
@@ -313,11 +412,11 @@ export default function AdminAnnouncementsPage() {
                 <Button variant="flat" onPress={onClose}>Cancel</Button>
                 <Button
                   color="primary"
-                  onPress={handleCreate}
-                  isLoading={creating}
+                  onPress={handleSave}
+                  isLoading={saving}
                   isDisabled={!form.title || !form.content}
                 >
-                  Create Announcement
+                  {editingAnn ? "Update" : "Create Announcement"}
                 </Button>
               </ModalFooter>
             </>

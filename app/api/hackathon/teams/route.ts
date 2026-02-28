@@ -127,9 +127,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/hackathon/teams — Create team
+// POST /api/hackathon/teams — Create team (auth required)
 export async function POST(request: NextRequest) {
   try {
+    const auth = await verifyAuth(request);
+    if (!auth.authenticated) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { eventId, teamName, description, leaderId, leaderName, leaderEmail, maxSize } = body;
 

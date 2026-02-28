@@ -57,9 +57,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/hackathon/submissions — Create submission
+// POST /api/hackathon/submissions — Create submission (auth required)
 export async function POST(request: NextRequest) {
   try {
+    const auth = await verifyAuth(request);
+    if (!auth.authenticated) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       eventId,
@@ -170,9 +175,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH /api/hackathon/submissions — Update submission
+// PATCH /api/hackathon/submissions — Update submission (auth required)
 export async function PATCH(request: NextRequest) {
   try {
+    const auth = await verifyAuth(request);
+    if (!auth.authenticated) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { submissionId, ...updateData } = body;
 

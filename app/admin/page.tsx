@@ -31,6 +31,8 @@ import {
   GavelIcon,
   TicketPercentIcon,
   BookOpenIcon,
+  Users2Icon,
+  FileTextIcon,
 } from "lucide-react";
 
 interface AdminStats {
@@ -115,6 +117,22 @@ const adminSections = [
     gradient: "from-yellow-500 to-amber-400",
   },
   {
+    title: "Hackathon Teams",
+    description: "View and manage hackathon teams, members, and invite codes.",
+    href: "/admin/teams",
+    icon: Users2Icon,
+    color: "primary" as const,
+    gradient: "from-blue-500 to-indigo-400",
+  },
+  {
+    title: "Submissions",
+    description: "Review hackathon project submissions, manage status, and view scores.",
+    href: "/admin/submissions",
+    icon: FileTextIcon,
+    color: "secondary" as const,
+    gradient: "from-pink-500 to-rose-400",
+  },
+  {
     title: "Discount Coupons",
     description: "Create and manage discount codes for events. Track usage and set limits.",
     href: "/admin/coupons",
@@ -176,10 +194,23 @@ export default function AdminDashboardPage() {
         };
       }
 
+      // Fetch event stats
+      const eventsRes = await fetch("/api/events/register", { credentials: "same-origin" });
+      let eventsData = { total: 0, upcoming: 0 };
+      if (eventsRes.ok) {
+        const eventsJson = await eventsRes.json();
+        const allEvents = eventsJson.events || eventsJson || [];
+        const now = new Date();
+        eventsData = {
+          total: allEvents.length,
+          upcoming: allEvents.filter((e: any) => new Date(e.date || e.startDate) >= now).length,
+        };
+      }
+
       setStats({
         blogs: blogData,
         gallery: galleryData,
-        events: { total: 0, upcoming: 0 },
+        events: eventsData,
         loading: false,
         error: null,
       });
@@ -309,15 +340,21 @@ export default function AdminDashboardPage() {
           <CardBody className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-default-500 uppercase tracking-wider font-medium">Approved</p>
+                <p className="text-xs text-default-500 uppercase tracking-wider font-medium">Total Events</p>
                 <p className="text-2xl md:text-3xl font-bold text-foreground mt-1">
-                  {stats.loading ? "—" : stats.blogs.approved}
+                  {stats.loading ? "—" : stats.events.total}
                 </p>
               </div>
               <div className="p-2 rounded-lg bg-purple-500/20">
-                <CheckCircleIcon className="w-5 h-5 text-purple-500" />
+                <CalendarIcon className="w-5 h-5 text-purple-500" />
               </div>
             </div>
+            {!stats.loading && stats.events.upcoming > 0 && (
+              <div className="mt-2 flex items-center gap-1.5">
+                <TrendingUpIcon className="w-3 h-3 text-success" />
+                <span className="text-xs text-success font-medium">{stats.events.upcoming} upcoming</span>
+              </div>
+            )}
           </CardBody>
         </Card>
 
@@ -325,15 +362,21 @@ export default function AdminDashboardPage() {
           <CardBody className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-default-500 uppercase tracking-wider font-medium">Rejected</p>
+                <p className="text-xs text-default-500 uppercase tracking-wider font-medium">Blog Status</p>
                 <p className="text-2xl md:text-3xl font-bold text-foreground mt-1">
-                  {stats.loading ? "—" : stats.blogs.rejected}
+                  {stats.loading ? "—" : stats.blogs.approved}
                 </p>
               </div>
               <div className="p-2 rounded-lg bg-red-500/20">
-                <XCircleIcon className="w-5 h-5 text-red-500" />
+                <CheckCircleIcon className="w-5 h-5 text-red-500" />
               </div>
             </div>
+            {!stats.loading && stats.blogs.rejected > 0 && (
+              <div className="mt-2 flex items-center gap-1.5">
+                <XCircleIcon className="w-3 h-3 text-danger" />
+                <span className="text-xs text-danger font-medium">{stats.blogs.rejected} rejected</span>
+              </div>
+            )}
           </CardBody>
         </Card>
       </div>

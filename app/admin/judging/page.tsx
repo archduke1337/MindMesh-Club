@@ -20,6 +20,9 @@ import {
   UsersIcon,
   CopyIcon,
   CheckIcon,
+  EditIcon,
+  TrashIcon,
+  BarChart3Icon,
 } from "lucide-react";
 
 interface Judge {
@@ -46,6 +49,20 @@ interface Criteria {
   order: number;
 }
 
+interface Score {
+  $id: string;
+  eventId: string;
+  judgeId: string;
+  judgeName: string;
+  submissionId: string;
+  teamId: string;
+  criteriaId: string;
+  criteriaName: string;
+  score: number;
+  comment: string | null;
+  scoredAt: string;
+}
+
 export default function AdminJudgingPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -56,9 +73,15 @@ export default function AdminJudgingPage() {
   const [selectedEventId, setSelectedEventId] = useState("");
   const [judges, setJudges] = useState<Judge[]>([]);
   const [criteria, setCriteria] = useState<Criteria[]>([]);
+  const [scores, setScores] = useState<Score[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"judges" | "criteria" | "scores">("judges");
+
+  const [editingJudge, setEditingJudge] = useState<Judge | null>(null);
+  const [editingCriteria, setEditingCriteria] = useState<Criteria | null>(null);
 
   const [judgeForm, setJudgeForm] = useState({
     name: "", email: "", organization: "", designation: "",
@@ -72,7 +95,6 @@ export default function AdminJudgingPage() {
     isUserAdminByEmail(user.email) || user.labels?.includes("admin")
   );
 
-  // Load hackathon events
   useEffect(() => {
     if (!isAdmin) return;
     fetch("/api/events/register")
@@ -90,14 +112,17 @@ export default function AdminJudgingPage() {
     if (!selectedEventId) return;
     setLoading(true);
     try {
-      const [jRes, cRes] = await Promise.all([
+      const [jRes, cRes, sRes] = await Promise.all([
         fetch(`/api/hackathon/judging?eventId=${selectedEventId}&type=judges`),
         fetch(`/api/hackathon/judging?eventId=${selectedEventId}&type=criteria`),
+        fetch(`/api/hackathon/judging?eventId=${selectedEventId}&type=scores`),
       ]);
       const jData = await jRes.json();
       const cData = await cRes.json();
+      const sData = await sRes.json();
       setJudges(jData.items || []);
       setCriteria(cData.items || []);
+      setScores(sData.items || []);
     } catch {
       //
     } finally {
@@ -109,52 +134,154 @@ export default function AdminJudgingPage() {
     loadData();
   }, [loadData]);
 
-  const handleAddJudge = async () => {
+  // Judge CRUD
+  const openAddJudge = () => {
+    setEditingJudge(null);
+    setJudgeForm({ name: "", email: "", organization: "", designation: "", expertise: "", isLead: false });
+    judgeModal.onOpen();
+  };
+
+  const openEditJudge = (j: Judge) => {
+    setEditingJudge(j);
+    setJudgeForm({
+      name: j.name,
+      email: j.email,
+      organization: j.organization || "",
+      designation: j.designation || "",
+      expertise: (j.expertise || []).join(", "),
+      isLead: j.isLead,
+    });
+    judgeModal.onOpen();
+  };
+
+  const handleSaveJudge = async () => {
     if (!judgeForm.name || !judgeForm.email) return;
     setSaving(true);
     try {
-      await fetch("/api/hackathon/judging", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "add_judge",
-          eventId: selectedEventId,
-          ...judgeForm,
-          expertise: judgeForm.expertise.split(",").map((s) => s.trim()).filter(Boolean),
-          order: judges.length,
-        }),
-      });
+      if (editingJudge) {
+        await fetch("/api/hackathon/judging", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "judge",
+            id: editingJudge.$id,
+            name: judgeForm.name,
+            email: judgeForm.email,
+            organization: judgeForm.organization || null,
+            designation: judgeForm.designation || null,
+            expertise: judgeForm.expertise.split(",").map((s) => s.trim()).filter(Boolean),
+            isLead: judgeForm.isLead,
+          }),
+        });
+      } else {
+        await fetch("/api/hackathon/judging", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "add_judge",
+            eventId: selectedEventId,
+            ...judgeForm,
+            expertise: judgeForm.expertise.split(",").map((s) => s.trim()).filter(Boolean),
+            order: judges.length,
+          }),
+        });
+      }
       judgeModal.onClose();
-      setJudgeForm({ name: "", email: "", organization: "", designation: "", expertise: "", isLead: false });
       await loadData();
     } catch {
-      //
+      alert("Failed to save judge");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAddCriteria = async () => {
+  const handleDeleteJudge = async (id: string) => {
+    if (!confirm("Remove this judge?")) return;
+    setDeleting(id);
+    try {
+      await fetch("/api/hackathon/judging", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "judge", id }),
+      });
+      await loadData();
+    } catch {
+      alert("Failed to delete");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  // Criteria CRUD
+  const openAddCriteria = () => {
+    setEditingCriteria(null);
+    setCriteriaForm({ name: "", description: "", maxScore: 10, weight: 0.2 });
+    criteriaModal.onOpen();
+  };
+
+  const openEditCriteria = (c: Criteria) => {
+    setEditingCriteria(c);
+    setCriteriaForm({
+      name: c.name,
+      description: c.description || "",
+      maxScore: c.maxScore,
+      weight: c.weight,
+    });
+    criteriaModal.onOpen();
+  };
+
+  const handleSaveCriteria = async () => {
     if (!criteriaForm.name) return;
     setSaving(true);
     try {
-      await fetch("/api/hackathon/judging", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "add_criteria",
-          eventId: selectedEventId,
-          ...criteriaForm,
-          order: criteria.length,
-        }),
-      });
+      if (editingCriteria) {
+        await fetch("/api/hackathon/judging", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "criteria",
+            id: editingCriteria.$id,
+            name: criteriaForm.name,
+            description: criteriaForm.description || null,
+            maxScore: criteriaForm.maxScore,
+            weight: criteriaForm.weight,
+          }),
+        });
+      } else {
+        await fetch("/api/hackathon/judging", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "add_criteria",
+            eventId: selectedEventId,
+            ...criteriaForm,
+            order: criteria.length,
+          }),
+        });
+      }
       criteriaModal.onClose();
-      setCriteriaForm({ name: "", description: "", maxScore: 10, weight: 0.2 });
       await loadData();
     } catch {
-      //
+      alert("Failed to save criteria");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteCriteria = async (id: string) => {
+    if (!confirm("Remove this criteria?")) return;
+    setDeleting(id);
+    try {
+      await fetch("/api/hackathon/judging", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "criteria", id }),
+      });
+      await loadData();
+    } catch {
+      alert("Failed to delete");
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -171,8 +298,18 @@ export default function AdminJudgingPage() {
 
   const totalWeight = criteria.reduce((sum, c) => sum + c.weight, 0);
 
+  // Aggregate scores by submission
+  const scoresBySubmission: Record<string, { total: number; count: number; judgeCount: number }> = {};
+  scores.forEach((s) => {
+    if (!scoresBySubmission[s.submissionId]) {
+      scoresBySubmission[s.submissionId] = { total: 0, count: 0, judgeCount: 0 };
+    }
+    scoresBySubmission[s.submissionId].total += s.score;
+    scoresBySubmission[s.submissionId].count++;
+  });
+
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Button
         variant="light"
         startContent={<ArrowLeftIcon className="w-4 h-4" />}
@@ -186,7 +323,7 @@ export default function AdminJudgingPage() {
         <GavelIcon className="w-7 h-7 text-warning" />
         Hackathon Judging
       </h1>
-      <p className="text-default-500 mb-6">Manage judges, criteria, and evaluation for hackathon events</p>
+      <p className="text-default-500 mb-6">Manage judges, criteria, and scores for hackathon events</p>
 
       {/* Event Selector */}
       <Card className="mb-6 border-none shadow-md">
@@ -217,110 +354,218 @@ export default function AdminJudgingPage() {
       )}
 
       {selectedEventId && !loading && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <>
+          {/* Tab Selector */}
+          <div className="flex gap-2 mb-6">
+            <Button
+              size="sm"
+              variant={activeTab === "judges" ? "solid" : "flat"}
+              color={activeTab === "judges" ? "primary" : "default"}
+              startContent={<UsersIcon className="w-4 h-4" />}
+              onPress={() => setActiveTab("judges")}
+            >
+              Judges ({judges.length})
+            </Button>
+            <Button
+              size="sm"
+              variant={activeTab === "criteria" ? "solid" : "flat"}
+              color={activeTab === "criteria" ? "secondary" : "default"}
+              startContent={<ScaleIcon className="w-4 h-4" />}
+              onPress={() => setActiveTab("criteria")}
+            >
+              Criteria ({criteria.length})
+            </Button>
+            <Button
+              size="sm"
+              variant={activeTab === "scores" ? "solid" : "flat"}
+              color={activeTab === "scores" ? "warning" : "default"}
+              startContent={<BarChart3Icon className="w-4 h-4" />}
+              onPress={() => setActiveTab("scores")}
+            >
+              Scores ({scores.length})
+            </Button>
+          </div>
+
           {/* Judges Panel */}
-          <Card className="border-none shadow-lg">
-            <CardHeader className="px-6 pt-6 pb-0 flex justify-between items-center">
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                <UsersIcon className="w-5 h-5" />
-                Judges ({judges.length})
-              </h2>
-              <Button size="sm" color="primary" startContent={<PlusIcon className="w-3.5 h-3.5" />}
-                onPress={judgeModal.onOpen}
-              >
-                Add Judge
-              </Button>
-            </CardHeader>
-            <CardBody className="px-6 pb-6">
-              {judges.length === 0 ? (
-                <p className="text-sm text-default-400 py-4 text-center">No judges added yet</p>
-              ) : (
-                <div className="space-y-3 mt-3">
-                  {judges.map((j) => (
-                    <div key={j.$id} className="flex items-center gap-3 p-3 bg-default-50 rounded-xl">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-warning to-orange-400 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                        {j.name.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-sm truncate">{j.name}</p>
-                          {j.isLead && <Chip size="sm" color="warning" variant="flat">Lead</Chip>}
-                          <Chip size="sm" variant="flat" color={
-                            j.status === "accepted" ? "success" :
-                            j.status === "declined" ? "danger" : "default"
-                          } className="capitalize">{j.status}</Chip>
+          {activeTab === "judges" && (
+            <Card className="border-none shadow-lg">
+              <CardHeader className="px-6 pt-6 pb-0 flex justify-between items-center">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <UsersIcon className="w-5 h-5" />
+                  Judges ({judges.length})
+                </h2>
+                <Button size="sm" color="primary" startContent={<PlusIcon className="w-3.5 h-3.5" />}
+                  onPress={openAddJudge}
+                >
+                  Add Judge
+                </Button>
+              </CardHeader>
+              <CardBody className="px-6 pb-6">
+                {judges.length === 0 ? (
+                  <p className="text-sm text-default-400 py-4 text-center">No judges added yet</p>
+                ) : (
+                  <div className="space-y-3 mt-3">
+                    {judges.map((j) => (
+                      <div key={j.$id} className="flex items-center gap-3 p-3 bg-default-50 rounded-xl">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-warning to-orange-400 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                          {j.name.charAt(0)}
                         </div>
-                        <p className="text-xs text-default-400 truncate">{j.email}</p>
-                        {j.organization && (
-                          <p className="text-xs text-default-400">{j.designation ? `${j.designation}, ` : ""}{j.organization}</p>
-                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-sm truncate">{j.name}</p>
+                            {j.isLead && <Chip size="sm" color="warning" variant="flat">Lead</Chip>}
+                            <Chip size="sm" variant="flat" color={
+                              j.status === "accepted" ? "success" :
+                              j.status === "declined" ? "danger" : "default"
+                            } className="capitalize">{j.status}</Chip>
+                          </div>
+                          <p className="text-xs text-default-400 truncate">{j.email}</p>
+                          {j.organization && (
+                            <p className="text-xs text-default-400">{j.designation ? `${j.designation}, ` : ""}{j.organization}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <code className="text-xs bg-default-100 px-2 py-1 rounded font-mono">{j.inviteCode}</code>
+                          <Button isIconOnly size="sm" variant="light" onPress={() => copyCode(j.inviteCode)}>
+                            {copiedCode === j.inviteCode ? <CheckIcon className="w-3.5 h-3.5 text-success" /> : <CopyIcon className="w-3.5 h-3.5" />}
+                          </Button>
+                          <Button isIconOnly size="sm" variant="light" onPress={() => openEditJudge(j)}>
+                            <EditIcon className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button isIconOnly size="sm" variant="light" color="danger" isLoading={deleting === j.$id} onPress={() => handleDeleteJudge(j.$id)}>
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <code className="text-xs bg-default-100 px-2 py-1 rounded font-mono">{j.inviteCode}</code>
-                        <Button isIconOnly size="sm" variant="light" onPress={() => copyCode(j.inviteCode)}>
-                          {copiedCode === j.inviteCode ? <CheckIcon className="w-3.5 h-3.5 text-success" /> : <CopyIcon className="w-3.5 h-3.5" />}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardBody>
-          </Card>
+                    ))}
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          )}
 
           {/* Criteria Panel */}
-          <Card className="border-none shadow-lg">
-            <CardHeader className="px-6 pt-6 pb-0 flex justify-between items-center">
-              <div>
-                <h2 className="text-lg font-bold flex items-center gap-2">
-                  <ScaleIcon className="w-5 h-5" />
-                  Criteria ({criteria.length})
-                </h2>
-                <p className="text-xs text-default-400 mt-0.5">
-                  Total weight: {(totalWeight * 100).toFixed(0)}%
-                  {Math.abs(totalWeight - 1) > 0.01 && (
-                    <span className="text-danger ml-2">(should be 100%)</span>
-                  )}
-                </p>
-              </div>
-              <Button size="sm" color="secondary" startContent={<PlusIcon className="w-3.5 h-3.5" />}
-                onPress={criteriaModal.onOpen}
-              >
-                Add Criteria
-              </Button>
-            </CardHeader>
-            <CardBody className="px-6 pb-6">
-              {criteria.length === 0 ? (
-                <p className="text-sm text-default-400 py-4 text-center">No criteria defined yet</p>
-              ) : (
-                <div className="space-y-3 mt-3">
-                  {criteria.map((c) => (
-                    <div key={c.$id} className="p-3 bg-default-50 rounded-xl">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="font-semibold text-sm">{c.name}</p>
-                        <div className="flex items-center gap-2">
-                          <Chip size="sm" variant="flat">Max: {c.maxScore}</Chip>
-                          <Chip size="sm" variant="flat" color="primary">{(c.weight * 100).toFixed(0)}%</Chip>
-                        </div>
-                      </div>
-                      {c.description && (
-                        <p className="text-xs text-default-400">{c.description}</p>
-                      )}
-                    </div>
-                  ))}
+          {activeTab === "criteria" && (
+            <Card className="border-none shadow-lg">
+              <CardHeader className="px-6 pt-6 pb-0 flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-bold flex items-center gap-2">
+                    <ScaleIcon className="w-5 h-5" />
+                    Criteria ({criteria.length})
+                  </h2>
+                  <p className="text-xs text-default-400 mt-0.5">
+                    Total weight: {(totalWeight * 100).toFixed(0)}%
+                    {Math.abs(totalWeight - 1) > 0.01 && (
+                      <span className="text-danger ml-2">(should be 100%)</span>
+                    )}
+                  </p>
                 </div>
-              )}
-            </CardBody>
-          </Card>
-        </div>
+                <Button size="sm" color="secondary" startContent={<PlusIcon className="w-3.5 h-3.5" />}
+                  onPress={openAddCriteria}
+                >
+                  Add Criteria
+                </Button>
+              </CardHeader>
+              <CardBody className="px-6 pb-6">
+                {criteria.length === 0 ? (
+                  <p className="text-sm text-default-400 py-4 text-center">No criteria defined yet</p>
+                ) : (
+                  <div className="space-y-3 mt-3">
+                    {criteria.map((c) => (
+                      <div key={c.$id} className="p-3 bg-default-50 rounded-xl">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-semibold text-sm">{c.name}</p>
+                          <div className="flex items-center gap-2">
+                            <Chip size="sm" variant="flat">Max: {c.maxScore}</Chip>
+                            <Chip size="sm" variant="flat" color="primary">{(c.weight * 100).toFixed(0)}%</Chip>
+                            <Button isIconOnly size="sm" variant="light" onPress={() => openEditCriteria(c)}>
+                              <EditIcon className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button isIconOnly size="sm" variant="light" color="danger" isLoading={deleting === c.$id} onPress={() => handleDeleteCriteria(c.$id)}>
+                              <TrashIcon className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                        {c.description && (
+                          <p className="text-xs text-default-400">{c.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Scores Panel */}
+          {activeTab === "scores" && (
+            <Card className="border-none shadow-lg">
+              <CardHeader className="px-6 pt-6 pb-0">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <BarChart3Icon className="w-5 h-5" />
+                  Scores ({scores.length} entries)
+                </h2>
+              </CardHeader>
+              <CardBody className="px-6 pb-6">
+                {scores.length === 0 ? (
+                  <p className="text-sm text-default-400 py-4 text-center">No scores submitted yet</p>
+                ) : (
+                  <div className="space-y-3 mt-3">
+                    {/* Group scores by submission */}
+                    {Object.entries(
+                      scores.reduce((acc, s) => {
+                        const key = s.submissionId;
+                        if (!acc[key]) acc[key] = [];
+                        acc[key].push(s);
+                        return acc;
+                      }, {} as Record<string, Score[]>)
+                    ).map(([submissionId, submScores]) => {
+                      const avgScore = submScores.reduce((sum, s) => sum + s.score, 0) / submScores.length;
+                      return (
+                        <div key={submissionId} className="p-4 bg-default-50 rounded-xl">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-semibold text-sm">Submission: {submissionId.slice(0, 8)}...</p>
+                            <Chip size="sm" color="warning" variant="flat">
+                              Avg: {avgScore.toFixed(1)}
+                            </Chip>
+                          </div>
+                          <Divider className="my-2" />
+                          <div className="space-y-1.5">
+                            {submScores.map((s) => (
+                              <div key={s.$id} className="flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-default-600 font-medium">{s.judgeName || "Judge"}</span>
+                                  <span className="text-default-400">→</span>
+                                  <span className="text-default-500">{s.criteriaName || "Criteria"}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold">{s.score}</span>
+                                  {s.comment && (
+                                    <span className="text-default-400 truncate max-w-[150px]" title={s.comment}>
+                                      &quot;{s.comment}&quot;
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          )}
+        </>
       )}
 
-      {/* Add Judge Modal */}
+      {/* Add/Edit Judge Modal */}
       <Modal isOpen={judgeModal.isOpen} onOpenChange={judgeModal.onOpenChange} size="lg">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Add Judge</ModalHeader>
+              <ModalHeader>{editingJudge ? "Edit Judge" : "Add Judge"}</ModalHeader>
               <ModalBody className="space-y-4">
                 <Input label="Name" value={judgeForm.name} onChange={(e) => setJudgeForm({ ...judgeForm, name: e.target.value })} isRequired variant="bordered" />
                 <Input label="Email" type="email" value={judgeForm.email} onChange={(e) => setJudgeForm({ ...judgeForm, email: e.target.value })} isRequired variant="bordered" />
@@ -336,19 +581,21 @@ export default function AdminJudgingPage() {
               </ModalBody>
               <ModalFooter>
                 <Button variant="flat" onPress={onClose}>Cancel</Button>
-                <Button color="primary" onPress={handleAddJudge} isLoading={saving} isDisabled={!judgeForm.name || !judgeForm.email}>Add Judge</Button>
+                <Button color="primary" onPress={handleSaveJudge} isLoading={saving} isDisabled={!judgeForm.name || !judgeForm.email}>
+                  {editingJudge ? "Update" : "Add Judge"}
+                </Button>
               </ModalFooter>
             </>
           )}
         </ModalContent>
       </Modal>
 
-      {/* Add Criteria Modal */}
+      {/* Add/Edit Criteria Modal */}
       <Modal isOpen={criteriaModal.isOpen} onOpenChange={criteriaModal.onOpenChange} size="lg">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Add Judging Criteria</ModalHeader>
+              <ModalHeader>{editingCriteria ? "Edit Criteria" : "Add Judging Criteria"}</ModalHeader>
               <ModalBody className="space-y-4">
                 <Input label="Criteria Name" value={criteriaForm.name} onChange={(e) => setCriteriaForm({ ...criteriaForm, name: e.target.value })} isRequired variant="bordered" placeholder="e.g. Innovation, Technical Complexity" />
                 <Textarea label="Description" value={criteriaForm.description} onChange={(e) => setCriteriaForm({ ...criteriaForm, description: e.target.value })} variant="bordered" placeholder="What should judges evaluate for this criterion?" minRows={2} />
@@ -359,7 +606,9 @@ export default function AdminJudgingPage() {
               </ModalBody>
               <ModalFooter>
                 <Button variant="flat" onPress={onClose}>Cancel</Button>
-                <Button color="secondary" onPress={handleAddCriteria} isLoading={saving} isDisabled={!criteriaForm.name}>Add Criteria</Button>
+                <Button color="secondary" onPress={handleSaveCriteria} isLoading={saving} isDisabled={!criteriaForm.name}>
+                  {editingCriteria ? "Update" : "Add Criteria"}
+                </Button>
               </ModalFooter>
             </>
           )}
