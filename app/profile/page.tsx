@@ -353,6 +353,7 @@ export default function ProfilePage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   startContent={<UserIcon className="w-4 h-4 text-default-400" />}
+                  isDisabled={updateLoading}
                   isRequired
                   isInvalid={!!validationErrors.name}
                   errorMessage={validationErrors.name}

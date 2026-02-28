@@ -152,11 +152,13 @@ export default function CompleteProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex justify-center min-h-[calc(100vh-200px)]">
-      <Card className="w-full max-w-2xl">
+    <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex justify-center min-h-[calc(100vh-200px)] relative">
+      <div className="absolute top-10 left-10 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse -z-10" />
+      <div className="absolute bottom-10 right-10 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-pulse -z-10" />
+      <Card className="w-full max-w-2xl border-none shadow-2xl">
         <CardHeader className="flex flex-col gap-2 pt-8 px-6">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xl font-bold">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
               {user.name?.charAt(0)?.toUpperCase() || "?"}
             </div>
             <div>
