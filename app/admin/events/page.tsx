@@ -573,7 +573,7 @@ export default function AdminEventsPage() {
           className="w-full sm:max-w-xs"
           size="sm"
           isClearable
-          onClear={() => setSearchQuery("")}
+          onClear={() => setSearchQuery("")} variant="bordered"
         />
         <div className="flex flex-wrap gap-1.5">
           {["all", "upcoming", "ongoing", "completed", "cancelled"].map((s) => (
@@ -911,7 +911,7 @@ export default function AdminEventsPage() {
                         description="Enter a direct link to the event image"
                         classNames={{
                           input: "text-sm"
-                        }}
+                        }} variant="bordered"
                       />
                       {formData.image && formData.image.startsWith('http') && (
                         <div className="relative group w-full">
@@ -944,7 +944,7 @@ export default function AdminEventsPage() {
                       classNames={{
                         label: "font-semibold",
                         input: "text-base"
-                      }}
+                      }} variant="bordered"
                     />
 
                     <div className="space-y-2">
@@ -964,7 +964,7 @@ export default function AdminEventsPage() {
                       required
                       classNames={{
                         label: "font-semibold"
-                      }}
+                      }} variant="bordered"
                     >
                       <SelectItem key="conference" variant="bordered">Conference</SelectItem>
                       <SelectItem key="workshop" variant="bordered">Workshop</SelectItem>
@@ -1016,7 +1016,7 @@ export default function AdminEventsPage() {
                         required
                         classNames={{
                           label: "font-semibold"
-                        }}
+                        }} variant="bordered"
                       />
                       <Input
                         label="Time"
@@ -1027,7 +1027,7 @@ export default function AdminEventsPage() {
                         required
                         classNames={{
                           label: "font-semibold"
-                        }}
+                        }} variant="bordered"
                       />
                     </div>
 
@@ -1040,7 +1040,7 @@ export default function AdminEventsPage() {
                         required
                         classNames={{
                           label: "font-semibold"
-                        }}
+                        }} variant="bordered"
                       />
                       <Input
                         label="Location"
@@ -1050,7 +1050,7 @@ export default function AdminEventsPage() {
                         required
                         classNames={{
                           label: "font-semibold"
-                        }}
+                        }} variant="bordered"
                       />
                     </div>
 
@@ -1086,7 +1086,7 @@ export default function AdminEventsPage() {
                         startContent={<span className="text-default-400">₹</span>}
                         classNames={{
                           label: "font-semibold"
-                        }}
+                        }} variant="bordered"
                       />
                       <Input
                         label="Discount Price (₹)"
@@ -1097,7 +1097,7 @@ export default function AdminEventsPage() {
                         startContent={<span className="text-default-400">₹</span>}
                         classNames={{
                           label: "font-semibold"
-                        }}
+                        }} variant="bordered"
                       />
                       <Input
                         label="Capacity"
@@ -1109,7 +1109,7 @@ export default function AdminEventsPage() {
                         startContent={<UsersIcon className="w-4 h-4 text-default-400" />}
                         classNames={{
                           label: "font-semibold"
-                        }}
+                        }} variant="bordered"
                       />
                     </div>
 
@@ -1176,7 +1176,7 @@ export default function AdminEventsPage() {
                             onChange={(e) => handleInputChange("recurringPattern", e.target.value)}
                             classNames={{
                               label: "font-semibold text-sm"
-                            }}
+                            }} variant="bordered"
                           >
                             <SelectItem key="weekly" variant="bordered">Every Week</SelectItem>
                             <SelectItem key="biweekly" variant="bordered">Every 2 Weeks</SelectItem>
@@ -1203,7 +1203,7 @@ export default function AdminEventsPage() {
                       size="sm"
                       classNames={{
                         label: "font-semibold text-xs md:text-sm"
-                      }}
+                      }} variant="bordered"
                     />
 
                     <div className="space-y-3">
@@ -1220,7 +1220,7 @@ export default function AdminEventsPage() {
                         description="Enter a direct link to the organizer's avatar"
                         classNames={{
                           input: "text-sm"
-                        }}
+                        }} variant="bordered"
                       />
                       {formData.organizerAvatar && formData.organizerAvatar.startsWith('http') && (
                         <div className="flex items-center gap-3 p-3 bg-default-100 dark:bg-default-50/10 rounded-lg">
@@ -1253,7 +1253,7 @@ export default function AdminEventsPage() {
                               e.preventDefault();
                               handleAddTag();
                             }
-                          }}
+                          }} variant="bordered"
                         />
                         <Button
                           type="button"
@@ -1395,7 +1395,7 @@ export default function AdminEventsPage() {
                     onKeyDown={handleCheckinScan}
                     onChange={(e) => setCheckinData(e.target.value)}
                     className="text-lg"
-                    autoFocus
+                    autoFocus variant="bordered"
                   />
                   <p className="text-xs text-default-500 mt-2">Point scanner at QR codes to check-in attendees</p>
                 </div>

@@ -311,7 +311,7 @@ export default function AdminResourcesPage() {
           placeholder="Search resources..." value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           startContent={<SearchIcon className="w-4 h-4 text-default-400" />}
-          className="w-full sm:max-w-xs" size="sm" isClearable onClear={() => setSearchQuery("")}
+          className="w-full sm:max-w-xs" size="sm" isClearable onClear={() => setSearchQuery("")} variant="bordered"
         />
         <div className="flex flex-wrap gap-1.5">
           <Button size="sm" variant={typeFilter === "all" ? "solid" : "flat"}
@@ -418,30 +418,30 @@ export default function AdminResourcesPage() {
 
           <ModalBody className="py-6 space-y-4">
             <Input label="Title" placeholder="Resource title" required
-              value={formData.title} onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))}
+              value={formData.title} onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))} variant="bordered"
             />
 
             <Textarea label="Description" placeholder="Brief description"
               value={formData.description || ""} onChange={(e) => setFormData(p => ({ ...p, description: e.target.value || null }))}
-              minRows={2}
+              minRows={2} variant="bordered"
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Select label="Type" selectedKeys={[formData.type]}
-                onChange={(e) => setFormData(p => ({ ...p, type: e.target.value as ResourceType }))}
+                onChange={(e) => setFormData(p => ({ ...p, type: e.target.value as ResourceType }))} variant="bordered"
               >
                 {RESOURCE_TYPES.map((t) => <SelectItem key={t.key} variant="bordered">{t.label}</SelectItem>)}
               </Select>
 
               <Select label="Difficulty" selectedKeys={[formData.difficulty]}
-                onChange={(e) => setFormData(p => ({ ...p, difficulty: e.target.value as Difficulty }))}
+                onChange={(e) => setFormData(p => ({ ...p, difficulty: e.target.value as Difficulty }))} variant="bordered"
               >
                 {DIFFICULTIES.map((d) => <SelectItem key={d.key} variant="bordered">{d.label}</SelectItem>)}
               </Select>
             </div>
 
             <Select label="Category" selectedKeys={[formData.category]}
-              onChange={(e) => setFormData(p => ({ ...p, category: e.target.value }))}
+              onChange={(e) => setFormData(p => ({ ...p, category: e.target.value }))} variant="bordered"
             >
               {CATEGORIES.map((c) => <SelectItem key={c} variant="bordered">{c}</SelectItem>)}
             </Select>
@@ -449,20 +449,20 @@ export default function AdminResourcesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label="URL" placeholder="https://..." type="url"
                 value={formData.url || ""} onChange={(e) => setFormData(p => ({ ...p, url: e.target.value || null }))}
-                startContent={<LinkIcon className="w-4 h-4 text-default-400" />}
+                startContent={<LinkIcon className="w-4 h-4 text-default-400" />} variant="bordered"
               />
               <Input label="File URL" placeholder="https://..." type="url"
                 value={formData.fileUrl || ""} onChange={(e) => setFormData(p => ({ ...p, fileUrl: e.target.value || null }))}
-                startContent={<FileIcon className="w-4 h-4 text-default-400" />}
+                startContent={<FileIcon className="w-4 h-4 text-default-400" />} variant="bordered"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label="Event Name (optional)" placeholder="Linked event"
-                value={formData.eventName || ""} onChange={(e) => setFormData(p => ({ ...p, eventName: e.target.value || null }))}
+                value={formData.eventName || ""} onChange={(e) => setFormData(p => ({ ...p, eventName: e.target.value || null }))} variant="bordered"
               />
               <Input label="Uploaded By" placeholder="email or name"
-                value={formData.uploadedBy} onChange={(e) => setFormData(p => ({ ...p, uploadedBy: e.target.value }))}
+                value={formData.uploadedBy} onChange={(e) => setFormData(p => ({ ...p, uploadedBy: e.target.value }))} variant="bordered"
               />
             </div>
 
@@ -472,7 +472,7 @@ export default function AdminResourcesPage() {
               <div className="flex gap-2">
                 <Input placeholder="e.g. React, JavaScript" value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddTag(); } }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddTag(); } }} variant="bordered"
                 />
                 <Button type="button" onPress={handleAddTag} color="primary" variant="flat">Add</Button>
               </div>
