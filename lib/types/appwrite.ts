@@ -1,4 +1,4 @@
-// lib/types/appwrite.ts
+  // lib/types/appwrite.ts
 // ═══════════════════════════════════════════════════════
 // TypeScript type definitions for ALL Appwrite collections
 // ═══════════════════════════════════════════════════════

@@ -34,8 +34,27 @@ const envSchema = z.object({
 
 // ── Parse & export ──────────────────────────────────────
 
+// Next.js inlines `process.env.NEXT_PUBLIC_*` via literal string replacement
+// at build time. Passing `process.env` as an object does NOT work on the
+// client because the object is empty — each variable must be referenced by
+// its full name so the bundler can inline it.
+const rawEnv = {
+  NEXT_PUBLIC_APPWRITE_ENDPOINT: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT,
+  NEXT_PUBLIC_APPWRITE_PROJECT_ID: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID,
+  NEXT_PUBLIC_APPWRITE_DATABASE_ID: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+  APPWRITE_API_KEY: process.env.APPWRITE_API_KEY,
+  NEXT_PUBLIC_APPWRITE_BUCKET_ID: process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID,
+  NEXT_PUBLIC_EVENT_IMAGES_BUCKET_ID: process.env.NEXT_PUBLIC_EVENT_IMAGES_BUCKET_ID,
+  NEXT_PUBLIC_GALLERY_IMAGES_BUCKET_ID: process.env.NEXT_PUBLIC_GALLERY_IMAGES_BUCKET_ID,
+  NEXT_PUBLIC_APPWRITE_BLOGS_COLLECTION_ID: process.env.NEXT_PUBLIC_APPWRITE_BLOGS_COLLECTION_ID,
+  ADMIN_EMAILS: process.env.ADMIN_EMAILS,
+  NEXT_PUBLIC_ADMIN_EMAILS: process.env.NEXT_PUBLIC_ADMIN_EMAILS,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+  RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
+};
+
 function parseEnv() {
-  const result = envSchema.safeParse(process.env);
+  const result = envSchema.safeParse(rawEnv);
   if (!result.success) {
     const formatted = result.error.issues
       .map((i) => `  • ${i.path.join(".")}: ${i.message}`)
@@ -47,7 +66,7 @@ function parseEnv() {
       throw new Error(`Missing or invalid environment variables:\n${formatted}`);
     }
   }
-  return result.success ? result.data : (process.env as unknown as z.infer<typeof envSchema>);
+  return result.success ? result.data : (rawEnv as unknown as z.infer<typeof envSchema>);
 }
 
 export const env = parseEnv();
