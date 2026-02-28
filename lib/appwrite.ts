@@ -91,6 +91,69 @@ export const createAdminDatabases = () => {
       
       return response.json();
     },
+
+    deleteDocument: async (databaseId: string, collectionId: string, documentId: string) => {
+      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+      const apiKey = process.env.APPWRITE_API_KEY;
+
+      if (!endpoint || !projectId || !apiKey) {
+        throw new Error("Missing required environment variables: APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, or APPWRITE_API_KEY");
+      }
+
+      const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents/${documentId}`;
+
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          "X-Appwrite-Key": apiKey,
+          "X-Appwrite-Project": projectId,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[AdminAPI] Delete error - Status:", response.status, "Body:", errorText);
+        try {
+          const error = JSON.parse(errorText);
+          throw new Error(error.message || `HTTP ${response.status}: Failed to delete document`);
+        } catch (e) {
+          if (e instanceof Error && e.message.startsWith('HTTP')) throw e;
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+      }
+
+      return true;
+    },
+
+    listDocuments: async (databaseId: string, collectionId: string, queries: string[] = []) => {
+      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+      const apiKey = process.env.APPWRITE_API_KEY;
+
+      if (!endpoint || !projectId || !apiKey) {
+        throw new Error("Missing required environment variables");
+      }
+
+      const params = new URLSearchParams();
+      queries.forEach(q => params.append('queries[]', q));
+      const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents?${params.toString()}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "X-Appwrite-Key": apiKey,
+          "X-Appwrite-Project": projectId,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      return response.json();
+    },
   } as any;
 };
 

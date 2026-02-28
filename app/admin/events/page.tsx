@@ -253,12 +253,20 @@ export default function AdminEventsPage() {
 
     setDeletingId(eventId);
     try {
-      await eventService.deleteEvent(eventId);
+      const res = await fetch("/api/admin/events", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete event");
+      }
       await loadEvents();
       showToast("Event deleted successfully!", 'success');
     } catch (error) {
       console.error("Error deleting event:", error);
-      showToast("Failed to delete event", 'error');
+      showToast(getErrorMessage(error), 'error');
     } finally {
       setDeletingId(null);
     }
@@ -438,12 +446,21 @@ export default function AdminEventsPage() {
     if (!confirm("Are you sure you want to delete all past events?")) return;
 
     try {
-      const count = await eventService.deletePastEvents();
+      const res = await fetch("/api/admin/events", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deletePast: true }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete past events");
+      }
+      const data = await res.json();
       await loadEvents();
-      showToast(`${count} past events deleted successfully!`, 'success');
+      showToast(`${data.deleted} past events deleted successfully!`, 'success');
     } catch (error) {
       console.error("Error deleting past events:", error);
-      showToast("Failed to delete past events", 'error');
+      showToast(getErrorMessage(error), 'error');
     }
   };
 
