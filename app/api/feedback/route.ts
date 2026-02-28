@@ -1,31 +1,20 @@
 // app/api/feedback/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
-import { adminFetch } from "@/lib/adminApi";
-import { DATABASE_ID, COLLECTION_IDS } from "@/lib/types/appwrite";
-
-const COLLECTION_ID = COLLECTION_IDS.FEEDBACK;
+import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
 
 // GET /api/feedback?eventId=xxx
 export async function GET(request: NextRequest) {
   try {
     const eventId = request.nextUrl.searchParams.get("eventId");
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`
-    );
-    if (!res.ok) {
-      return NextResponse.json({ feedback: [] });
-    }
+    const queries: string[] = eventId
+      ? [Query.equal("eventId", eventId)]
+      : [];
 
-    const data = await res.json();
-    let items = data.documents || [];
+    const result = await adminDb.listDocuments(DATABASE_ID, COLLECTIONS.FEEDBACK, queries);
 
-    if (eventId) {
-      items = items.filter((f: any) => f.eventId === eventId);
-    }
-
-    return NextResponse.json({ feedback: items });
+    return NextResponse.json({ feedback: result.documents });
   } catch {
     return NextResponse.json({ feedback: [] });
   }
@@ -57,14 +46,11 @@ export async function POST(request: NextRequest) {
     const verifiedUserEmail = authUser.email;
 
     // Check for duplicate
-    const existingRes = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`
-    );
-    const existingData = await existingRes.json();
-    const duplicate = (existingData.documents || []).find(
-      (f: any) => f.eventId === eventId && f.userId === verifiedUserId
-    );
-    if (duplicate) {
+    const existing = await adminDb.listDocuments(DATABASE_ID, COLLECTIONS.FEEDBACK, [
+      Query.equal("eventId", eventId),
+      Query.equal("userId", verifiedUserId),
+    ]);
+    if (existing.total > 0) {
       return NextResponse.json(
         { error: "You have already submitted feedback for this event" },
         { status: 409 }
@@ -80,35 +66,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          documentId: "unique()",
-          data: {
-            eventId,
-            userId: verifiedUserId,
-            userName: verifiedUserName,
-            userEmail: verifiedUserEmail,
-            rating: ratingNum,
-            feedback,
-            suggestions: suggestions || null,
-            category: category || "general",
-            isAnonymous: isAnonymous || false,
-            isResolved: false,
-            adminResponse: null,
-          },
-        }),
-      }
-    );
+    const doc = await adminDb.createDocument(DATABASE_ID, COLLECTIONS.FEEDBACK, ID.unique(), {
+      eventId,
+      userId: verifiedUserId,
+      userName: verifiedUserName,
+      userEmail: verifiedUserEmail,
+      rating: ratingNum,
+      feedback,
+      suggestions: suggestions || null,
+      category: category || "general",
+      isAnonymous: isAnonymous || false,
+      isResolved: false,
+      adminResponse: null,
+    });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      return NextResponse.json({ error: errText }, { status: res.status });
-    }
-
-    const doc = await res.json();
     return NextResponse.json({ success: true, feedback: doc }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

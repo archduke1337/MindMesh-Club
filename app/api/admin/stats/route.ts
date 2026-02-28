@@ -3,21 +3,21 @@
 // Returns document counts using Appwrite's `total` field (no full document transfer)
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/apiAuth";
-import { adminFetch } from "@/lib/adminApi";
-import { DATABASE_ID, COLLECTION_IDS } from "@/lib/types/appwrite";
+import { adminDb, DATABASE_ID, COLLECTIONS, Query } from "@/lib/appwrite/server";
 
 /**
- * Helper to get a count via Appwrite REST — uses limit=1 and reads `total`.
+ * Helper to get a count via Appwrite SDK — uses limit=1 and reads `total`.
  */
 async function getCount(collectionId: string, queries: string[] = []): Promise<number> {
-  const allQueries = [...queries, '{"method":"limit","values":[1]}'];
-  const qs = allQueries.map((q) => `queries[]=${encodeURIComponent(q)}`).join("&");
-  const res = await adminFetch(
-    `/databases/${DATABASE_ID}/collections/${collectionId}/documents?${qs}`
-  );
-  if (!res.ok) return 0;
-  const data = await res.json();
-  return data.total ?? 0;
+  try {
+    const result = await adminDb.listDocuments(DATABASE_ID, collectionId, [
+      ...queries,
+      Query.limit(1),
+    ]);
+    return result.total;
+  } catch {
+    return 0;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -39,17 +39,17 @@ export async function GET(request: NextRequest) {
       eventsUpcoming,
     ] = await Promise.all([
       // Blog counts
-      getCount(COLLECTION_IDS.BLOG),
-      getCount(COLLECTION_IDS.BLOG, ['{"method":"equal","attribute":"status","values":["pending"]}']),
-      getCount(COLLECTION_IDS.BLOG, ['{"method":"equal","attribute":"status","values":["approved"]}']),
-      getCount(COLLECTION_IDS.BLOG, ['{"method":"equal","attribute":"status","values":["rejected"]}']),
+      getCount(COLLECTIONS.BLOG),
+      getCount(COLLECTIONS.BLOG, [Query.equal("status", "pending")]),
+      getCount(COLLECTIONS.BLOG, [Query.equal("status", "approved")]),
+      getCount(COLLECTIONS.BLOG, [Query.equal("status", "rejected")]),
       // Gallery counts
-      getCount(COLLECTION_IDS.GALLERY),
-      getCount(COLLECTION_IDS.GALLERY, ['{"method":"equal","attribute":"isApproved","values":[false]}']),
+      getCount(COLLECTIONS.GALLERY),
+      getCount(COLLECTIONS.GALLERY, [Query.equal("isApproved", false)]),
       // Event counts
-      getCount(COLLECTION_IDS.EVENTS),
-      getCount(COLLECTION_IDS.EVENTS, [
-        `{"method":"greaterThanEqual","attribute":"date","values":["${new Date().toISOString().split("T")[0]}"]}`,
+      getCount(COLLECTIONS.EVENTS),
+      getCount(COLLECTIONS.EVENTS, [
+        Query.greaterThanEqual("date", new Date().toISOString().split("T")[0]),
       ]),
     ]);
 
