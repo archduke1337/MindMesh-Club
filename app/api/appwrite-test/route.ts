@@ -1,6 +1,7 @@
 // app/api/appwrite-test/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/apiAuth";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,8 +43,8 @@ export async function GET(request: NextRequest) {
       } else {
         healthCheckNote = `Health check returned status: ${endpointTest.status}`;
       }
-    } catch (healthError: any) {
-      healthCheckNote = `Health check error: ${healthError.message}`;
+    } catch (healthError: unknown) {
+      healthCheckNote = `Health check error: ${getErrorMessage(healthError)}`;
     }
 
     // Do not expose database IDs, bucket IDs, or project IDs in response
@@ -54,12 +55,12 @@ export async function GET(request: NextRequest) {
       healthCheckNote: healthCheckNote,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
-    console.error("Appwrite Test Error:", error);
+  } catch (error: unknown) {
+    console.error("Appwrite Test Error:", getErrorMessage(error));
     return NextResponse.json(
       {
         status: "error",
-        message: error.message || "Failed to connect to Appwrite",
+        message: getErrorMessage(error),
       },
       { status: 500 }
     );

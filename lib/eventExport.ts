@@ -3,17 +3,33 @@
 
 import { Event, Registration } from "./database";
 import { EventMetrics } from "./eventAnalytics";
-import { jsPDF } from "jspdf";
+
+// Lazy-load jsPDF to avoid increasing bundle size when not needed
+async function loadJsPDF() {
+  const { jsPDF } = await import("jspdf");
+  return jsPDF;
+}
+
+/**
+ * Escape a value for CSV output (handles commas, quotes, newlines)
+ */
+function escapeCSV(value: string): string {
+  if (/[,"\n\r]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
 
 /**
  * Generate PDF for registration list
  */
-export function generateRegistrationListPDF(
+export async function generateRegistrationListPDF(
   eventTitle: string,
   eventDate: string,
   registrations: Registration[]
-): Blob {
-  const doc = new jsPDF();
+): Promise<Blob> {
+  const JsPDF = await loadJsPDF();
+  const doc = new JsPDF();
   
   // Title
   doc.setFontSize(18);
@@ -107,12 +123,12 @@ export function generateRegistrationListPDF(
 /**
  * Download registration list as PDF
  */
-export function downloadRegistrationListPDF(
+export async function downloadRegistrationListPDF(
   eventTitle: string,
   eventDate: string,
   registrations: Registration[]
-): void {
-  const pdfBlob = generateRegistrationListPDF(eventTitle, eventDate, registrations);
+): Promise<void> {
+  const pdfBlob = await generateRegistrationListPDF(eventTitle, eventDate, registrations);
   const url = URL.createObjectURL(pdfBlob);
   const link = document.createElement("a");
   
@@ -179,7 +195,7 @@ export function generateEventStatsCSV(
   lines.push("User Name,Email,Registered At");
   registrations.forEach((reg) => {
     const date = new Date(reg.registeredAt).toLocaleString();
-    lines.push(`"${reg.userName}","${reg.userEmail}","${date}"`);
+    lines.push(`${escapeCSV(reg.userName)},${escapeCSV(reg.userEmail)},${escapeCSV(date)}`);
   });
 
   return lines.join("\n");
@@ -218,7 +234,7 @@ export function generateRegistrationList(registrations: Registration[]): string 
 
   registrations.forEach((reg) => {
     const date = new Date(reg.registeredAt).toLocaleDateString();
-    lines.push(`${reg.userName},${reg.userEmail},${date}`);
+    lines.push(`${escapeCSV(reg.userName)},${escapeCSV(reg.userEmail)},${escapeCSV(date)}`);
   });
 
   return lines.join("\n");
@@ -228,7 +244,7 @@ export function generateRegistrationList(registrations: Registration[]): string 
  * Trigger registration list download as PDF
  * @deprecated Use downloadRegistrationListPDF instead
  */
-export function downloadRegistrationList(eventTitle: string, registrations: Registration[]): void {
+export async function downloadRegistrationList(eventTitle: string, registrations: Registration[]): Promise<void> {
   // Get the first registration date to pass as eventDate
   const eventDate = registrations.length > 0 
     ? new Date().toISOString() 

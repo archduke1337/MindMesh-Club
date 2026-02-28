@@ -3,12 +3,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
   let code = "";
   for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    code += chars.charAt(bytes[i] % chars.length);
   }
   return code;
 }
@@ -95,9 +98,9 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ error: "eventId or inviteCode required" }, { status: 400 });
-  } catch (error: any) {
-    console.error("[API] Teams GET error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("[API] Teams GET error:", getErrorMessage(error));
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -162,8 +165,8 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({ success: true, team }, { status: 201 });
-  } catch (error: any) {
-    console.error("[API] Teams POST error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("[API] Teams POST error:", getErrorMessage(error));
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

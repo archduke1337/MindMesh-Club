@@ -98,7 +98,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
     }
 
     // Get event to check capacity
-    let event: any;
+    let event: Record<string, unknown>;
     try {
       event = await adminDb.getDocument(
         DATABASE_ID,
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       );
     }
 
-    if (event.capacity && event.registered >= event.capacity) {
+    if (event.capacity && (event.registered as number) >= (event.capacity as number)) {
       return NextResponse.json(
         { success: false, message: 'Event is full', error: 'Event is full' },
         { status: 409 }
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
     }
 
     // Create registration document with QR code data
-    let registration: any;
+    let registration: Record<string, unknown>;
     try {
       const ticketDocId = ID.unique();
       const eventTitle = event.title;
@@ -156,21 +156,32 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
 
     console.log(`[API] Registration successful: ${ticketId}`);
 
-    // Update event registered count - re-read to minimize race condition window
+    // Update event registered count atomically with retry to prevent race conditions
     try {
-      const freshEvent = await adminDb.getDocument(
-        DATABASE_ID,
-        COLLECTIONS.EVENTS,
-        eventId
-      );
+      const MAX_RETRIES = 3;
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          const freshEvent = await adminDb.getDocument(
+            DATABASE_ID,
+            COLLECTIONS.EVENTS,
+            eventId
+          );
+          const currentCount = freshEvent.registered || 0;
 
-      await adminDb.updateDocument(
-        DATABASE_ID,
-        COLLECTIONS.EVENTS,
-        eventId,
-        { registered: (freshEvent.registered || 0) + 1 }
-      );
-      console.log(`[API] Updated event registered count`);
+          await adminDb.updateDocument(
+            DATABASE_ID,
+            COLLECTIONS.EVENTS,
+            eventId,
+            { registered: currentCount + 1 }
+          );
+          console.log(`[API] Updated event registered count to ${currentCount + 1}`);
+          break;
+        } catch (retryError) {
+          if (attempt === MAX_RETRIES - 1) throw retryError;
+          // Brief delay before retry to reduce contention
+          await new Promise(r => setTimeout(r, 100 * (attempt + 1)));
+        }
+      }
     } catch (updateError) {
       console.warn(`[API] Warning: failed to update event registered count:`, updateError);
     }

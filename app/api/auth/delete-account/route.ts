@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -72,13 +73,13 @@ export async function DELETE(request: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error: any) {
-    console.error("Error deleting account:", error);
+  } catch (error: unknown) {
+    console.error("Error deleting account:", getErrorMessage(error));
     
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to delete account",
+        error: getErrorMessage(error),
       },
       { status: 500 }
     );

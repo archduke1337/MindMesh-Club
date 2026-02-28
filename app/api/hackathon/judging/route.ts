@@ -3,9 +3,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth, verifyAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 function generateInviteCode() {
-  return Math.random().toString(36).substring(2, 10).toUpperCase();
+  const bytes = new Uint8Array(5);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(36).padStart(2, '0')).join('').substring(0, 10).toUpperCase();
 }
 
 function getCollectionId(type: string): string {
@@ -36,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     // Sort by order for judges/criteria
     if (type !== "scores") {
-      items.sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+      items.sort((a: Record<string, unknown>, b: Record<string, unknown>) => ((a.order as number) || 0) - ((b.order as number) || 0));
     }
 
     return NextResponse.json({ items });
@@ -242,8 +245,8 @@ export async function POST(request: NextRequest) {
             );
             results.push({ score: createdDoc });
           }
-        } catch (err: any) {
-          results.push({ error: err.message });
+        } catch (err: unknown) {
+          results.push({ error: getErrorMessage(err) });
         }
       }
 
@@ -251,8 +254,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -281,8 +284,8 @@ export async function PATCH(request: NextRequest) {
     );
 
     return NextResponse.json({ item: doc });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -305,7 +308,7 @@ export async function DELETE(request: NextRequest) {
     await adminDb.deleteDocument(DATABASE_ID, collectionId, id);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

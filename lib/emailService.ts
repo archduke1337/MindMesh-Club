@@ -1,27 +1,26 @@
 // lib/emailService.ts
 // FINAL VERSION - Matches your EmailJS template exactly
 
-// Generate a unique ticket ID
+import { generateTicketQRCodeUrl } from './eventQRCode';
+
+// Generate a unique ticket ID using crypto for security
 const generateTicketId = (): string => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const randomBytes = new Uint8Array(8);
+  crypto.getRandomValues(randomBytes);
   let ticketId = 'TKT-';
   for (let i = 0; i < 8; i++) {
-    ticketId += chars.charAt(Math.floor(Math.random() * chars.length));
+    ticketId += chars.charAt(randomBytes[i] % chars.length);
   }
   return ticketId;
 };
 
-// Generate QR code URL (using free QR code API)
-// Updated to use ticket QR format: TICKET|ticketId|userName|eventTitle
+// Generate QR code URL — delegates to the canonical implementation
 const generateQRCode = (ticketId: string, userName?: string, eventTitle?: string): string => {
-  let qrData = ticketId;
-  
-  // If additional info provided, use ticket QR format for venue check-in
   if (userName && eventTitle) {
-    qrData = `TICKET|${ticketId}|${userName}|${eventTitle}`;
+    return generateTicketQRCodeUrl(ticketId, userName, eventTitle);
   }
-  
-  return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(ticketId)}`;
 };
 
 // Format date for email (e.g., "Monday, January 15, 2025")

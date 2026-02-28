@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth, verifyAdminAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 // GET /api/events/documents?eventId=xxx
 export async function GET(request: NextRequest) {
@@ -24,12 +25,12 @@ export async function GET(request: NextRequest) {
     );
 
     const sorted = (response.documents || []).sort(
-      (a: any, b: any) => (a.order || 0) - (b.order || 0)
+      (a: Record<string, unknown>, b: Record<string, unknown>) => ((a.order as number) || 0) - ((b.order as number) || 0)
     );
     return NextResponse.json({ documents: sorted });
-  } catch (err: any) {
-    console.error("[Events Documents GET]", err);
-    return NextResponse.json({ error: err?.message || "Failed to fetch documents" }, { status: 500 });
+  } catch (err: unknown) {
+    console.error("[Events Documents GET]", getErrorMessage(err));
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }
 
@@ -67,8 +68,8 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({ document: doc }, { status: 201 });
-  } catch (error: any) {
-    console.error("[Events Documents POST]", error);
-    return NextResponse.json({ error: error?.message || "Failed to create document" }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("[Events Documents POST]", getErrorMessage(error));
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

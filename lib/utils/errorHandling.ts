@@ -1,10 +1,10 @@
 // lib/utils/errorHandling.ts
 import { toast } from 'sonner';
 import { ZodError } from 'zod';
-import { getErrorMessage } from '../errorHandler';
+import { getErrorMessage, getErrorDetails, isError } from '../errorHandler';
 
 // Re-export from canonical source to avoid duplication
-export { getErrorMessage };
+export { getErrorMessage, getErrorDetails, isError };
 
 /**
  * Handle Zod validation errors
@@ -112,7 +112,7 @@ export function showWarningToast(message: string): void {
  * Log error to console and potentially to external service
  * In the future, this could send to Sentry, LogRocket, etc.
  */
-export function logError(error: unknown, context?: string, additionalData?: Record<string, any>): void {
+export function logError(error: unknown, context?: string, additionalData?: Record<string, unknown>): void {
     const errorMessage = getErrorMessage(error);
     const timestamp = new Date().toISOString();
 
@@ -137,7 +137,7 @@ export function logError(error: unknown, context?: string, additionalData?: Reco
  * Async error handler wrapper
  * Wraps async functions to catch and handle errors
  */
-export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
+export function withErrorHandling<T extends (...args: unknown[]) => Promise<unknown>>(
     fn: T,
     context?: string
 ): T {

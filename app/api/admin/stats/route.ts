@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, Query } from "@/lib/appwrite/server";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 /**
  * Helper to get a count via Appwrite SDK — uses limit=1 and reads `total`.
@@ -58,10 +59,10 @@ export async function GET(request: NextRequest) {
       gallery: { total: galleryTotal, pending: galleryPending },
       events: { total: eventsTotal, upcoming: eventsUpcoming },
     });
-  } catch (err: any) {
-    console.error("[API] Admin stats error:", err);
+  } catch (err: unknown) {
+    console.error("[API] Admin stats error:", getErrorMessage(err));
     return NextResponse.json(
-      { error: "Failed to fetch stats", details: err.message },
+      { error: "Failed to fetch stats", details: getErrorMessage(err) },
       { status: 500 }
     );
   }

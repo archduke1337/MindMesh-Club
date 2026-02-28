@@ -64,8 +64,13 @@ export default function AdminBlogsPage() {
     try {
       setError(null);
       setLoading(true);
-      const allBlogs = await blogService.getAllBlogs();
-      setBlogs(allBlogs);
+      // Use admin API route instead of client SDK to go through proper auth
+      const res = await fetch("/api/blog/admin", { credentials: "same-origin" });
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result?.error || "Failed to fetch blogs");
+      }
+      setBlogs(result.data || []);
     } catch (err) {
       const errorMsg = getErrorMessage(err);
       console.error("Error loading blogs:", errorMsg);

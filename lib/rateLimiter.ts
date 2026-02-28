@@ -21,8 +21,9 @@ async function recentBlogCount(userId: string): Promise<number> {
     ]);
     return result.total;
   } catch {
-    // If the query fails, allow the submission (fail-open)
-    return 0;
+    // Fail-closed: if the query fails, treat as limit exceeded to prevent abuse
+    console.warn("[RateLimiter] Failed to query blog count, denying submission");
+    return BLOG_SUBMISSION_LIMIT;
   }
 }
 

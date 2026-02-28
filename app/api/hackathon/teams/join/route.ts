@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 // POST /api/hackathon/teams/join
 export async function POST(request: NextRequest) {
@@ -131,8 +132,8 @@ export async function POST(request: NextRequest) {
       teamName: team.teamName,
       message: `You have joined team "${team.teamName}"!`,
     });
-  } catch (error: any) {
-    console.error("[API] Join team error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("[API] Join team error:", getErrorMessage(error));
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

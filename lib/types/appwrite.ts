@@ -599,7 +599,7 @@ export interface BlogPost extends AppwriteDocument {
   authorAvatar: string | null;
   category: string;
   tags: string[];
-  status: "draft" | "published";
+  status: "draft" | "pending" | "approved" | "rejected";
   isFeatured: boolean;
   readTime: number;
   views: number;

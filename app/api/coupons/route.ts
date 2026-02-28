@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth, verifyAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 // GET /api/coupons — list all or validate a specific code
 // ?code=EARLYBIRD50&eventId=xxx&userId=yyy — validate
@@ -88,8 +89,8 @@ export async function GET(request: NextRequest) {
         scope: coupon.scope,
       },
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -193,8 +194,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -214,15 +215,15 @@ export async function PATCH(request: NextRequest) {
 
     // Whitelist allowed fields to prevent abuse (e.g., resetting usedCount)
     const allowedFields = ["isActive", "description", "validFrom", "validUntil", "usageLimit", "perUserLimit"];
-    const safeData: Record<string, any> = {};
+    const safeData: Record<string, unknown> = {};
     for (const key of allowedFields) {
       if (key in updateData) safeData[key] = updateData[key];
     }
 
     const doc = await adminDb.updateDocument(DATABASE_ID, COLLECTIONS.COUPONS, couponId, safeData);
     return NextResponse.json({ coupon: doc });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -241,7 +242,7 @@ export async function DELETE(request: NextRequest) {
 
     await adminDb.deleteDocument(DATABASE_ID, COLLECTIONS.COUPONS, couponId);
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

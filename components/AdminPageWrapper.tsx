@@ -9,7 +9,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { AlertCircle, ArrowLeft } from "lucide-react";
@@ -25,7 +24,7 @@ export default function AdminPageWrapper({
   title,
   description,
 }: AdminPageWrapperProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin: isAdminUser } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -39,12 +38,9 @@ export default function AdminPageWrapper({
         return;
       }
 
-      // Check admin status using email or Appwrite labels
-      const hasAdminAccess =
-        isUserAdminByEmail(user.email) ||
-        (user as any).labels?.includes("admin");
-
-      if (!hasAdminAccess) {
+      // Check admin status using unified isAdmin from AuthContext
+      // (checks both Appwrite labels and email-based config)
+      if (!isAdminUser) {
         setError("You do not have permission to access this page.");
         setTimeout(() => router.push("/"), 3000);
         return;
@@ -52,7 +48,7 @@ export default function AdminPageWrapper({
 
       setIsAdmin(true);
     }
-  }, [user, loading, router]);
+  }, [user, loading, isAdminUser, router]);
 
   if (loading) {
     return (

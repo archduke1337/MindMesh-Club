@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, Query } from "@/lib/appwrite/server";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 /**
  * DELETE /api/admin/events
@@ -28,7 +29,7 @@ export async function DELETE(request: NextRequest) {
 
       const docs = response.documents || [];
       await Promise.all(
-        docs.map((doc: any) =>
+        docs.map((doc) =>
           adminDb.deleteDocument(DATABASE_ID, COLLECTIONS.EVENTS, doc.$id)
         )
       );
@@ -45,10 +46,10 @@ export async function DELETE(request: NextRequest) {
     await adminDb.deleteDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId);
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[Admin Events DELETE]", err);
     return NextResponse.json(
-      { error: err?.message || "Failed to delete event" },
+      { error: getErrorMessage(err) },
       { status: 500 }
     );
   }

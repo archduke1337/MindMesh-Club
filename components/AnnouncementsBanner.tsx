@@ -28,12 +28,32 @@ const TYPE_ICONS: Record<string, string> = {
   update: "🔔",
 };
 
+const DISMISSED_KEY = "mindmesh-dismissed-announcements";
+
+function getDismissedFromStorage(): Set<string> {
+  try {
+    const stored = localStorage.getItem(DISMISSED_KEY);
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDismissedToStorage(dismissed: Set<string>) {
+  try {
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(Array.from(dismissed)));
+  } catch {
+    // Silent fail
+  }
+}
+
 export default function AnnouncementsBanner() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
+    setDismissed(getDismissedFromStorage());
     fetchAnnouncements();
   }, []);
 
@@ -115,7 +135,9 @@ export default function AnnouncementsBanner() {
 
       <button
         onClick={() => {
-          setDismissed((prev) => new Set(Array.from(prev).concat(current.$id)));
+          const updated = new Set(Array.from(dismissed).concat(current.$id));
+          setDismissed(updated);
+          saveDismissedToStorage(updated);
           setCurrentIndex(0);
         }}
         className="text-xs opacity-40 hover:opacity-100 flex-shrink-0 p-1"

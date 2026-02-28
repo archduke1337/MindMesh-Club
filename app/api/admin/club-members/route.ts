@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 // GET all club members
 export async function GET(request: NextRequest) {
@@ -65,8 +66,8 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({ member: doc }, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -93,7 +94,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Clean undefined values
-    const cleanData: Record<string, any> = {};
+    const cleanData: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(updateData)) {
       if (value !== undefined && value !== "") {
         cleanData[key] = value;
@@ -110,8 +111,8 @@ export async function PATCH(request: NextRequest) {
     );
 
     return NextResponse.json({ member: doc });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -130,7 +131,7 @@ export async function DELETE(request: NextRequest) {
     await adminDb.deleteDocument(DATABASE_ID, COLLECTIONS.TEAM, memberId);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

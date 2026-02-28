@@ -65,7 +65,11 @@ export function canUserPerformAction(
   // Owner role can perform all actions
   if (role === "owner") return true;
   
-  // Default: email-based admins with no explicit role get full access
-  // If you want to restrict, change this to false
-  return isUserAdminByEmail(user.email);
+  // Default: email-based admins with no explicit role get create/edit only
+  // They cannot delete or approve without an explicit role assignment
+  if (isUserAdminByEmail(user.email)) {
+    return ["create", "edit"].includes(action);
+  }
+
+  return false;
 }

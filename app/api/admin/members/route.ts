@@ -3,11 +3,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, Query } from "@/lib/appwrite/server";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 export async function GET(request: NextRequest) {
   const { isAdmin, error } = await verifyAdminAuth(request);
   if (!isAdmin) {
-    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 403 });
   }
   try {
     const { documents } = await adminDb.listDocuments(
@@ -16,9 +17,9 @@ export async function GET(request: NextRequest) {
       [Query.limit(500)]
     );
     return NextResponse.json({ profiles: documents });
-  } catch (error: any) {
-    console.error("[API] Admin members error:", error);
-    return NextResponse.json({ profiles: [] });
+  } catch (err: unknown) {
+    console.error("[API] Admin members error:", err);
+    return NextResponse.json({ error: getErrorMessage(err), profiles: [] }, { status: 500 });
   }
 }
 
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const { isAdmin, error } = await verifyAdminAuth(request);
   if (!isAdmin) {
-    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 403 });
   }
   try {
     const body = await request.json();
@@ -48,8 +49,8 @@ export async function PATCH(request: NextRequest) {
     );
 
     return NextResponse.json({ success: true, profile });
-  } catch (error: any) {
-    console.error("[API] Admin members PATCH error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err: unknown) {
+    console.error("[API] Admin members PATCH error:", err);
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }

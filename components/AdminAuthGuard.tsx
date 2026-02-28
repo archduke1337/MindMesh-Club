@@ -3,16 +3,16 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 
 /**
  * Shared auth guard for all admin routes.
  * Redirects unauthenticated users to /login and non-admins to /unauthorized.
+ * Uses the unified isAdmin from AuthContext (checks both labels and email).
  */
 export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!loading) {
@@ -21,17 +21,16 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const userIsAdmin = isUserAdminByEmail(user.email);
-      if (!userIsAdmin) {
+      if (!isAdmin) {
         router.push("/unauthorized");
         return;
       }
 
-      setIsAdmin(true);
+      setAuthorized(true);
     }
-  }, [user, loading, router]);
+  }, [user, loading, isAdmin, router]);
 
-  if (loading || isAdmin === null) {
+  if (loading || authorized === null) {
     return (
       <div className="flex items-center justify-center min-h-screen text-lg">
         Loading...

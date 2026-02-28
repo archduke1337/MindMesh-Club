@@ -116,13 +116,15 @@ export const clubService = {
   async reorder(
     members: { id: string; displayOrder: number }[]
   ): Promise<void> {
-    for (const m of members) {
-      await databases.updateDocument(
-        DATABASE_ID,
-        COLLECTION_IDS.TEAM,
-        m.id,
-        { displayOrder: m.displayOrder }
-      );
-    }
+    await Promise.all(
+      members.map((m) =>
+        databases.updateDocument(
+          DATABASE_ID,
+          COLLECTION_IDS.TEAM,
+          m.id,
+          { displayOrder: m.displayOrder }
+        )
+      )
+    );
   },
 };

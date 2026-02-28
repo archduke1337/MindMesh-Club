@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 // GET /api/hackathon/submissions?eventId=xxx or ?teamId=xxx
 export async function GET(request: NextRequest) {
@@ -22,9 +23,9 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({ submissions: data.documents });
-  } catch (error: any) {
-    console.error("[API] Submissions GET error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("[API] Submissions GET error:", getErrorMessage(error));
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -122,9 +123,9 @@ export async function POST(request: NextRequest) {
       { success: true, submission },
       { status: 201 }
     );
-  } catch (error: any) {
-    console.error("[API] Submissions POST error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("[API] Submissions POST error:", getErrorMessage(error));
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -154,8 +155,8 @@ export async function PATCH(request: NextRequest) {
     );
 
     return NextResponse.json({ success: true, submission });
-  } catch (error: any) {
-    console.error("[API] Submissions PATCH error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("[API] Submissions PATCH error:", getErrorMessage(error));
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

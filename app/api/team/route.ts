@@ -2,6 +2,7 @@
 // Public API to get active club/team members (no auth required)
 import { NextResponse } from "next/server";
 import { adminDb, DATABASE_ID, COLLECTIONS, Query } from "@/lib/appwrite/server";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 export async function GET() {
   try {
@@ -14,9 +15,9 @@ export async function GET() {
 
     // Only return active members, strip any sensitive fields
     const activeMembers = documents
-      .filter((m: any) => m.isActive !== false)
-      .sort((a: any, b: any) => (a.displayOrder || a.position || 0) - (b.displayOrder || b.position || 0))
-      .map((m: any) => ({
+      .filter((m: Record<string, unknown>) => m.isActive !== false)
+      .sort((a: Record<string, unknown>, b: Record<string, unknown>) => ((a.displayOrder as number) || (a.position as number) || 0) - ((b.displayOrder as number) || (b.position as number) || 0))
+      .map((m: Record<string, unknown>) => ({
         $id: m.$id,
         name: m.name,
         role: m.role || m.designation || "Member",
@@ -34,8 +35,8 @@ export async function GET() {
       }));
 
     return NextResponse.json({ members: activeMembers });
-  } catch (error: any) {
-    console.error("[API] Public team GET error:", error);
+  } catch (error: unknown) {
+    console.error("[API] Public team GET error:", getErrorMessage(error));
     return NextResponse.json({ members: [] });
   }
 }

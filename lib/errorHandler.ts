@@ -1,5 +1,11 @@
 // lib/errorHandler.ts
 /**
+ * Canonical error handling module.
+ * Import error utilities from here (or from @/lib/utils/errorHandling
+ * for client-side toast/retry helpers that depend on sonner).
+ */
+
+/**
  * Safely extract error message from unknown error type
  */
 export function getErrorMessage(error: unknown): string {

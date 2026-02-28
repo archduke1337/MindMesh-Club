@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const featured = searchParams.get("featured");
     const limit = parseInt(searchParams.get("limit") || "50");
 
-    let blogs: any[] = [];
+    let blogs: unknown[] = [];
 
     try {
       if (featured === "true") {

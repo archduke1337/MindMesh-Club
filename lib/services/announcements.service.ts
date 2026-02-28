@@ -21,14 +21,16 @@ export const announcementService = {
       COLLECTION_IDS.ANNOUNCEMENTS,
       [
         Query.equal("isActive", true),
+        // Use server-side filter to exclude expired announcements
+        Query.or([
+          Query.isNull("expiresAt"),
+          Query.greaterThan("expiresAt", now),
+        ]),
         Query.orderDesc("$createdAt"),
         Query.limit(20),
       ]
     );
-    // Filter out expired ones client-side
-    return (res.documents as unknown as Announcement[]).filter(
-      (a) => !a.expiresAt || a.expiresAt > now
-    );
+    return res.documents as unknown as Announcement[];
   },
 
   async getPinned(): Promise<Announcement[]> {

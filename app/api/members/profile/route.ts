@@ -1,8 +1,12 @@
 ﻿// app/api/members/profile/route.ts
 // Server-side API for member profile create/read/update
 import { NextRequest, NextResponse } from "next/server";
+import { ZodError } from "zod";
 import { verifyAuth } from "@/lib/apiAuth";
 import { adminDb, adminUsers, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
+import { memberProfileSchema } from "@/lib/validation/schemas";
+import { getErrorMessage } from "@/lib/errorHandler";
+import { handleZodError } from "@/lib/utils/errorHandling";
 
 // GET /api/members/profile?userId=xxx
 export async function GET(request: NextRequest) {
@@ -22,7 +26,7 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({ profile: documents[0] || null });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[API] Profile GET error:", error);
     return NextResponse.json({ profile: null });
   }
@@ -30,21 +34,37 @@ export async function GET(request: NextRequest) {
 
 // POST /api/members/profile — Create profile
 export async function POST(request: NextRequest) {
+  // Verify authentication — prevent unauthenticated profile creation
+  const { authenticated, user: authUser } = await verifyAuth(request);
+  if (!authenticated || !authUser) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
+
+    // Validate with Zod schema
+    let validated;
+    try {
+      validated = memberProfileSchema.parse(body);
+    } catch (validationError) {
+      if (validationError instanceof ZodError) {
+        return NextResponse.json(
+          { error: handleZodError(validationError) },
+          { status: 400 }
+        );
+      }
+      throw validationError;
+    }
+
     const {
-      userId, name, email, phone, whatsapp, branch, year,
+      name, email, phone, whatsapp, branch, year,
       college, program, rollNumber, skills, interests,
       bio, linkedin, github, twitter, portfolio,
-    } = body;
+    } = validated;
 
-    // Validate required fields
-    if (!userId || !name || !email || !phone || !whatsapp || !branch || !year || !college || !program) {
-      return NextResponse.json(
-        { error: "Missing required fields: userId, name, email, phone, whatsapp, branch, year, college, program" },
-        { status: 400 }
-      );
-    }
+    // Use server-verified userId instead of trusting request body
+    const userId = authUser.$id;
 
     // Check for existing profile
     const { documents: existing } = await adminDb.listDocuments(
@@ -104,12 +124,13 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, profile }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[API] Profile POST error:", error);
-    if (error.code === 409) {
+    const appwriteErr = error as { code?: number; message?: string };
+    if (appwriteErr.code === 409) {
       return NextResponse.json({ error: "Profile already exists" }, { status: 409 });
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: appwriteErr.message || "Internal server error" }, { status: 500 });
   }
 }
 
@@ -146,8 +167,9 @@ export async function PATCH(request: NextRequest) {
     );
 
     return NextResponse.json({ success: true, profile });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[API] Profile PATCH error:", error);
-    return NextResponse.json({ error: error.message }, { status: error.code || 500 });
+    const appwriteErr = error as { code?: number; message?: string };
+    return NextResponse.json({ error: appwriteErr.message || "Internal server error" }, { status: appwriteErr.code || 500 });
   }
 }

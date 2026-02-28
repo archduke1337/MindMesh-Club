@@ -424,3 +424,47 @@ export const registerSchema = z.object({
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+/**
+ * Member Profile Schema
+ * Used for creating/updating member profiles
+ */
+export const memberProfileSchema = z.object({
+    name: z.string().min(2, 'Name must be at least 2 characters').max(100),
+    email: z.string().email('Invalid email address'),
+    phone: z.string().min(5, 'Phone number is required'),
+    whatsapp: z.string().min(5, 'WhatsApp number is required'),
+    branch: z.string().min(1, 'Branch is required'),
+    year: z.string().min(1, 'Year is required'),
+    college: z.string().min(1, 'College is required'),
+    program: z.string().min(1, 'Program is required'),
+    rollNumber: z.string().optional().nullable(),
+    skills: z.array(z.string()).optional().default([]),
+    interests: z.array(z.string()).optional().default([]),
+    bio: z.string().max(1000).optional().nullable(),
+    linkedin: z.string().url('Invalid LinkedIn URL').optional().nullable(),
+    github: z.string().url('Invalid GitHub URL').optional().nullable(),
+    twitter: z.string().url('Invalid Twitter URL').optional().nullable(),
+    portfolio: z.string().url('Invalid portfolio URL').optional().nullable(),
+});
+
+export type MemberProfileInput = z.infer<typeof memberProfileSchema>;
+
+/**
+ * Announcement Schema
+ * Used for creating announcements
+ */
+export const announcementSchema = z.object({
+    title: z.string().min(1, 'Title is required').max(200),
+    content: z.string().min(1, 'Content is required').max(2000),
+    type: z.enum(['info', 'event', 'urgent', 'update']).default('info'),
+    priority: z.enum(['low', 'normal', 'high', 'critical']).default('normal'),
+    isPinned: z.boolean().default(false),
+    createdBy: z.string().min(1, 'createdBy is required'),
+    eventId: z.string().optional(),
+    link: z.string().url('Invalid link URL').optional().nullable(),
+    linkText: z.string().max(100).optional().nullable(),
+    expiresAt: z.string().refine((d) => !isNaN(Date.parse(d)), 'Invalid date').optional().nullable(),
+});
+
+export type AnnouncementInput = z.infer<typeof announcementSchema>;
