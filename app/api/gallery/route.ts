@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { galleryService } from "@/lib/database";
-import { getErrorMessage } from "@/lib/errorHandler";
 import { verifyAuth, verifyAdminAuth } from "@/lib/apiAuth";
+import { handleApiError, ApiError, successResponse, validateRequestBody } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Validation schema for gallery image creation
+const createGallerySchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters").max(100, "Title too long"),
+  description: z.string().max(500, "Description too long").optional(),
+  imageUrl: z.string().url("Invalid image URL"),
+  category: z.enum(['events', 'workshops', 'hackathons', 'team', 'projects', 'campus', 'achievements']),
+  date: z.string().refine((date) => !isNaN(Date.parse(date)), "Invalid date format"),
+  attendees: z.number().int().min(0).default(0),
+  tags: z.array(z.string()).max(10, "Maximum 10 tags allowed").default([]),
+  eventId: z.string().optional(),
+  isApproved: z.boolean().optional(),
+  isFeatured: z.boolean().optional(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,46 +34,22 @@ export async function GET(request: NextRequest) {
       images = await galleryService.getApprovedImages();
     }
 
-    return NextResponse.json({
-      success: true,
-      data: images,
-      total: images.length,
-    });
+    return successResponse({ images, total: images.length });
   } catch (error) {
-    console.error("Gallery API error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "GET /api/gallery");
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication via centralized auth
+    // Verify authentication
     const { authenticated, user } = await verifyAuth(request);
     if (!authenticated || !user) {
-      return NextResponse.json(
-        { success: false, error: "Authentication required to upload gallery images" },
-        { status: 401 }
-      );
+      throw new ApiError(401, "Authentication required to upload gallery images");
     }
 
-    const data = await request.json();
-
-    // Validate required fields
-    if (!data.title || !data.imageUrl || !data.category || !data.date) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Missing required fields: title, imageUrl, category, date",
-        },
-        { status: 400 }
-      );
-    }
+    // Validate request body
+    const data = await validateRequestBody(request, createGallerySchema);
 
     // Check if user is admin — only admins can pre-approve
     const { isAdmin } = await verifyAdminAuth(request);
@@ -77,22 +68,8 @@ export async function POST(request: NextRequest) {
       eventId: data.eventId,
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: image,
-        message: "Gallery image created successfully",
-      },
-      { status: 201 }
-    );
+    return successResponse({ image, message: "Gallery image created successfully" }, 201);
   } catch (error) {
-    console.error("Error creating gallery image:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "POST /api/gallery");
   }
 }
