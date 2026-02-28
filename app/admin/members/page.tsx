@@ -95,7 +95,7 @@ export default function AdminMembersPage() {
   const updateStatus = async (profileId: string, status: string) => {
     setUpdating(profileId);
     try {
-      const res = await fetch("/api/members/profile", {
+      const res = await fetch("/api/admin/members", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ profileId, memberStatus: status }),

@@ -82,7 +82,7 @@ export default function AdminAnnouncementsPage() {
   const loadAnnouncements = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/announcements");
+      const res = await fetch("/api/announcements?all=true");
       const data = await res.json();
       setAnnouncements(data.announcements || []);
     } catch {

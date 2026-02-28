@@ -25,8 +25,8 @@ async function adminFetch(path: string, options: RequestInit = {}) {
   });
 }
 
-// GET /api/announcements — Active announcements
-export async function GET() {
+// GET /api/announcements — Active announcements (or all for admins with ?all=true)
+export async function GET(request: NextRequest) {
   try {
     const res = await adminFetch(
       `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`
@@ -36,10 +36,27 @@ export async function GET() {
     }
 
     const data = await res.json();
+    const documents = data.documents || [];
+
+    // If admin requests all announcements (for admin panel)
+    const showAll = request.nextUrl.searchParams.get("all") === "true";
+    if (showAll) {
+      const { isAdmin } = await verifyAdminAuth(request);
+      if (isAdmin) {
+        // Sort: pinned first, then by creation date
+        documents.sort((a: any, b: any) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          return new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime();
+        });
+        return NextResponse.json({ announcements: documents });
+      }
+    }
+
     const now = new Date().toISOString();
 
     // Filter active and not expired
-    const active = (data.documents || []).filter((a: any) => {
+    const active = documents.filter((a: any) => {
       if (!a.isActive) return false;
       if (a.expiresAt && a.expiresAt < now) return false;
       return true;

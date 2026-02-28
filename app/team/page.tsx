@@ -70,7 +70,7 @@ export default function TeamPage() {
   useEffect(() => {
     const fetchTeam = async () => {
       try {
-        const res = await fetch("/api/admin/club-members");
+        const res = await fetch("/api/team");
         if (res.ok) {
           const data = await res.json();
           const members: TeamMember[] = (data.members || [])
