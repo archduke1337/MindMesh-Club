@@ -5,6 +5,7 @@ import { Avatar } from "@heroui/avatar";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
+import { Divider } from "@heroui/divider";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import NextLink from "next/link";
@@ -13,12 +14,29 @@ import { ImageGravity } from "appwrite";
 import { logger } from "@/lib/logger";
 import { userProfileSchema } from "@/lib/validation/schemas";
 import { z } from "zod";
+import {
+  CameraIcon,
+  MailIcon,
+  PhoneIcon,
+  GraduationCapIcon,
+  BuildingIcon,
+  CalendarIcon,
+  GithubIcon,
+  LinkedinIcon,
+  GlobeIcon,
+  ShieldIcon,
+  TicketIcon,
+  SettingsIcon,
+  EditIcon,
+  SparklesIcon,
+  BookOpenIcon,
+} from "lucide-react";
 
 // Profile pictures bucket ID
 const PROFILE_BUCKET_ID = "profile-pictures";
 
 export default function ProfilePage() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, profileLoading, isAdmin, isProfileComplete } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,23 +62,23 @@ export default function ProfilePage() {
   }, [user, loading, router]);
 
   const loadProfilePicture = () => {
+    // Try member profile avatar first, then Appwrite prefs
+    if (profile?.avatar) {
+      setProfilePicture(profile.avatar);
+      return;
+    }
     const prefs = user?.prefs as Record<string, any> | undefined;
     if (prefs?.profilePictureId) {
       try {
         const fileUrl = storage.getFilePreview(
           PROFILE_BUCKET_ID,
           prefs.profilePictureId,
-          400, // width
-          400, // height
-          ImageGravity.Center, // gravity
-          100 // quality
+          400, 400,
+          ImageGravity.Center,
+          100
         );
-
-        const urlString = fileUrl.toString();
-        logger.log("Profile picture URL:", urlString);
-        setProfilePicture(urlString);
-      } catch (error) {
-        logger.error("Error loading profile picture:", error);
+        setProfilePicture(fileUrl.toString());
+      } catch {
         setProfilePicture(getAvatarUrl(user?.name || "User"));
       }
     } else {
@@ -68,13 +86,10 @@ export default function ProfilePage() {
     }
   };
 
-  const getAvatarUrl = (name: string) => {
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=400`;
-  };
+  const getAvatarUrl = (name: string) =>
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=7c3aed&color=fff&bold=true&size=400`;
 
-  const handleFileSelect = () => {
-    fileInputRef.current?.click();
-  };
+  const handleFileSelect = () => fileInputRef.current?.click();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -84,7 +99,6 @@ export default function ProfilePage() {
       setUpdateError("Please select an image file");
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
       setUpdateError("Image size should be less than 5MB");
       return;
@@ -98,47 +112,21 @@ export default function ProfilePage() {
       if (prefs?.profilePictureId) {
         try {
           await storage.deleteFile(PROFILE_BUCKET_ID, prefs.profilePictureId);
-          logger.log("Old profile picture deleted");
-        } catch (error) {
-          logger.log("No old picture to delete or error:", error);
+        } catch {
+          // old pic might not exist
         }
       }
 
-      const response = await storage.createFile(
-        PROFILE_BUCKET_ID,
-        ID.unique(),
-        file
-      );
+      const response = await storage.createFile(PROFILE_BUCKET_ID, ID.unique(), file);
+      await account.updatePrefs({ ...user?.prefs, profilePictureId: response.$id });
 
-      logger.log("File uploaded:", response.$id);
-
-      await account.updatePrefs({
-        ...user?.prefs,
-        profilePictureId: response.$id,
-      });
-
-      const fileUrl = storage.getFilePreview(
-        PROFILE_BUCKET_ID,
-        response.$id,
-        400,
-        400,
-        ImageGravity.Center,
-        100
-      );
-
-      const urlString = fileUrl.toString();
-      logger.log("New profile picture URL:", urlString);
-      setProfilePicture(urlString);
-
+      const fileUrl = storage.getFilePreview(PROFILE_BUCKET_ID, response.$id, 400, 400, ImageGravity.Center, 100);
+      setProfilePicture(fileUrl.toString());
       setUpdateSuccess(true);
-      setUpdateError("Profile picture updated successfully!");
-
-      setTimeout(() => {
-        router.refresh();
-      }, 2000);
+      setUpdateError("Profile picture updated!");
+      setTimeout(() => router.refresh(), 2000);
     } catch (err: any) {
-      logger.error("Upload error:", err);
-      setUpdateError(err.message || "Failed to upload profile picture. Please check bucket permissions.");
+      setUpdateError(err.message || "Failed to upload profile picture.");
     } finally {
       setUploadingPhoto(false);
     }
@@ -152,7 +140,6 @@ export default function ProfilePage() {
     setUpdateLoading(true);
 
     try {
-      // Validate input
       const validationResult = userProfileSchema.safeParse({
         name,
         phone: phone || undefined,
@@ -174,12 +161,8 @@ export default function ProfilePage() {
       setUpdateSuccess(true);
       setUpdateError("Profile updated successfully!");
       setIsEditing(false);
-
-      setTimeout(() => {
-        router.refresh();
-      }, 2000);
+      setTimeout(() => router.refresh(), 2000);
     } catch (err: any) {
-      logger.error("Update error:", err);
       setUpdateError(err.message || "Failed to update profile");
     } finally {
       setUpdateLoading(false);
@@ -197,213 +180,192 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
-    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-10 lg:py-12 flex items-center justify-center min-h-[calc(100vh-200px)]">
-      <Card className="w-full max-w-2xl md:max-w-3xl">
-        <CardHeader className="flex flex-col gap-3 sm:gap-4 items-center pt-6 sm:pt-8 md:pt-10 px-4 sm:px-6 md:px-8">
-          <div className="relative">
-            <Avatar
-              src={profilePicture}
-              className="w-24 sm:w-28 md:w-32 h-24 sm:h-28 md:h-32"
-              isBordered
-              color="primary"
-              showFallback
-              name={user.name}
-            />
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      {/* Profile Header Card */}
+      <Card className="border-none shadow-xl mb-6">
+        <CardBody className="p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              <Avatar
+                src={profilePicture}
+                className="w-28 h-28 sm:w-32 sm:h-32"
+                isBordered
+                color="primary"
+                showFallback
+                name={user.name}
+              />
+              <Button
+                isIconOnly
+                size="sm"
+                color="primary"
+                className="absolute bottom-1 right-1 shadow-lg"
+                onPress={handleFileSelect}
+                isLoading={uploadingPhoto}
+              >
+                {!uploadingPhoto && <CameraIcon className="w-4 h-4" />}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+                title="Upload profile picture"
+              />
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 text-center sm:text-left">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-1">{user.name}</h1>
+              <p className="text-default-500 text-sm mb-3">{user.email}</p>
+              <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                <Chip color="success" variant="flat" size="sm">
+                  Active Account
+                </Chip>
+                {isAdmin && (
+                  <Chip color="warning" variant="flat" size="sm" startContent={<ShieldIcon className="w-3 h-3" />}>
+                    Admin
+                  </Chip>
+                )}
+                {profile && (
+                  <Chip
+                    color={profile.memberStatus === "approved" ? "primary" : "warning"}
+                    variant="flat"
+                    size="sm"
+                  >
+                    {profile.memberStatus === "approved" ? "Verified Member" : profile.memberStatus}
+                  </Chip>
+                )}
+                {!isProfileComplete && (
+                  <Chip color="danger" variant="flat" size="sm">
+                    Profile Incomplete
+                  </Chip>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Status/Error Messages */}
+      {updateError && (
+        <div className={`p-3 rounded-lg text-sm font-medium mb-4 ${
+          updateSuccess ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+        }`}>
+          {updateError}
+        </div>
+      )}
+
+      {/* Profile Incomplete Banner */}
+      {!isProfileComplete && !profileLoading && (
+        <Card className="border-none shadow-md mb-6 bg-gradient-to-r from-warning-50 to-orange-50 dark:from-warning-900/20 dark:to-orange-900/20">
+          <CardBody className="p-4 flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex-1">
+              <h3 className="font-bold text-sm">Complete Your Profile</h3>
+              <p className="text-xs text-default-500">
+                Add your branch, year, college, and other details to become a verified member.
+              </p>
+            </div>
             <Button
-              isIconOnly
+              as={NextLink}
+              href="/complete-profile"
+              color="warning"
               size="sm"
-              color="primary"
-              className="absolute bottom-0 right-0 shadow-lg"
-              onPress={handleFileSelect}
-              isLoading={uploadingPhoto}
             >
-              {!uploadingPhoto && (
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 sm:w-3.5 md:w-4 h-3 sm:h-3.5 md:h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
-                </svg>
-              )}
+              Complete Profile
             </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-              title="Upload profile picture"
-              placeholder="Select an image"
-            />
-          </div>
-          <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center">{user.name}</h1>
-            <p className="text-xs sm:text-small md:text-base text-default-500 text-center break-all">{user.email}</p>
-            {user.phone && (
-              <p className="text-[10px] sm:text-xs md:text-small text-default-500 text-center">{user.phone}</p>
-            )}
-            <Chip color="success" variant="flat" size="sm" className="mt-2 text-[10px] sm:text-xs md:text-small">
-              Active Account
-            </Chip>
-          </div>
-        </CardHeader>
+          </CardBody>
+        </Card>
+      )}
 
-        <CardBody className="gap-5 sm:gap-6 md:gap-8 px-4 sm:px-6 md:px-8 pb-6 sm:pb-8 md:pb-10">
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
-            <Button
-              as={NextLink}
-              href="/tickets"
-              variant="flat"
-              color="primary"
-              className="text-[10px] sm:text-xs md:text-small"
-              size="lg"
-            >
-              📋 My Tickets
-            </Button>
-            <Button
-              as={NextLink}
-              href="/events"
-              variant="flat"
-              className="text-[10px] sm:text-xs md:text-small"
-              size="lg"
-            >
-              🎫 Browse Events
-            </Button>
-            <Button
-              as={NextLink}
-              href="/settings"
-              variant="flat"
-              className="text-[10px] sm:text-xs md:text-small"
-              size="lg"
-            >
-              ⚙️ Settings
-            </Button>
-          </div>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <Button
+          as={NextLink}
+          href="/tickets"
+          variant="flat"
+          className="flex flex-col items-center gap-1 h-auto py-4"
+        >
+          <TicketIcon className="w-5 h-5" />
+          <span className="text-xs">My Tickets</span>
+        </Button>
+        <Button
+          as={NextLink}
+          href="/events"
+          variant="flat"
+          className="flex flex-col items-center gap-1 h-auto py-4"
+        >
+          <CalendarIcon className="w-5 h-5" />
+          <span className="text-xs">Events</span>
+        </Button>
+        <Button
+          as={NextLink}
+          href="/resources"
+          variant="flat"
+          className="flex flex-col items-center gap-1 h-auto py-4"
+        >
+          <BookOpenIcon className="w-5 h-5" />
+          <span className="text-xs">Resources</span>
+        </Button>
+        <Button
+          as={NextLink}
+          href="/settings"
+          variant="flat"
+          className="flex flex-col items-center gap-1 h-auto py-4"
+        >
+          <SettingsIcon className="w-5 h-5" />
+          <span className="text-xs">Settings</span>
+        </Button>
+      </div>
 
-          {/* Show upload status */}
-          {updateError && (
-            <div className={`p-2 sm:p-3 md:p-4 rounded-lg text-[10px] sm:text-xs md:text-small font-medium ${updateSuccess ? "bg-success/10 text-success-700 dark:text-success-200" : "bg-danger/10 text-danger-700 dark:text-danger-200"
-              }`}>
-              {updateError}
-            </div>
-          )}
-
-          <div className="border-t border-divider pt-6 sm:pt-7 md:pt-8">
-            <h2 className="text-sm sm:text-base md:text-lg font-semibold mb-4 sm:mb-5 md:mb-6">Account Information</h2>
-
-            <div className="space-y-3 sm:space-y-4 md:space-y-5">
-              <div className="flex flex-col gap-1.5 sm:gap-2">
-                <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">User ID</label>
-                <p className="text-[10px] sm:text-xs md:text-small font-mono bg-default-100 p-2 md:p-3 rounded-lg break-all">
-                  {user.$id}
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-1.5 sm:gap-2">
-                <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Email</label>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2">
-                  <p className="text-[10px] sm:text-xs md:text-small p-2 break-all">{user.email}</p>
-                  <Chip
-                    color={user.emailVerification ? "success" : "warning"}
-                    variant="flat"
-                    size="sm"
-                    className="text-[10px] sm:text-xs md:text-small w-fit"
-                  >
-                    {user.emailVerification ? "Verified" : "Not Verified"}
-                  </Chip>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5 sm:gap-2">
-                <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Phone Number</label>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2">
-                  <p className="text-[10px] sm:text-xs md:text-small p-2">{user.phone || "Not added"}</p>
-                  <Chip
-                    color={user.phoneVerification ? "success" : "warning"}
-                    variant="flat"
-                    size="sm"
-                    className="text-[10px] sm:text-xs md:text-small w-fit"
-                  >
-                    {user.phoneVerification ? "Verified" : "Not Verified"}
-                  </Chip>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5 sm:gap-2">
-                <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Account Created</label>
-                <p className="text-[10px] sm:text-xs md:text-small p-2">
-                  {new Date(user.$createdAt).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-divider pt-6 sm:pt-7 md:pt-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-5 md:mb-6">
-              <h2 className="text-sm sm:text-base md:text-lg font-semibold">Profile Details</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Account Information */}
+        <Card className="border-none shadow-lg">
+          <CardHeader className="px-6 pt-6 pb-0">
+            <div className="flex items-center justify-between w-full">
+              <h2 className="text-lg font-bold">Account Information</h2>
               {!isEditing && (
                 <Button
-                  size="lg"
+                  size="sm"
                   color="primary"
                   variant="flat"
                   onPress={() => setIsEditing(true)}
-                  className="text-[10px] sm:text-xs md:text-small"
+                  startContent={<EditIcon className="w-3.5 h-3.5" />}
                 >
-                  Edit Profile
+                  Edit
                 </Button>
               )}
             </div>
-
+          </CardHeader>
+          <CardBody className="px-6 pb-6 space-y-4">
             {isEditing ? (
-              <form onSubmit={handleUpdateProfile} className="space-y-3 sm:space-y-4 md:space-y-5">
+              <form onSubmit={handleUpdateProfile} className="space-y-4">
                 <Input
                   label="Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your name"
                   required
                   isDisabled={updateLoading}
-                  size="lg"
-                  classNames={{
-                    input: "text-xs sm:text-small md:text-base",
-                    label: "text-[10px] sm:text-xs md:text-small font-semibold"
-                  }}
+                  variant="bordered"
                   isInvalid={!!validationErrors.name}
                   errorMessage={validationErrors.name}
                 />
-
                 <Input
                   label="Phone"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Enter your phone number"
                   isDisabled={updateLoading}
-                  size="lg"
-                  classNames={{
-                    input: "text-xs sm:text-small md:text-base",
-                    label: "text-[10px] sm:text-xs md:text-small font-semibold"
-                  }}
+                  variant="bordered"
                   isInvalid={!!validationErrors.phone}
                   errorMessage={validationErrors.phone}
                 />
-
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4">
-                  <Button
-                    type="submit"
-                    color="primary"
-                    isLoading={updateLoading}
-                    size="lg"
-                    className="flex-1 text-[10px] sm:text-xs md:text-small"
-                  >
-                    Save Changes
+                <div className="flex gap-2">
+                  <Button type="submit" color="primary" isLoading={updateLoading} className="flex-1">
+                    Save
                   </Button>
                   <Button
                     variant="flat"
@@ -412,78 +374,216 @@ export default function ProfilePage() {
                       setName(user.name);
                       setPhone(user.phone || "");
                       setUpdateError("");
-                      setUpdateSuccess(false);
                       setValidationErrors({});
                     }}
                     isDisabled={updateLoading}
-                    size="lg"
-                    className="flex-1 text-[10px] sm:text-xs md:text-small"
+                    className="flex-1"
                   >
                     Cancel
                   </Button>
                 </div>
               </form>
             ) : (
-              <div className="space-y-4 sm:space-y-5 md:space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                  <div className="flex flex-col gap-1.5 sm:gap-2 border border-divider p-3 sm:p-4 rounded-xl bg-default-50/50">
-                    <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Name</label>
-                    <p className="text-xs sm:text-sm md:text-base font-semibold">{user.name}</p>
-                  </div>
-                  {profile && (
-                    <>
-                      <div className="flex flex-col gap-1.5 sm:gap-2 border border-divider p-3 sm:p-4 rounded-xl bg-default-50/50">
-                        <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">College/Institution</label>
-                        <p className="text-xs sm:text-sm md:text-base font-semibold">{profile.college}</p>
-                      </div>
-                      <div className="flex flex-col gap-1.5 sm:gap-2 border border-divider p-3 sm:p-4 rounded-xl bg-default-50/50">
-                        <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Branch / Stream</label>
-                        <p className="text-xs sm:text-sm md:text-base font-semibold">{profile.branch}</p>
-                      </div>
-                      <div className="flex flex-col gap-1.5 sm:gap-2 border border-divider p-3 sm:p-4 rounded-xl bg-default-50/50">
-                        <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Year of Study</label>
-                        <p className="text-xs sm:text-sm md:text-base font-semibold">{profile.year}</p>
-                      </div>
-                      <div className="flex flex-col gap-1.5 sm:gap-2 border border-divider p-3 sm:p-4 rounded-xl bg-default-50/50">
-                        <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Program</label>
-                        <p className="text-xs sm:text-sm md:text-base font-semibold">{profile.program}</p>
-                      </div>
-                    </>
-                  )}
-                </div>
-                {profile && profile.skills && profile.skills.length > 0 && (
-                  <div className="flex flex-col gap-2 p-3 sm:p-4">
-                    <label className="text-[10px] sm:text-xs md:text-small text-default-500 font-medium">Skills</label>
-                    <div className="flex flex-wrap gap-2">
-                      {profile.skills.map((skill: string) => (
-                        <Chip key={skill} variant="flat" color="secondary" size="sm">{skill}</Chip>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {!profile && (
-                  <div className="bg-warning/10 border border-warning/20 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4">
-                    <div>
-                      <h3 className="text-sm font-semibold text-warning-600 dark:text-warning-500">Incomplete Profile</h3>
-                      <p className="text-xs text-default-500 mt-1">Complete your member profile to unlock all features like hackathon team creation.</p>
-                    </div>
-                    <Button
-                      as={NextLink}
-                      href="/complete-profile"
-                      color="warning"
+              <div className="space-y-3">
+                <InfoRow icon={<MailIcon className="w-4 h-4" />} label="Email" value={user.email}>
+                  <Chip
+                    color={user.emailVerification ? "success" : "warning"}
+                    variant="flat"
+                    size="sm"
+                  >
+                    {user.emailVerification ? "Verified" : "Not Verified"}
+                  </Chip>
+                </InfoRow>
+                <InfoRow icon={<PhoneIcon className="w-4 h-4" />} label="Phone" value={user.phone || "Not added"}>
+                  {user.phone && (
+                    <Chip
+                      color={user.phoneVerification ? "success" : "warning"}
                       variant="flat"
                       size="sm"
-                      className="shrink-0"
                     >
-                      Complete Profile
-                    </Button>
-                  </div>
-                )}
+                      {user.phoneVerification ? "Verified" : "Not Verified"}
+                    </Chip>
+                  )}
+                </InfoRow>
+                <InfoRow
+                  icon={<CalendarIcon className="w-4 h-4" />}
+                  label="Joined"
+                  value={new Date(user.$createdAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                />
+                <div className="pt-2">
+                  <p className="text-xs text-default-400 font-mono break-all">ID: {user.$id}</p>
+                </div>
               </div>
             )}
-          </div>
-        </CardBody>
-      </Card>
+          </CardBody>
+        </Card>
+
+        {/* Member Profile Details */}
+        <Card className="border-none shadow-lg">
+          <CardHeader className="px-6 pt-6 pb-0">
+            <div className="flex items-center justify-between w-full">
+              <h2 className="text-lg font-bold">Member Details</h2>
+              {isProfileComplete && (
+                <Button
+                  as={NextLink}
+                  href="/complete-profile"
+                  size="sm"
+                  variant="flat"
+                  startContent={<EditIcon className="w-3.5 h-3.5" />}
+                >
+                  Update
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardBody className="px-6 pb-6">
+            {profileLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+              </div>
+            ) : profile ? (
+              <div className="space-y-3">
+                <InfoRow
+                  icon={<GraduationCapIcon className="w-4 h-4" />}
+                  label="Program"
+                  value={`${profile.program} — ${profile.branch}`}
+                />
+                <InfoRow
+                  icon={<BuildingIcon className="w-4 h-4" />}
+                  label="College"
+                  value={profile.college}
+                />
+                <InfoRow
+                  icon={<CalendarIcon className="w-4 h-4" />}
+                  label="Year"
+                  value={profile.year}
+                />
+                <InfoRow
+                  icon={<PhoneIcon className="w-4 h-4" />}
+                  label="WhatsApp"
+                  value={profile.whatsapp || "Not added"}
+                />
+
+                {/* Social Links */}
+                <Divider className="my-3" />
+                <div className="flex flex-wrap gap-2">
+                  {profile.github && (
+                    <Button
+                      as="a"
+                      href={`https://github.com/${profile.github}`}
+                      target="_blank"
+                      size="sm"
+                      variant="flat"
+                      startContent={<GithubIcon className="w-3.5 h-3.5" />}
+                    >
+                      {profile.github}
+                    </Button>
+                  )}
+                  {profile.linkedin && (
+                    <Button
+                      as="a"
+                      href={profile.linkedin}
+                      target="_blank"
+                      size="sm"
+                      variant="flat"
+                      startContent={<LinkedinIcon className="w-3.5 h-3.5" />}
+                    >
+                      LinkedIn
+                    </Button>
+                  )}
+                  {profile.portfolio && (
+                    <Button
+                      as="a"
+                      href={profile.portfolio}
+                      target="_blank"
+                      size="sm"
+                      variant="flat"
+                      startContent={<GlobeIcon className="w-3.5 h-3.5" />}
+                    >
+                      Portfolio
+                    </Button>
+                  )}
+                </div>
+
+                {/* Skills */}
+                {profile.skills && profile.skills.length > 0 && (
+                  <>
+                    <Divider className="my-3" />
+                    <div>
+                      <p className="text-xs text-default-500 font-medium mb-2">Skills</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {profile.skills.map((skill: string, i: number) => (
+                          <Chip key={i} size="sm" variant="flat" color="primary">
+                            {skill}
+                          </Chip>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Stats */}
+                <Divider className="my-3" />
+                <div className="flex gap-4">
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-primary">{profile.eventsAttended || 0}</p>
+                    <p className="text-xs text-default-400">Events</p>
+                  </div>
+                  {profile.badges && profile.badges.length > 0 && (
+                    <div className="text-center">
+                      <p className="text-xl font-bold text-warning">{profile.badges.length}</p>
+                      <p className="text-xs text-default-400">Badges</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <SparklesIcon className="w-10 h-10 text-default-300 mx-auto mb-3" />
+                <p className="text-sm text-default-500 mb-3">No member profile yet</p>
+                <Button
+                  as={NextLink}
+                  href="/complete-profile"
+                  color="primary"
+                  size="sm"
+                >
+                  Complete Profile
+                </Button>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// Reusable info row component
+function InfoRow({
+  icon,
+  label,
+  value,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="text-default-400 mt-0.5 flex-shrink-0">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-default-400 mb-0.5">{label}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium truncate">{value}</p>
+          {children}
+        </div>
+      </div>
     </div>
   );
 }

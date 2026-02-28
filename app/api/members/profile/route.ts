@@ -1,17 +1,15 @@
 // app/api/members/profile/route.ts
-// Server-side API for member profile create/update
+// Server-side API for member profile create/read/update
 import { NextRequest, NextResponse } from "next/server";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = "member_profiles";
 
 function getAdminHeaders() {
-  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!;
-  const apiKey = process.env.APPWRITE_API_KEY!;
   return {
     "Content-Type": "application/json",
-    "X-Appwrite-Project": projectId,
-    "X-Appwrite-Key": apiKey,
+    "X-Appwrite-Project": process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!,
+    "X-Appwrite-Key": process.env.APPWRITE_API_KEY!,
   };
 }
 
@@ -22,44 +20,30 @@ function getEndpoint() {
 // GET /api/members/profile?userId=xxx
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get("userId");
-    if (!userId) {
-      return NextResponse.json(
-        { error: "userId is required" },
-        { status: 400 }
-      );
+    let userId = request.nextUrl.searchParams.get("userId");
+
+    // If userId is __SELF__, we can't resolve server-side without auth cookies
+    // Just return null profile — the AuthContext will use actual userId
+    if (!userId || userId === "__SELF__") {
+      return NextResponse.json({ profile: null });
     }
 
     const endpoint = getEndpoint();
+
+    // Fetch all profiles and filter (Appwrite REST query syntax can be finicky)
     const res = await fetch(
-      `${endpoint}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?queries[]=${encodeURIComponent(
-        JSON.stringify({ method: "equal", attribute: "userId", values: [userId] })
-      )}`,
+      `${endpoint}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`,
       {
         headers: getAdminHeaders(),
         cache: "no-store",
       }
     );
 
-    // Use Appwrite REST query format
-    const queryRes = await fetch(
-      `${endpoint}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`,
-      {
-        method: "GET",
-        headers: {
-          ...getAdminHeaders(),
-        },
-        cache: "no-store",
-      }
-    );
-
-    if (!queryRes.ok) {
-      const err = await queryRes.text();
-      console.error("[API] List profiles error:", err);
+    if (!res.ok) {
       return NextResponse.json({ profile: null });
     }
 
-    const data = await queryRes.json();
+    const data = await res.json();
     const profile = data.documents?.find(
       (doc: any) => doc.userId === userId
     );
@@ -67,10 +51,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ profile: profile || null });
   } catch (error: any) {
     console.error("[API] Profile GET error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to get profile" },
-      { status: 500 }
-    );
+    return NextResponse.json({ profile: null });
   }
 }
 
@@ -79,23 +60,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      userId,
-      name,
-      email,
-      phone,
-      whatsapp,
-      branch,
-      year,
-      college,
-      program,
-      rollNumber,
-      skills,
-      interests,
-      bio,
-      linkedin,
-      github,
-      twitter,
-      portfolio,
+      userId, name, email, phone, whatsapp, branch, year,
+      college, program, rollNumber, skills, interests,
+      bio, linkedin, github, twitter, portfolio,
     } = body;
 
     // Validate required fields
@@ -108,17 +75,46 @@ export async function POST(request: NextRequest) {
 
     const endpoint = getEndpoint();
 
-    // Create profile document
+    // Check for existing profile
+    const existRes = await fetch(
+      `${endpoint}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`,
+      { headers: getAdminHeaders(), cache: "no-store" }
+    );
+    if (existRes.ok) {
+      const existData = await existRes.json();
+      const existing = existData.documents?.find((d: any) => d.userId === userId);
+      if (existing) {
+        // Update instead of duplicate
+        const updateRes = await fetch(
+          `${endpoint}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents/${existing.$id}`,
+          {
+            method: "PATCH",
+            headers: getAdminHeaders(),
+            body: JSON.stringify({
+              data: {
+                name, email, phone, whatsapp, branch, year, college, program,
+                rollNumber: rollNumber || null,
+                skills: skills || [],
+                interests: interests || [],
+                bio: bio || null,
+                linkedin: linkedin || null,
+                github: github || null,
+                twitter: twitter || null,
+                portfolio: portfolio || null,
+              },
+            }),
+          }
+        );
+        if (updateRes.ok) {
+          const profile = await updateRes.json();
+          return NextResponse.json({ success: true, profile });
+        }
+      }
+    }
+
+    // Create new profile
     const profileData = {
-      userId,
-      name,
-      email,
-      phone,
-      whatsapp,
-      branch,
-      year,
-      college,
-      program,
+      userId, name, email, phone, whatsapp, branch, year, college, program,
       rollNumber: rollNumber || null,
       skills: skills || [],
       interests: interests || [],
@@ -138,61 +134,35 @@ export async function POST(request: NextRequest) {
       {
         method: "POST",
         headers: getAdminHeaders(),
-        body: JSON.stringify({
-          documentId: "unique()",
-          data: profileData,
-        }),
+        body: JSON.stringify({ documentId: "unique()", data: profileData }),
       }
     );
 
     if (!createRes.ok) {
       const errText = await createRes.text();
-      console.error("[API] Create profile error:", errText);
-      
-      // Check for duplicate
       if (createRes.status === 409) {
-        return NextResponse.json(
-          { error: "Profile already exists for this user" },
-          { status: 409 }
-        );
+        return NextResponse.json({ error: "Profile already exists" }, { status: 409 });
       }
-      
-      return NextResponse.json(
-        { error: `Failed to create profile: ${errText}` },
-        { status: createRes.status }
-      );
+      return NextResponse.json({ error: errText }, { status: createRes.status });
     }
 
     const profile = await createRes.json();
 
-    // Update Appwrite account prefs to mark profile as completed
+    // Update user prefs to mark profile as completed
     try {
-      // We use a separate call to update user prefs via server SDK
-      const prefsRes = await fetch(
-        `${endpoint}/users/${userId}/prefs`,
-        {
-          method: "PATCH",
-          headers: getAdminHeaders(),
-          body: JSON.stringify({ profileCompleted: true }),
-        }
-      );
-      if (!prefsRes.ok) {
-        console.warn("[API] Could not update user prefs:", await prefsRes.text());
-      }
-    } catch (prefsErr) {
-      console.warn("[API] Prefs update failed (non-critical):", prefsErr);
+      await fetch(`${endpoint}/users/${userId}/prefs`, {
+        method: "PATCH",
+        headers: getAdminHeaders(),
+        body: JSON.stringify({ profileCompleted: true }),
+      });
+    } catch {
+      // Non-critical
     }
 
-    return NextResponse.json(
-      { success: true, profile },
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true, profile }, { status: 201 });
   } catch (error: any) {
     console.error("[API] Profile POST error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to create profile" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
@@ -203,14 +173,10 @@ export async function PATCH(request: NextRequest) {
     const { profileId, ...updateData } = body;
 
     if (!profileId) {
-      return NextResponse.json(
-        { error: "profileId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "profileId is required" }, { status: 400 });
     }
 
     const endpoint = getEndpoint();
-
     const updateRes = await fetch(
       `${endpoint}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents/${profileId}`,
       {
@@ -222,20 +188,13 @@ export async function PATCH(request: NextRequest) {
 
     if (!updateRes.ok) {
       const errText = await updateRes.text();
-      console.error("[API] Update profile error:", errText);
-      return NextResponse.json(
-        { error: `Failed to update profile: ${errText}` },
-        { status: updateRes.status }
-      );
+      return NextResponse.json({ error: errText }, { status: updateRes.status });
     }
 
     const profile = await updateRes.json();
     return NextResponse.json({ success: true, profile });
   } catch (error: any) {
     console.error("[API] Profile PATCH error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to update profile" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
