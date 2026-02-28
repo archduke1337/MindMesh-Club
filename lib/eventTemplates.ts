@@ -8,7 +8,7 @@ export interface EventTemplate {
   name: string;
   description: string;
   icon: string;
-  defaultEvent: Omit<Event, '$id' | '$createdAt' | '$updatedAt'>;
+  defaultEvent: Partial<Omit<Event, '$id' | '$createdAt' | '$updatedAt'>>;
 }
 
 export const EVENT_TEMPLATES: EventTemplate[] = [
@@ -143,7 +143,7 @@ export function getTemplateById(id: string): EventTemplate | undefined {
   return EVENT_TEMPLATES.find((t) => t.id === id);
 }
 
-export function getTemplateEvent(templateId: string): Omit<Event, '$id' | '$createdAt' | '$updatedAt'> | null {
+export function getTemplateEvent(templateId: string): Partial<Omit<Event, '$id' | '$createdAt' | '$updatedAt'>> | null {
   const template = getTemplateById(templateId);
   return template ? template.defaultEvent : null;
 }

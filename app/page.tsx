@@ -19,12 +19,12 @@ const ThreeScene = dynamic(() => import('@/components/ThreeScene'), {
 // ── Framer Motion variants ──────────────────────────────
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" as const } },
 };
 
 const fadeRight = {
   hidden: { opacity: 0, x: 32 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut", delay: 0.3 } },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" as const, delay: 0.3 } },
 };
 
 const staggerChildren = {
