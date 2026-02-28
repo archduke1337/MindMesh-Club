@@ -78,7 +78,7 @@ export type EventStatus =
   | "completed"
   | "cancelled";
 
-export type RecurringPattern = "none" | "weekly" | "monthly" | "quarterly";
+export type RecurringPattern = "none" | "weekly" | "biweekly" | "monthly" | "quarterly";
 
 export interface Organizer {
   name: string;
