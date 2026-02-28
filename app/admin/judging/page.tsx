@@ -11,7 +11,6 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { Select, SelectItem } from "@heroui/select";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 import {
   ArrowLeftIcon,
   PlusIcon,
@@ -64,7 +63,7 @@ interface Score {
 }
 
 export default function AdminJudgingPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const judgeModal = useDisclosure();
   const criteriaModal = useDisclosure();
@@ -90,10 +89,6 @@ export default function AdminJudgingPage() {
   const [criteriaForm, setCriteriaForm] = useState({
     name: "", description: "", maxScore: 10, weight: 0.2,
   });
-
-  const isAdmin = !authLoading && user && (
-    isUserAdminByEmail(user.email) || user.labels?.includes("admin")
-  );
 
   useEffect(() => {
     if (!isAdmin) return;

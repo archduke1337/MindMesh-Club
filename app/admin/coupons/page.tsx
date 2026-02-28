@@ -12,7 +12,6 @@ import { Divider } from "@heroui/divider";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 import {
   ArrowLeftIcon,
   PlusIcon,
@@ -44,7 +43,7 @@ interface CouponData {
 }
 
 export default function AdminCouponsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const modal = useDisclosure();
 
@@ -71,10 +70,6 @@ export default function AdminCouponsPage() {
     validFrom: "",
     validUntil: "",
   });
-
-  const isAdmin = !authLoading && user && (
-    isUserAdminByEmail(user.email) || user.labels?.includes("admin")
-  );
 
   const loadCoupons = useCallback(async () => {
     setLoading(true);

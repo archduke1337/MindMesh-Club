@@ -11,7 +11,6 @@ import { Spinner } from "@heroui/spinner";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 import {
   UsersIcon,
   PlusIcon,
@@ -43,7 +42,7 @@ interface ClubMember {
 const MEMBER_TYPES = ["core", "volunteer", "advisor", "alumni", "mentor"];
 
 export default function AdminClubMembersPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const modal = useDisclosure();
 
@@ -68,10 +67,6 @@ export default function AdminClubMembersPage() {
     isActive: true,
     isFeatured: false,
   });
-
-  const isAdmin = !authLoading && user && (
-    isUserAdminByEmail(user.email) || user.labels?.includes("admin")
-  );
 
   const loadMembers = useCallback(async () => {
     setLoading(true);

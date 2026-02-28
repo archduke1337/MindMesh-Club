@@ -12,7 +12,6 @@ import { Spinner } from "@heroui/spinner";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 import { getErrorMessage } from "@/lib/errorHandler";
 import {
@@ -27,7 +26,7 @@ import {
 } from "lucide-react";
 
 export default function AdminSponsorsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const modal = useDisclosure();
 
@@ -50,11 +49,6 @@ export default function AdminSponsorsPage() {
     startDate: new Date().toISOString().split("T")[0],
     endDate: "",
   });
-
-  const isAdmin =
-    !authLoading &&
-    user &&
-    (isUserAdminByEmail(user.email) || user.labels?.includes("admin"));
 
   const loadSponsors = useCallback(async () => {
     setLoading(true);

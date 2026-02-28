@@ -11,7 +11,6 @@ import { Spinner } from "@heroui/spinner";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 import {
   BellIcon,
   PlusIcon,
@@ -63,7 +62,7 @@ const defaultForm = {
 };
 
 export default function AdminAnnouncementsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const modal = useDisclosure();
 
@@ -75,10 +74,6 @@ export default function AdminAnnouncementsPage() {
 
   const [form, setForm] = useState({ ...defaultForm });
   const [error, setError] = useState<string | null>(null);
-
-  const isAdmin = !authLoading && user && (
-    isUserAdminByEmail(user.email) || user.labels?.includes("admin")
-  );
 
   const loadAnnouncements = useCallback(async () => {
     setLoading(true);

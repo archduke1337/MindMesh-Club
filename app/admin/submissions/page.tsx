@@ -9,7 +9,6 @@ import { Select, SelectItem } from "@heroui/select";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 import {
   ArrowLeftIcon,
   FileTextIcon,
@@ -42,7 +41,7 @@ interface Submission {
 }
 
 export default function AdminSubmissionsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const detailModal = useDisclosure();
 
@@ -51,10 +50,6 @@ export default function AdminSubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
-
-  const isAdmin = !authLoading && user && (
-    isUserAdminByEmail(user.email) || user.labels?.includes("admin")
-  );
 
   useEffect(() => {
     if (!isAdmin) return;

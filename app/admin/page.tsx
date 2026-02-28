@@ -9,7 +9,6 @@ import { Spinner } from "@heroui/spinner";
 import { Divider } from "@heroui/divider";
 import NextLink from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboardIcon,
@@ -151,7 +150,7 @@ const adminSections = [
 ];
 
 export default function AdminDashboardPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState<AdminStats>({
     blogs: { total: 0, pending: 0, approved: 0, rejected: 0 },
@@ -160,10 +159,6 @@ export default function AdminDashboardPage() {
     loading: true,
     error: null,
   });
-
-  const isAdmin = !authLoading && user && (
-    isUserAdminByEmail(user.email) || user.labels?.includes("admin")
-  );
 
   const fetchStats = useCallback(async () => {
     setStats((prev) => ({ ...prev, loading: true, error: null }));
@@ -197,13 +192,13 @@ export default function AdminDashboardPage() {
         router.push("/login");
         return;
       }
-      if (!isUserAdminByEmail(user.email)) {
+      if (!isAdmin) {
         router.push("/unauthorized");
         return;
       }
       fetchStats();
     }
-  }, [authLoading, user, router, fetchStats]);
+  }, [authLoading, user, isAdmin, router, fetchStats]);
 
   if (authLoading) {
     return (

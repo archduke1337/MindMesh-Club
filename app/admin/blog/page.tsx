@@ -13,7 +13,6 @@ import { useAuth } from "@/context/AuthContext";
 import { blogService, Blog } from "@/lib/blog";
 import AdminPageWrapper from "@/components/AdminPageWrapper";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 import {
   CheckIcon,
   XIcon,
@@ -25,7 +24,7 @@ import {
 } from "lucide-react";
 
 export default function AdminBlogsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [filteredBlogs, setFilteredBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,14 +49,12 @@ export default function AdminBlogsPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      // Check if user is admin
-      const isAdmin = user.email && isUserAdminByEmail(user.email);
       setIsAuthorized(!!isAdmin);
       if (isAdmin) {
         loadBlogs();
       }
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, isAdmin]);
 
   useEffect(() => {
     filterBlogsByTab();

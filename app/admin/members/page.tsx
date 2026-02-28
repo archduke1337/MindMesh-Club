@@ -10,7 +10,6 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { Divider } from "@heroui/divider";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 import {
   UsersIcon,
   SearchIcon,
@@ -51,7 +50,7 @@ interface MemberProfile {
 }
 
 export default function AdminMembersPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const [profiles, setProfiles] = useState<MemberProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,10 +61,6 @@ export default function AdminMembersPage() {
   
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedProfile, setSelectedProfile] = useState<MemberProfile | null>(null);
-
-  const isAdmin = !authLoading && user && (
-    isUserAdminByEmail(user.email) || user.labels?.includes("admin")
-  );
 
   const loadProfiles = useCallback(async () => {
     setLoading(true);

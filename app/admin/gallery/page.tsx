@@ -3,7 +3,6 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 import { galleryService, type GalleryImage } from "@/lib/database";
 import { Card, CardBody, CardFooter } from "@heroui/card";
 import { Chip } from "@heroui/chip";
@@ -61,7 +60,7 @@ const emptyForm: FormData = {
 };
 
 export default function AdminGalleryPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const modal = useDisclosure();
 
@@ -72,11 +71,6 @@ export default function AdminGalleryPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("all");
   const [formData, setFormData] = useState<FormData>(emptyForm);
-
-  const isAdmin =
-    !authLoading &&
-    user &&
-    (isUserAdminByEmail(user.email) || user.labels?.includes("admin"));
 
   const fetchImages = useCallback(async () => {
     try {
