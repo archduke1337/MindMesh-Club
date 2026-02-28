@@ -80,9 +80,10 @@ export async function PATCH(
     }
 
     // Normalize tags to string format (blogService expects string)
+    const { tags, ...restData } = data;
     const updateData = {
-      ...data,
-      ...(data.tags && { tags: Array.isArray(data.tags) ? data.tags.join(", ") : data.tags }),
+      ...restData,
+      ...(tags && { tags: Array.isArray(tags) ? tags.join(", ") : tags }),
     };
 
     const blog = await blogService.updateBlog(id, updateData);
