@@ -1,37 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { galleryService } from "@/lib/database";
-import { getErrorMessage } from "@/lib/errorHandler";
 import { verifyAdminAuth } from "@/lib/apiAuth";
+import { handleApiError, successResponse, ApiError } from "@/lib/apiErrorHandler";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { isAdmin, user, error: authError } = await verifyAdminAuth(request);
+    const { isAdmin } = await verifyAdminAuth(request);
     if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: authError || "Not authorized" },
-        { status: user ? 403 : 401 }
-      );
+      throw new ApiError(403, "Admin access required");
     }
 
     const { id } = await params;
     const image = await galleryService.approveImage(id);
 
-    return NextResponse.json({
-      success: true,
-      data: image,
-      message: "Gallery image approved successfully",
-    });
+    return successResponse({ image, message: "Gallery image approved successfully" });
   } catch (error) {
-    console.error("Error approving gallery image:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "POST /api/gallery/[id]/approve");
   }
 }

@@ -3,7 +3,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
-import { getErrorMessage } from "@/lib/errorHandler";
+import { handleApiError, validateRequestBody, successResponse, ApiError } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Validation schemas
+const createSubmissionSchema = z.object({
+  eventId: z.string().min(1, "Event ID is required"),
+  teamId: z.string().optional(),
+  userId: z.string().min(1, "User ID is required"),
+  userName: z.string().min(1, "User name is required"),
+  projectTitle: z.string().min(3, "Project title must be at least 3 characters").max(200, "Project title too long"),
+  projectDescription: z.string().min(50, "Project description must be at least 50 characters").max(5000, "Description too long"),
+  problemStatementId: z.string().optional(),
+  techStack: z.array(z.string()).default([]),
+  repoUrl: z.string().url("Invalid repository URL").optional(),
+  demoUrl: z.string().url("Invalid demo URL").optional(),
+  videoUrl: z.string().url("Invalid video URL").optional(),
+  presentationUrl: z.string().url("Invalid presentation URL").optional(),
+  screenshots: z.array(z.string().url()).default([]),
+  teamPhotoUrl: z.string().url("Invalid team photo URL").optional(),
+  additionalNotes: z.string().max(2000, "Additional notes too long").optional(),
+});
+
+const updateSubmissionSchema = z.object({
+  submissionId: z.string().min(1, "Submission ID is required"),
+  projectTitle: z.string().min(3).max(200).optional(),
+  projectDescription: z.string().min(50).max(5000).optional(),
+  techStack: z.array(z.string()).optional(),
+  repoUrl: z.string().url().optional(),
+  demoUrl: z.string().url().optional(),
+  videoUrl: z.string().url().optional(),
+  presentationUrl: z.string().url().optional(),
+  screenshots: z.array(z.string().url()).optional(),
+  teamPhotoUrl: z.string().url().optional(),
+  additionalNotes: z.string().max(2000).optional(),
+});
 
 // GET /api/hackathon/submissions?eventId=xxx or ?teamId=xxx
 export async function GET(request: NextRequest) {
@@ -22,79 +56,52 @@ export async function GET(request: NextRequest) {
       queries
     );
 
-    return NextResponse.json({ submissions: data.documents });
-  } catch (error: unknown) {
-    console.error("[API] Submissions GET error:", getErrorMessage(error));
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return successResponse({ submissions: data.documents });
+  } catch (error) {
+    return handleApiError(error, "GET /api/hackathon/submissions");
   }
 }
 
 // POST /api/hackathon/submissions — Create submission (auth required)
 export async function POST(request: NextRequest) {
   try {
-    const auth = await verifyAuth(request);
-    if (!auth.authenticated) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    const { authenticated, user } = await verifyAuth(request);
+    if (!authenticated || !user) {
+      throw new ApiError(401, "Authentication required");
     }
 
-    const body = await request.json();
-    const {
-      eventId,
-      teamId,
-      userId,
-      userName,
-      projectTitle,
-      projectDescription,
-      problemStatementId,
-      techStack,
-      repoUrl,
-      demoUrl,
-      videoUrl,
-      presentationUrl,
-      screenshots,
-      teamPhotoUrl,
-      additionalNotes,
-    } = body;
-
-    if (!eventId || !userId || !userName || !projectTitle || !projectDescription) {
-      return NextResponse.json(
-        { error: "Missing required fields: eventId, userId, userName, projectTitle, projectDescription" },
-        { status: 400 }
-      );
-    }
+    // Validate request body
+    const data = await validateRequestBody(request, createSubmissionSchema);
 
     // Check for existing submission from this team/user
-    if (teamId) {
+    if (data.teamId) {
       const existing = await adminDb.listDocuments(
         DATABASE_ID,
         COLLECTIONS.SUBMISSIONS,
-        [Query.equal("eventId", eventId), Query.equal("teamId", teamId)]
+        [Query.equal("eventId", data.eventId), Query.equal("teamId", data.teamId)]
       );
       if (existing.total > 0) {
-        return NextResponse.json(
-          { error: "Your team has already submitted a project for this event" },
-          { status: 409 }
-        );
+        throw new ApiError(409, "Your team has already submitted a project for this event", "DUPLICATE_SUBMISSION");
       }
     }
 
     // Create submission
     const submissionData = {
-      eventId,
-      teamId: teamId || null,
-      userId,
-      userName,
-      projectTitle,
-      projectDescription,
-      problemStatementId: problemStatementId || null,
-      techStack: techStack || [],
-      repoUrl: repoUrl || null,
-      demoUrl: demoUrl || null,
-      videoUrl: videoUrl || null,
-      presentationUrl: presentationUrl || null,
-      screenshots: screenshots || [],
-      teamPhotoUrl: teamPhotoUrl || null,
-      additionalNotes: additionalNotes || null,
+      eventId: data.eventId,
+      teamId: data.teamId || null,
+      userId: data.userId,
+      userName: data.userName,
+      projectTitle: data.projectTitle,
+      projectDescription: data.projectDescription,
+      problemStatementId: data.problemStatementId || null,
+      techStack: data.techStack,
+      repoUrl: data.repoUrl || null,
+      demoUrl: data.demoUrl || null,
+      videoUrl: data.videoUrl || null,
+      presentationUrl: data.presentationUrl || null,
+      screenshots: data.screenshots,
+      teamPhotoUrl: data.teamPhotoUrl || null,
+      additionalNotes: data.additionalNotes || null,
       status: "submitted",
       submittedAt: new Date().toISOString(),
       reviewedBy: null,
@@ -110,42 +117,31 @@ export async function POST(request: NextRequest) {
     );
 
     // Update team status to "submitted" if teamId provided
-    if (teamId) {
+    if (data.teamId) {
       await adminDb.updateDocument(
         DATABASE_ID,
         COLLECTIONS.HACKATHON_TEAMS,
-        teamId,
+        data.teamId,
         { submissionId: submission.$id, status: "submitted" }
       );
     }
 
-    return NextResponse.json(
-      { success: true, submission },
-      { status: 201 }
-    );
-  } catch (error: unknown) {
-    console.error("[API] Submissions POST error:", getErrorMessage(error));
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return successResponse({ submission, message: "Submission created successfully" }, 201);
+  } catch (error) {
+    return handleApiError(error, "POST /api/hackathon/submissions");
   }
 }
 
 // PATCH /api/hackathon/submissions — Update submission (auth required)
 export async function PATCH(request: NextRequest) {
   try {
-    const auth = await verifyAuth(request);
-    if (!auth.authenticated) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    const { authenticated, user } = await verifyAuth(request);
+    if (!authenticated || !user) {
+      throw new ApiError(401, "Authentication required");
     }
 
-    const body = await request.json();
-    const { submissionId, ...updateData } = body;
-
-    if (!submissionId) {
-      return NextResponse.json(
-        { error: "submissionId is required" },
-        { status: 400 }
-      );
-    }
+    // Validate request body
+    const { submissionId, ...updateData } = await validateRequestBody(request, updateSubmissionSchema);
 
     const submission = await adminDb.updateDocument(
       DATABASE_ID,
@@ -154,9 +150,8 @@ export async function PATCH(request: NextRequest) {
       updateData
     );
 
-    return NextResponse.json({ success: true, submission });
-  } catch (error: unknown) {
-    console.error("[API] Submissions PATCH error:", getErrorMessage(error));
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return successResponse({ submission, message: "Submission updated successfully" });
+  } catch (error) {
+    return handleApiError(error, "PATCH /api/hackathon/submissions");
   }
 }

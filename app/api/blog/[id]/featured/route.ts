@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { blogService } from "@/lib/blog";
-import { getErrorMessage } from "@/lib/errorHandler";
 import { verifyAdminAuth } from "@/lib/apiAuth";
+import { handleApiError, validateRequestBody, successResponse, ApiError } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Validation schema
+const toggleFeaturedSchema = z.object({
+  isFeatured: z.boolean().default(false),
+});
 
 export async function POST(
   request: NextRequest,
@@ -9,34 +15,22 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { isAdmin, user, error } = await verifyAdminAuth(request);
+    const { isAdmin } = await verifyAdminAuth(request);
     if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: error || "Not authorized" },
-        { status: user ? 403 : 401 }
-      );
+      throw new ApiError(403, "Admin access required");
     }
 
-    const data = await request.json();
-    const isFeatured = data.isFeatured ?? false;
+    const data = await validateRequestBody(request, toggleFeaturedSchema);
 
     const blog = await blogService.updateBlog(id, {
-      featured: isFeatured,
+      featured: data.isFeatured,
     });
 
-    return NextResponse.json({
-      success: true,
-      data: blog,
-      message: `Blog ${isFeatured ? "marked as featured" : "removed from featured"}`,
+    return successResponse({
+      blog,
+      message: `Blog ${data.isFeatured ? "marked as featured" : "removed from featured"}`,
     });
   } catch (error) {
-    console.error("Error toggling featured:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "POST /api/blog/[id]/featured");
   }
 }

@@ -2,7 +2,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, Query } from "@/lib/appwrite/server";
-import { getErrorMessage } from "@/lib/errorHandler";
+import { handleApiError, validateRequestBody, successResponse, ApiError } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Validation schema
+const deleteEventsSchema = z.object({
+  deletePast: z.boolean().optional(),
+  eventId: z.string().optional(),
+}).refine(data => data.deletePast === true || !!data.eventId, {
+  message: "Either deletePast must be true or eventId must be provided",
+});
 
 /**
  * DELETE /api/admin/events
@@ -11,12 +20,12 @@ import { getErrorMessage } from "@/lib/errorHandler";
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const { isAdmin, error } = await verifyAdminAuth(request);
+    const { isAdmin } = await verifyAdminAuth(request);
     if (!isAdmin) {
-      return NextResponse.json({ error: error || "Unauthorized" }, { status: 403 });
+      throw new ApiError(403, "Admin access required");
     }
 
-    const body = await request.json();
+    const body = await validateRequestBody(request, deleteEventsSchema);
 
     // Delete all past events
     if (body.deletePast === true) {
@@ -34,23 +43,17 @@ export async function DELETE(request: NextRequest) {
         )
       );
 
-      return NextResponse.json({ deleted: docs.length });
+      return successResponse({ deleted: docs.length, message: `Deleted ${docs.length} past events` });
     }
 
     // Delete a single event
-    const { eventId } = body;
-    if (!eventId || typeof eventId !== "string") {
-      return NextResponse.json({ error: "eventId is required" }, { status: 400 });
+    if (body.eventId) {
+      await adminDb.deleteDocument(DATABASE_ID, COLLECTIONS.EVENTS, body.eventId);
+      return successResponse({ message: "Event deleted successfully" });
     }
 
-    await adminDb.deleteDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId);
-
-    return NextResponse.json({ success: true });
-  } catch (err: unknown) {
-    console.error("[Admin Events DELETE]", err);
-    return NextResponse.json(
-      { error: getErrorMessage(err) },
-      { status: 500 }
-    );
+    throw new ApiError(400, "Either deletePast or eventId must be provided");
+  } catch (error) {
+    return handleApiError(error, "DELETE /api/admin/events");
   }
 }

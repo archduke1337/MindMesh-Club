@@ -2,7 +2,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
-import { getErrorMessage } from "@/lib/errorHandler";
+import { handleApiError, validateRequestBody, successResponse, ApiError } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Validation schema
+const createFeedbackSchema = z.object({
+  eventId: z.string().min(1, "Event ID is required"),
+  rating: z.number().int().min(1, "Rating must be at least 1").max(5, "Rating must be at most 5"),
+  feedback: z.string().min(10, "Feedback must be at least 10 characters").max(2000, "Feedback too long"),
+  suggestions: z.string().max(2000, "Suggestions too long").optional(),
+  category: z.string().default("general"),
+  isAnonymous: z.boolean().default(false),
+  // These fields will be overridden with authenticated user data
+  userId: z.string().optional(),
+  userName: z.string().optional(),
+  userEmail: z.string().optional(),
+});
 
 // GET /api/feedback?eventId=xxx
 export async function GET(request: NextRequest) {
@@ -15,74 +30,53 @@ export async function GET(request: NextRequest) {
 
     const result = await adminDb.listDocuments(DATABASE_ID, COLLECTIONS.FEEDBACK, queries);
 
-    return NextResponse.json({ feedback: result.documents });
-  } catch {
-    return NextResponse.json({ feedback: [] });
+    return successResponse({ feedback: result.documents });
+  } catch (error) {
+    return handleApiError(error, "GET /api/feedback");
   }
 }
 
 // POST /api/feedback
 export async function POST(request: NextRequest) {
-  const { authenticated, user: authUser } = await verifyAuth(request);
-  if (!authenticated || !authUser) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-  }
   try {
-    const body = await request.json();
-    const {
-      eventId, userId, userName, userEmail,
-      rating, feedback, suggestions, category, isAnonymous,
-    } = body;
-
-    if (!eventId || !rating || !feedback) {
-      return NextResponse.json(
-        { error: "Missing: eventId, rating, feedback" },
-        { status: 400 }
-      );
+    const { authenticated, user: authUser } = await verifyAuth(request);
+    if (!authenticated || !authUser) {
+      throw new ApiError(401, "Authentication required");
     }
+
+    // Validate request body
+    const data = await validateRequestBody(request, createFeedbackSchema);
 
     // Use authenticated user data instead of request body to prevent spoofing
     const verifiedUserId = authUser.$id;
-    const verifiedUserName = isAnonymous ? "Anonymous" : (userName || authUser.name);
+    const verifiedUserName = data.isAnonymous ? "Anonymous" : (data.userName || authUser.name);
     const verifiedUserEmail = authUser.email;
 
     // Check for duplicate
     const existing = await adminDb.listDocuments(DATABASE_ID, COLLECTIONS.FEEDBACK, [
-      Query.equal("eventId", eventId),
+      Query.equal("eventId", data.eventId),
       Query.equal("userId", verifiedUserId),
     ]);
     if (existing.total > 0) {
-      return NextResponse.json(
-        { error: "You have already submitted feedback for this event" },
-        { status: 409 }
-      );
-    }
-
-    // Validate rating is a number between 1-5
-    const ratingNum = Number(rating);
-    if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
-      return NextResponse.json(
-        { error: "Rating must be a number between 1 and 5" },
-        { status: 400 }
-      );
+      throw new ApiError(409, "You have already submitted feedback for this event", "DUPLICATE_FEEDBACK");
     }
 
     const doc = await adminDb.createDocument(DATABASE_ID, COLLECTIONS.FEEDBACK, ID.unique(), {
-      eventId,
+      eventId: data.eventId,
       userId: verifiedUserId,
       userName: verifiedUserName,
       userEmail: verifiedUserEmail,
-      rating: ratingNum,
-      feedback,
-      suggestions: suggestions || null,
-      category: category || "general",
-      isAnonymous: isAnonymous || false,
+      rating: data.rating,
+      feedback: data.feedback,
+      suggestions: data.suggestions || null,
+      category: data.category,
+      isAnonymous: data.isAnonymous,
       isResolved: false,
       adminResponse: null,
     });
 
-    return NextResponse.json({ success: true, feedback: doc }, { status: 201 });
-  } catch (error: unknown) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return successResponse({ feedback: doc, message: "Feedback submitted successfully" }, 201);
+  } catch (error) {
+    return handleApiError(error, "POST /api/feedback");
   }
 }

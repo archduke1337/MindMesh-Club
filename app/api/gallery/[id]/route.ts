@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { galleryService } from "@/lib/database";
-import { getErrorMessage } from "@/lib/errorHandler";
 import { verifyAdminAuth } from "@/lib/apiAuth";
+import { handleApiError, validateRequestBody, successResponse, ApiError } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Validation schema for gallery image updates
+const updateGallerySchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).optional(),
+  category: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  status: z.enum(["pending", "approved", "rejected"]).optional(),
+  featured: z.boolean().optional(),
+});
 
 export async function GET(
   request: NextRequest,
@@ -11,19 +22,9 @@ export async function GET(
     const { id } = await params;
     const image = await galleryService.getImageById(id);
 
-    return NextResponse.json({
-      success: true,
-      data: image,
-    });
+    return successResponse(image);
   } catch (error) {
-    console.error("Error fetching gallery image:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 404 }
-    );
+    return handleApiError(error, "GET /api/gallery/[id]");
   }
 }
 
@@ -33,33 +34,19 @@ export async function PATCH(
 ) {
   try {
     // Verify admin authorization
-    const { isAdmin, user: adminUser, error: authError } = await verifyAdminAuth(request);
+    const { isAdmin } = await verifyAdminAuth(request);
     if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: authError || "Not authorized" },
-        { status: adminUser ? 403 : 401 }
-      );
+      throw new ApiError(403, "Admin access required");
     }
 
     const { id } = await params;
-    const data = await request.json();
+    const data = await validateRequestBody(request, updateGallerySchema);
 
     const image = await galleryService.updateImage(id, data);
 
-    return NextResponse.json({
-      success: true,
-      data: image,
-      message: "Gallery image updated successfully",
-    });
+    return successResponse({ image, message: "Gallery image updated successfully" });
   } catch (error) {
-    console.error("Error updating gallery image:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "PATCH /api/gallery/[id]");
   }
 }
 
@@ -69,29 +56,16 @@ export async function DELETE(
 ) {
   try {
     // Verify admin authorization
-    const { isAdmin: isAdminDel, user: adminUserDel, error: authErrorDel } = await verifyAdminAuth(request);
-    if (!isAdminDel) {
-      return NextResponse.json(
-        { success: false, error: authErrorDel || "Not authorized" },
-        { status: adminUserDel ? 403 : 401 }
-      );
+    const { isAdmin } = await verifyAdminAuth(request);
+    if (!isAdmin) {
+      throw new ApiError(403, "Admin access required");
     }
 
     const { id } = await params;
     await galleryService.deleteImage(id);
 
-    return NextResponse.json({
-      success: true,
-      message: "Gallery image deleted successfully",
-    });
+    return successResponse({ message: "Gallery image deleted successfully" });
   } catch (error) {
-    console.error("Error deleting gallery image:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "DELETE /api/gallery/[id]");
   }
 }

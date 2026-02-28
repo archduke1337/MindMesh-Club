@@ -3,54 +3,54 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, Query } from "@/lib/appwrite/server";
-import { getErrorMessage } from "@/lib/errorHandler";
+import { handleApiError, validateRequestBody, successResponse, ApiError } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Validation schema
+const updateMemberStatusSchema = z.object({
+  profileId: z.string().min(1, "Profile ID is required"),
+  memberStatus: z.enum(["pending", "approved", "suspended"], {
+    errorMap: () => ({ message: "Invalid memberStatus. Must be: pending, approved, or suspended" })
+  }),
+});
 
 export async function GET(request: NextRequest) {
-  const { isAdmin, error } = await verifyAdminAuth(request);
-  if (!isAdmin) {
-    return NextResponse.json({ error: error || "Not authorized" }, { status: 403 });
-  }
   try {
+    const { isAdmin } = await verifyAdminAuth(request);
+    if (!isAdmin) {
+      throw new ApiError(403, "Admin access required");
+    }
+
     const { documents } = await adminDb.listDocuments(
       DATABASE_ID,
       COLLECTIONS.MEMBER_PROFILES,
       [Query.limit(500)]
     );
-    return NextResponse.json({ profiles: documents });
-  } catch (err: unknown) {
-    console.error("[API] Admin members error:", err);
-    return NextResponse.json({ error: getErrorMessage(err), profiles: [] }, { status: 500 });
+    return successResponse({ profiles: documents });
+  } catch (error) {
+    return handleApiError(error, "GET /api/admin/members");
   }
 }
 
 // PATCH /api/admin/members — Update memberStatus (admin only)
 export async function PATCH(request: NextRequest) {
-  const { isAdmin, error } = await verifyAdminAuth(request);
-  if (!isAdmin) {
-    return NextResponse.json({ error: error || "Not authorized" }, { status: 403 });
-  }
   try {
-    const body = await request.json();
-    const { profileId, memberStatus } = body;
-
-    if (!profileId) {
-      return NextResponse.json({ error: "profileId is required" }, { status: 400 });
+    const { isAdmin } = await verifyAdminAuth(request);
+    if (!isAdmin) {
+      throw new ApiError(403, "Admin access required");
     }
 
-    if (!memberStatus || !["pending", "approved", "suspended"].includes(memberStatus)) {
-      return NextResponse.json({ error: "Invalid memberStatus. Must be: pending, approved, or suspended" }, { status: 400 });
-    }
+    const data = await validateRequestBody(request, updateMemberStatusSchema);
 
     const profile = await adminDb.updateDocument(
       DATABASE_ID,
       COLLECTIONS.MEMBER_PROFILES,
-      profileId,
-      { memberStatus }
+      data.profileId,
+      { memberStatus: data.memberStatus }
     );
 
-    return NextResponse.json({ success: true, profile });
-  } catch (err: unknown) {
-    console.error("[API] Admin members PATCH error:", err);
-    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
+    return successResponse({ profile, message: "Member status updated successfully" });
+  } catch (error) {
+    return handleApiError(error, "PATCH /api/admin/members");
   }
 }

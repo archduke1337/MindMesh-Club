@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { blogService } from "@/lib/blog";
-import { getErrorMessage } from "@/lib/errorHandler";
 import { verifyAdminAuth } from "@/lib/apiAuth";
+import { handleApiError, successResponse, ApiError } from "@/lib/apiErrorHandler";
 
 export async function POST(
   request: NextRequest,
@@ -9,30 +9,16 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { isAdmin, user, error } = await verifyAdminAuth(request);
+    const { isAdmin } = await verifyAdminAuth(request);
     
     if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: error || "Not authorized" },
-        { status: user ? 403 : 401 }
-      );
+      throw new ApiError(403, "Admin access required");
     }
 
     const blog = await blogService.approveBlog(id);
 
-    return NextResponse.json({
-      success: true,
-      data: blog,
-      message: "Blog approved successfully",
-    });
+    return successResponse({ blog, message: "Blog approved successfully" });
   } catch (error) {
-    console.error("[Approve] Error approving blog:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "POST /api/blog/[id]/approve");
   }
 }

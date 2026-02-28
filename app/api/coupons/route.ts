@@ -3,7 +3,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth, verifyAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
-import { getErrorMessage } from "@/lib/errorHandler";
+import { handleApiError, validateRequestBody, successResponse, ApiError } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Validation schemas
+const createCouponSchema = z.object({
+  code: z.string().min(3, "Code must be at least 3 characters").max(50, "Code too long"),
+  description: z.string().max(500, "Description too long").optional(),
+  type: z.enum(["percentage", "fixed"], { errorMap: () => ({ message: "Type must be 'percentage' or 'fixed'" }) }),
+  value: z.number().positive("Value must be positive"),
+  minPurchase: z.number().min(0).default(0),
+  maxDiscount: z.number().positive().optional(),
+  scope: z.enum(["global", "event"]).default("global"),
+  eventId: z.string().optional(),
+  eventName: z.string().optional(),
+  usageLimit: z.number().int().min(0).default(0),
+  perUserLimit: z.number().int().min(0).default(0),
+  validFrom: z.string().datetime("Invalid date format for validFrom"),
+  validUntil: z.string().datetime("Invalid date format for validUntil"),
+  createdBy: z.string().optional(),
+});
+
+const applyCouponSchema = z.object({
+  couponId: z.string().min(1, "Coupon ID is required"),
+  couponCode: z.string().optional(),
+  userId: z.string().min(1, "User ID is required"),
+  userName: z.string().optional(),
+  userEmail: z.string().email().optional(),
+  eventId: z.string().min(1, "Event ID is required"),
+  originalPrice: z.number().positive("Original price must be positive"),
+  discountAmount: z.number().min(0).optional(),
+  finalPrice: z.number().min(0).optional(),
+});
+
+const updateCouponSchema = z.object({
+  couponId: z.string().min(1, "Coupon ID is required"),
+  isActive: z.boolean().optional(),
+  description: z.string().max(500).optional(),
+  validFrom: z.string().datetime().optional(),
+  validUntil: z.string().datetime().optional(),
+  usageLimit: z.number().int().min(0).optional(),
+  perUserLimit: z.number().int().min(0).optional(),
+});
 
 // GET /api/coupons — list all or validate a specific code
 // ?code=EARLYBIRD50&eventId=xxx&userId=yyy — validate
@@ -19,15 +60,15 @@ export async function GET(request: NextRequest) {
     if (listAll === "true") {
       const { isAdmin } = await verifyAdminAuth(request);
       if (!isAdmin) {
-        return NextResponse.json({ error: "Admin access required" }, { status: 401 });
+        throw new ApiError(401, "Admin access required");
       }
       const result = await adminDb.listDocuments(DATABASE_ID, COLLECTIONS.COUPONS);
-      return NextResponse.json({ coupons: result.documents });
+      return successResponse({ coupons: result.documents });
     }
 
     // Validate a coupon code
     if (!code) {
-      return NextResponse.json({ error: "code parameter required" }, { status: 400 });
+      throw new ApiError(400, "code parameter required");
     }
 
     // Find coupon by code
@@ -89,8 +130,8 @@ export async function GET(request: NextRequest) {
         scope: coupon.scope,
       },
     });
-  } catch (error: unknown) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, "GET /api/coupons");
   }
 }
 
@@ -105,144 +146,118 @@ export async function POST(request: NextRequest) {
     if (action === "create") {
       const { isAdmin } = await verifyAdminAuth(request);
       if (!isAdmin) {
-        return NextResponse.json({ error: "Admin access required" }, { status: 401 });
+        throw new ApiError(401, "Admin access required");
       }
-      const {
-        code, description, type, value, minPurchase, maxDiscount,
-        scope, eventId, eventName, usageLimit, perUserLimit,
-        validFrom, validUntil, createdBy,
-      } = body;
 
-      if (!code || !type || value == null || !validFrom || !validUntil) {
-        return NextResponse.json({
-          error: "code, type, value, validFrom, validUntil required",
-        }, { status: 400 });
-      }
+      const data = await validateRequestBody(request, createCouponSchema);
 
       // Check for duplicate code
       const existResult = await adminDb.listDocuments(DATABASE_ID, COLLECTIONS.COUPONS, [
-        Query.equal("code", code.toUpperCase()),
+        Query.equal("code", data.code.toUpperCase()),
       ]);
       if (existResult.total > 0) {
-        return NextResponse.json({ error: "Coupon code already exists" }, { status: 409 });
+        throw new ApiError(409, "Coupon code already exists", "DUPLICATE_CODE");
       }
 
       const doc = await adminDb.createDocument(DATABASE_ID, COLLECTIONS.COUPONS, ID.unique(), {
-        code: code.toUpperCase(),
-        description: description || null,
-        type,
-        value,
-        minPurchase: minPurchase || 0,
-        maxDiscount: maxDiscount || null,
-        scope: scope || "global",
-        eventId: scope === "event" ? eventId : null,
-        eventName: scope === "event" ? eventName : null,
-        usageLimit: usageLimit || 0,
+        code: data.code.toUpperCase(),
+        description: data.description || null,
+        type: data.type,
+        value: data.value,
+        minPurchase: data.minPurchase,
+        maxDiscount: data.maxDiscount || null,
+        scope: data.scope,
+        eventId: data.scope === "event" ? data.eventId : null,
+        eventName: data.scope === "event" ? data.eventName : null,
+        usageLimit: data.usageLimit,
         usedCount: 0,
-        perUserLimit: perUserLimit || 0,
-        validFrom,
-        validUntil,
+        perUserLimit: data.perUserLimit,
+        validFrom: data.validFrom,
+        validUntil: data.validUntil,
         isActive: true,
-        createdBy: createdBy || "",
+        createdBy: data.createdBy || "",
       });
 
-      return NextResponse.json({ coupon: doc }, { status: 201 });
+      return successResponse({ coupon: doc, message: "Coupon created successfully" }, 201);
     }
 
     // Apply a coupon (record usage + increment count)
     if (action === "apply") {
       const { authenticated } = await verifyAuth(request);
       if (!authenticated) {
-        return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+        throw new ApiError(401, "Authentication required");
       }
-      const {
-        couponId, couponCode, userId, userName, userEmail,
-        eventId, originalPrice, discountAmount, finalPrice,
-      } = body;
 
-      if (!couponId || !userId || !eventId || originalPrice == null) {
-        return NextResponse.json({
-          error: "couponId, userId, eventId, originalPrice required",
-        }, { status: 400 });
-      }
+      const data = await validateRequestBody(request, applyCouponSchema);
 
       // Record usage
       const usage = await adminDb.createDocument(DATABASE_ID, COLLECTIONS.COUPON_USAGE, ID.unique(), {
-        couponId,
-        couponCode: couponCode || "",
-        userId,
-        userName: userName || "",
-        userEmail: userEmail || "",
-        eventId,
-        originalPrice,
-        discountAmount: discountAmount || 0,
-        finalPrice: finalPrice || originalPrice,
+        couponId: data.couponId,
+        couponCode: data.couponCode || "",
+        userId: data.userId,
+        userName: data.userName || "",
+        userEmail: data.userEmail || "",
+        eventId: data.eventId,
+        originalPrice: data.originalPrice,
+        discountAmount: data.discountAmount || 0,
+        finalPrice: data.finalPrice || data.originalPrice,
         usedAt: new Date().toISOString(),
       });
 
       // Increment usedCount on coupon
       try {
-        const couponData = await adminDb.getDocument(DATABASE_ID, COLLECTIONS.COUPONS, couponId);
-        await adminDb.updateDocument(DATABASE_ID, COLLECTIONS.COUPONS, couponId, {
+        const couponData = await adminDb.getDocument(DATABASE_ID, COLLECTIONS.COUPONS, data.couponId);
+        await adminDb.updateDocument(DATABASE_ID, COLLECTIONS.COUPONS, data.couponId, {
           usedCount: (couponData.usedCount || 0) + 1,
         });
       } catch {
         // Non-fatal: usage was already recorded
       }
 
-      return NextResponse.json({ success: true, usage }, { status: 201 });
+      return successResponse({ usage, message: "Coupon applied successfully" }, 201);
     }
 
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (error: unknown) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    throw new ApiError(400, "Invalid action. Must be 'create' or 'apply'");
+  } catch (error) {
+    return handleApiError(error, "POST /api/coupons");
   }
 }
 
 // PATCH /api/coupons — toggle active, update details
 export async function PATCH(request: NextRequest) {
-  const { isAdmin, error } = await verifyAdminAuth(request);
-  if (!isAdmin) {
-    return NextResponse.json({ error: error || "Admin access required" }, { status: 401 });
-  }
   try {
-    const body = await request.json();
-    const { couponId, ...updateData } = body;
-
-    if (!couponId) {
-      return NextResponse.json({ error: "couponId required" }, { status: 400 });
+    const { isAdmin } = await verifyAdminAuth(request);
+    if (!isAdmin) {
+      throw new ApiError(401, "Admin access required");
     }
 
-    // Whitelist allowed fields to prevent abuse (e.g., resetting usedCount)
-    const allowedFields = ["isActive", "description", "validFrom", "validUntil", "usageLimit", "perUserLimit"];
-    const safeData: Record<string, unknown> = {};
-    for (const key of allowedFields) {
-      if (key in updateData) safeData[key] = updateData[key];
-    }
+    const data = await validateRequestBody(request, updateCouponSchema);
+    const { couponId, ...updateData } = data;
 
-    const doc = await adminDb.updateDocument(DATABASE_ID, COLLECTIONS.COUPONS, couponId, safeData);
-    return NextResponse.json({ coupon: doc });
-  } catch (error: unknown) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    const doc = await adminDb.updateDocument(DATABASE_ID, COLLECTIONS.COUPONS, couponId, updateData);
+    return successResponse({ coupon: doc, message: "Coupon updated successfully" });
+  } catch (error) {
+    return handleApiError(error, "PATCH /api/coupons");
   }
 }
 
 // DELETE /api/coupons — Delete coupon (admin)
 export async function DELETE(request: NextRequest) {
-  const { isAdmin, error } = await verifyAdminAuth(request);
-  if (!isAdmin) {
-    return NextResponse.json({ error: error || "Admin access required" }, { status: 401 });
-  }
   try {
+    const { isAdmin } = await verifyAdminAuth(request);
+    if (!isAdmin) {
+      throw new ApiError(401, "Admin access required");
+    }
+
     const { couponId } = await request.json();
 
     if (!couponId) {
-      return NextResponse.json({ error: "couponId required" }, { status: 400 });
+      throw new ApiError(400, "couponId required");
     }
 
     await adminDb.deleteDocument(DATABASE_ID, COLLECTIONS.COUPONS, couponId);
-    return NextResponse.json({ success: true });
-  } catch (error: unknown) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return successResponse({ message: "Coupon deleted successfully" });
+  } catch (error) {
+    return handleApiError(error, "DELETE /api/coupons");
   }
 }

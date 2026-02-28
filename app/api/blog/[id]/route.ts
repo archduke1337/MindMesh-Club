@@ -1,7 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { blogService } from "@/lib/blog";
-import { getErrorMessage } from "@/lib/errorHandler";
 import { verifyAuth, verifyAdminAuth } from "@/lib/apiAuth";
+import { handleApiError, validateRequestBody, successResponse, ApiError } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Validation schema for blog updates
+const updateBlogSchema = z.object({
+  title: z.string().min(5).max(150).optional(),
+  content: z.string().min(100).max(65536).optional(),
+  excerpt: z.string().max(300).optional(),
+  coverImage: z.string().url().optional(),
+  category: z.string().min(1).optional(),
+  tags: z.union([z.array(z.string()), z.string()]).optional(),
+  // Admin-only fields (will be filtered if not admin)
+  status: z.enum(["draft", "pending", "published", "rejected"]).optional(),
+  views: z.number().int().min(0).optional(),
+  likes: z.number().int().min(0).optional(),
+  featured: z.boolean().optional(),
+});
 
 export async function GET(
   request: NextRequest,
@@ -16,13 +32,7 @@ export async function GET(
     });
 
     if (!blog) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Blog not found",
-        },
-        { status: 404 }
-      );
+      throw new ApiError(404, "Blog not found", "BLOG_NOT_FOUND");
     }
 
     // Increment views
@@ -30,19 +40,9 @@ export async function GET(
       await blogService.incrementViews(blog.$id);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: blog,
-    });
+    return successResponse(blog);
   } catch (error) {
-    console.error("Error fetching blog:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 404 }
-    );
+    return handleApiError(error, "GET /api/blog/[id]");
   }
 }
 
@@ -55,10 +55,7 @@ export async function PATCH(
     // Verify user is authenticated before allowing updates
     const { authenticated, user } = await verifyAuth(request);
     if (!authenticated || !user) {
-      return NextResponse.json(
-        { success: false, error: "Not authenticated" },
-        { status: 401 }
-      );
+      throw new ApiError(401, "Authentication required");
     }
 
     const { isAdmin } = await verifyAdminAuth(request);
@@ -67,14 +64,12 @@ export async function PATCH(
     const existingBlog = await blogService.getBlogBySlug(id).catch(() => null);
     if (existingBlog && existingBlog.authorEmail !== user.email) {
       if (!isAdmin) {
-        return NextResponse.json(
-          { success: false, error: "Not authorized — you can only edit your own blog posts" },
-          { status: 403 }
-        );
+        throw new ApiError(403, "Not authorized — you can only edit your own blog posts", "UNAUTHORIZED");
       }
     }
 
-    const data = await request.json();
+    // Validate request body
+    const data = await validateRequestBody(request, updateBlogSchema);
 
     // Prevent non-admins from updating sensitive fields
     if (!isAdmin) {
@@ -86,20 +81,9 @@ export async function PATCH(
 
     const blog = await blogService.updateBlog(id, data);
 
-    return NextResponse.json({
-      success: true,
-      data: blog,
-      message: "Blog updated successfully",
-    });
+    return successResponse({ blog, message: "Blog updated successfully" });
   } catch (error) {
-    console.error("Error updating blog:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "PATCH /api/blog/[id]");
   }
 }
 
@@ -109,27 +93,15 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const { isAdmin: isAdminUser, user: adminUser, error } = await verifyAdminAuth(request);
-    if (!isAdminUser) {
-      return NextResponse.json(
-        { success: false, error: error || "Not authorized" },
-        { status: adminUser ? 403 : 401 }
-      );
+    const { isAdmin } = await verifyAdminAuth(request);
+    if (!isAdmin) {
+      throw new ApiError(403, "Admin access required");
     }
+    
     await blogService.deleteBlog(id);
 
-    return NextResponse.json({
-      success: true,
-      message: "Blog deleted successfully",
-    });
+    return successResponse({ message: "Blog deleted successfully" });
   } catch (error) {
-    console.error("Error deleting blog:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "DELETE /api/blog/[id]");
   }
 }

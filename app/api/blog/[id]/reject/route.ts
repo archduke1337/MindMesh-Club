@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { blogService } from "@/lib/blog";
-import { getErrorMessage } from "@/lib/errorHandler";
 import { verifyAdminAuth } from "@/lib/apiAuth";
+import { handleApiError, validateRequestBody, successResponse, ApiError } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Validation schema
+const rejectBlogSchema = z.object({
+  reason: z.string().min(10, "Rejection reason must be at least 10 characters").max(500, "Reason too long").default("No reason provided"),
+});
 
 export async function POST(
   request: NextRequest,
@@ -9,32 +15,17 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { isAdmin, user, error } = await verifyAdminAuth(request);
+    const { isAdmin } = await verifyAdminAuth(request);
     if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: error || "Not authorized" },
-        { status: user ? 403 : 401 }
-      );
+      throw new ApiError(403, "Admin access required");
     }
 
-    const data = await request.json();
-    const reason = data.reason || "No reason provided";
+    const data = await validateRequestBody(request, rejectBlogSchema);
 
-    const blog = await blogService.rejectBlog(id, reason);
+    const blog = await blogService.rejectBlog(id, data.reason);
 
-    return NextResponse.json({
-      success: true,
-      data: blog,
-      message: "Blog rejected successfully",
-    });
+    return successResponse({ blog, message: "Blog rejected successfully" });
   } catch (error) {
-    console.error("Error rejecting blog:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "POST /api/blog/[id]/reject");
   }
 }
