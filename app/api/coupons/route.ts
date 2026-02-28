@@ -2,8 +2,7 @@
 // Coupon management + validation + usage tracking
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth, verifyAuth } from "@/lib/apiAuth";
-import { adminFetch } from "@/lib/adminApi";
-import { DATABASE_ID } from "@/lib/types/appwrite";
+import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
 
 // GET /api/coupons — list all or validate a specific code
 // ?code=EARLYBIRD50&eventId=xxx&userId=yyy — validate
@@ -21,12 +20,8 @@ export async function GET(request: NextRequest) {
       if (!isAdmin) {
         return NextResponse.json({ error: "Admin access required" }, { status: 401 });
       }
-      const res = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/coupons/documents`
-      );
-      if (!res.ok) return NextResponse.json({ coupons: [] });
-      const data = await res.json();
-      return NextResponse.json({ coupons: data.documents || [] });
+      const result = await adminDb.listDocuments(DATABASE_ID, COLLECTIONS.COUPONS);
+      return NextResponse.json({ coupons: result.documents });
     }
 
     // Validate a coupon code
@@ -35,17 +30,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Find coupon by code
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/coupons/documents`
-    );
-    if (!res.ok) {
-      return NextResponse.json({ error: "Failed to fetch coupons" }, { status: 500 });
-    }
+    const result = await adminDb.listDocuments(DATABASE_ID, COLLECTIONS.COUPONS, [
+      Query.equal("code", code.toUpperCase()),
+    ]);
 
-    const data = await res.json();
-    const coupon = (data.documents || []).find(
-      (c: any) => c.code.toUpperCase() === code.toUpperCase()
-    );
+    const coupon = result.documents[0];
 
     if (!coupon) {
       return NextResponse.json({ valid: false, error: "Invalid coupon code" });
@@ -77,17 +66,12 @@ export async function GET(request: NextRequest) {
 
     // Check per-user limit
     if (userId && coupon.perUserLimit > 0) {
-      const usageRes = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/coupon_usage/documents`
-      );
-      if (usageRes.ok) {
-        const usageData = await usageRes.json();
-        const userUses = (usageData.documents || []).filter(
-          (u: any) => u.couponId === coupon.$id && u.userId === userId
-        ).length;
-        if (userUses >= coupon.perUserLimit) {
-          return NextResponse.json({ valid: false, error: "You've already used this coupon" });
-        }
+      const usageResult = await adminDb.listDocuments(DATABASE_ID, COLLECTIONS.COUPON_USAGE, [
+        Query.equal("couponId", coupon.$id),
+        Query.equal("userId", userId),
+      ]);
+      if (usageResult.total >= coupon.perUserLimit) {
+        return NextResponse.json({ valid: false, error: "You've already used this coupon" });
       }
     }
 
@@ -135,53 +119,32 @@ export async function POST(request: NextRequest) {
       }
 
       // Check for duplicate code
-      const existRes = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/coupons/documents`
-      );
-      if (existRes.ok) {
-        const existData = await existRes.json();
-        const dup = (existData.documents || []).find(
-          (c: any) => c.code.toUpperCase() === code.toUpperCase()
-        );
-        if (dup) {
-          return NextResponse.json({ error: "Coupon code already exists" }, { status: 409 });
-        }
+      const existResult = await adminDb.listDocuments(DATABASE_ID, COLLECTIONS.COUPONS, [
+        Query.equal("code", code.toUpperCase()),
+      ]);
+      if (existResult.total > 0) {
+        return NextResponse.json({ error: "Coupon code already exists" }, { status: 409 });
       }
 
-      const res = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/coupons/documents`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            documentId: "unique()",
-            data: {
-              code: code.toUpperCase(),
-              description: description || null,
-              type,
-              value,
-              minPurchase: minPurchase || 0,
-              maxDiscount: maxDiscount || null,
-              scope: scope || "global",
-              eventId: scope === "event" ? eventId : null,
-              eventName: scope === "event" ? eventName : null,
-              usageLimit: usageLimit || 0,
-              usedCount: 0,
-              perUserLimit: perUserLimit || 0,
-              validFrom,
-              validUntil,
-              isActive: true,
-              createdBy: createdBy || "",
-            },
-          }),
-        }
-      );
+      const doc = await adminDb.createDocument(DATABASE_ID, COLLECTIONS.COUPONS, ID.unique(), {
+        code: code.toUpperCase(),
+        description: description || null,
+        type,
+        value,
+        minPurchase: minPurchase || 0,
+        maxDiscount: maxDiscount || null,
+        scope: scope || "global",
+        eventId: scope === "event" ? eventId : null,
+        eventName: scope === "event" ? eventName : null,
+        usageLimit: usageLimit || 0,
+        usedCount: 0,
+        perUserLimit: perUserLimit || 0,
+        validFrom,
+        validUntil,
+        isActive: true,
+        createdBy: createdBy || "",
+      });
 
-      if (!res.ok) {
-        const err = await res.text();
-        return NextResponse.json({ error: err }, { status: res.status });
-      }
-
-      const doc = await res.json();
       return NextResponse.json({ coupon: doc }, { status: 201 });
     }
 
@@ -203,51 +166,29 @@ export async function POST(request: NextRequest) {
       }
 
       // Record usage
-      const usageRes = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/coupon_usage/documents`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            documentId: "unique()",
-            data: {
-              couponId,
-              couponCode: couponCode || "",
-              userId,
-              userName: userName || "",
-              userEmail: userEmail || "",
-              eventId,
-              originalPrice,
-              discountAmount: discountAmount || 0,
-              finalPrice: finalPrice || originalPrice,
-              usedAt: new Date().toISOString(),
-            },
-          }),
-        }
-      );
-
-      if (!usageRes.ok) {
-        const err = await usageRes.text();
-        return NextResponse.json({ error: err }, { status: usageRes.status });
-      }
+      const usage = await adminDb.createDocument(DATABASE_ID, COLLECTIONS.COUPON_USAGE, ID.unique(), {
+        couponId,
+        couponCode: couponCode || "",
+        userId,
+        userName: userName || "",
+        userEmail: userEmail || "",
+        eventId,
+        originalPrice,
+        discountAmount: discountAmount || 0,
+        finalPrice: finalPrice || originalPrice,
+        usedAt: new Date().toISOString(),
+      });
 
       // Increment usedCount on coupon
-      const couponRes = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/coupons/documents/${couponId}`
-      );
-      if (couponRes.ok) {
-        const couponData = await couponRes.json();
-        await adminFetch(
-          `/databases/${DATABASE_ID}/collections/coupons/documents/${couponId}`,
-          {
-            method: "PATCH",
-            body: JSON.stringify({
-              data: { usedCount: (couponData.usedCount || 0) + 1 },
-            }),
-          }
-        );
+      try {
+        const couponData = await adminDb.getDocument(DATABASE_ID, COLLECTIONS.COUPONS, couponId);
+        await adminDb.updateDocument(DATABASE_ID, COLLECTIONS.COUPONS, couponId, {
+          usedCount: (couponData.usedCount || 0) + 1,
+        });
+      } catch {
+        // Non-fatal: usage was already recorded
       }
 
-      const usage = await usageRes.json();
       return NextResponse.json({ success: true, usage }, { status: 201 });
     }
 
@@ -278,17 +219,7 @@ export async function PATCH(request: NextRequest) {
       if (key in updateData) safeData[key] = updateData[key];
     }
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/coupons/documents/${couponId}`,
-      { method: "PATCH", body: JSON.stringify({ data: safeData }) }
-    );
-
-    if (!res.ok) {
-      const err = await res.text();
-      return NextResponse.json({ error: err }, { status: res.status });
-    }
-
-    const doc = await res.json();
+    const doc = await adminDb.updateDocument(DATABASE_ID, COLLECTIONS.COUPONS, couponId, safeData);
     return NextResponse.json({ coupon: doc });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -308,16 +239,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "couponId required" }, { status: 400 });
     }
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/coupons/documents/${couponId}`,
-      { method: "DELETE" }
-    );
-
-    if (!res.ok) {
-      const err = await res.text();
-      return NextResponse.json({ error: err }, { status: res.status });
-    }
-
+    await adminDb.deleteDocument(DATABASE_ID, COLLECTIONS.COUPONS, couponId);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
