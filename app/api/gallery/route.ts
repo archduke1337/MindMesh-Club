@@ -1,30 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { galleryService } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
-
-// Helper to verify authenticated user via session
-async function verifyUser(request: NextRequest): Promise<{ authenticated: boolean; email?: string }> {
-  try {
-    const cookieHeader = request.headers.get("cookie");
-    if (cookieHeader) {
-      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-      if (endpoint && projectId) {
-        const res = await fetch(`${endpoint}/account`, {
-          headers: { "X-Appwrite-Project": projectId, "Cookie": cookieHeader },
-        });
-        if (res.ok) {
-          const user = await res.json();
-          return { authenticated: true, email: user.email };
-        }
-      }
-    }
-    return { authenticated: false };
-  } catch {
-    return { authenticated: false };
-  }
-}
+import { verifyAuth, verifyAdminAuth } from "@/lib/apiAuth";
 
 export async function GET(request: NextRequest) {
   try {
@@ -61,9 +38,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication before allowing upload
-    const { authenticated } = await verifyUser(request);
-    if (!authenticated) {
+    // Verify authentication via centralized auth
+    const { authenticated, user } = await verifyAuth(request);
+    if (!authenticated || !user) {
       return NextResponse.json(
         { success: false, error: "Authentication required to upload gallery images" },
         { status: 401 }
@@ -83,6 +60,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if user is admin — only admins can pre-approve
+    const { isAdmin } = await verifyAdminAuth(request);
+
     const image = await galleryService.createImage({
       title: data.title,
       description: data.description || "",
@@ -90,9 +70,9 @@ export async function POST(request: NextRequest) {
       category: data.category,
       date: data.date,
       attendees: data.attendees || 0,
-      uploadedBy: data.uploadedBy || "anonymous",
-      isApproved: data.isApproved || false,
-      isFeatured: data.isFeatured || false,
+      uploadedBy: user.$id, // Use server-verified identity
+      isApproved: isAdmin ? (data.isApproved ?? false) : false, // Non-admins always false
+      isFeatured: isAdmin ? (data.isFeatured ?? false) : false,
       tags: data.tags || [],
       eventId: data.eventId,
     });

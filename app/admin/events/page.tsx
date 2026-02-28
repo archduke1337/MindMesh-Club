@@ -223,7 +223,7 @@ export default function AdminEventsPage() {
               date: newDateStr,
               parentEventId: parentId,
               isRecurring: false,
-              recurringPattern: undefined
+              recurringPattern: "none" as const
             };
             await eventService.createEvent(recurData as Omit<Event, '$id' | '$createdAt' | '$updatedAt'>);
           }

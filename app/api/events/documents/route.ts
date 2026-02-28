@@ -1,35 +1,35 @@
 // app/api/events/documents/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminAuth } from "@/lib/apiAuth";
-import { adminFetch } from "@/lib/adminApi";
-import { DATABASE_ID, COLLECTION_IDS } from "@/lib/types/appwrite";
-
-const COLLECTION_ID = COLLECTION_IDS.EVENT_DOCUMENTS;
+import { verifyAuth, verifyAdminAuth } from "@/lib/apiAuth";
+import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
 
 // GET /api/events/documents?eventId=xxx
 export async function GET(request: NextRequest) {
   try {
+    // Require authentication to view event documents
+    const { authenticated, error: authError } = await verifyAuth(request);
+    if (!authenticated) {
+      return NextResponse.json({ error: authError || "Authentication required" }, { status: 401 });
+    }
+
     const eventId = request.nextUrl.searchParams.get("eventId");
     if (!eventId) {
       return NextResponse.json({ error: "eventId required" }, { status: 400 });
     }
 
-    const query = encodeURIComponent(`{"method":"equal","attribute":"eventId","values":["${eventId}"]}`);
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?queries[]=${query}`
+    const response = await adminDb.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.EVENT_DOCUMENTS,
+      [Query.equal("eventId", eventId)]
     );
 
-    if (!res.ok) {
-      return NextResponse.json({ documents: [] });
-    }
-
-    const data = await res.json();
-    const sorted = (data.documents || []).sort(
+    const sorted = (response.documents || []).sort(
       (a: any, b: any) => (a.order || 0) - (b.order || 0)
     );
     return NextResponse.json({ documents: sorted });
-  } catch {
-    return NextResponse.json({ documents: [] });
+  } catch (err: any) {
+    console.error("[Events Documents GET]", err);
+    return NextResponse.json({ error: err?.message || "Failed to fetch documents" }, { status: 500 });
   }
 }
 
@@ -50,34 +50,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`,
+    const doc = await adminDb.createDocument(
+      DATABASE_ID,
+      COLLECTIONS.EVENT_DOCUMENTS,
+      ID.unique(),
       {
-        method: "POST",
-        body: JSON.stringify({
-          documentId: "unique()",
-          data: {
-            eventId,
-            type,
-            title,
-            content: content || null,
-            fileUrl: fileUrl || null,
-            isRequired: isRequired || false,
-            isPublic: isPublic !== undefined ? isPublic : true,
-            order: order || 0,
-          },
-        }),
+        eventId,
+        type,
+        title,
+        content: content || null,
+        fileUrl: fileUrl || null,
+        isRequired: isRequired || false,
+        isPublic: isPublic !== undefined ? isPublic : true,
+        order: order || 0,
       }
     );
 
-    if (!res.ok) {
-      const errText = await res.text();
-      return NextResponse.json({ error: errText }, { status: res.status });
-    }
-
-    const doc = await res.json();
     return NextResponse.json({ document: doc }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[Events Documents POST]", error);
+    return NextResponse.json({ error: error?.message || "Failed to create document" }, { status: 500 });
   }
 }
