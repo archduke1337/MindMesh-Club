@@ -63,7 +63,7 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
 };
 
 // Primary links shown directly in desktop nav bar
-const PRIMARY_NAV = ["/about", "/events", "/blog", "/gallery", "/contact"];
+const PRIMARY_NAV = ["/about", "/events", "/Blog", "/gallery", "/contact"];
 
 export const Navbar = () => {
   const { user, loading, logout } = useAuth();
