@@ -20,7 +20,7 @@ import { calculateEventMetrics, getCapacityAlertMessage, estimateFutureRegistrat
 import { generateEventQRCodeUrl, generateEventShareQRCodeUrl } from "@/lib/eventQRCode";
 import { downloadEventStatsCSV, downloadRegistrationList } from "@/lib/eventExport";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
-import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon, AlertCircle, XIcon, QrCode, Download, Share2, RefreshCw } from "lucide-react";
+import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon, AlertCircle, XIcon, QrCode, Download, Share2, RefreshCw, ArrowLeftIcon, SearchIcon, LightbulbIcon, InfoIcon, CheckCircleIcon } from "lucide-react";
 
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
@@ -44,6 +44,14 @@ export default function AdminEventsPage() {
   const [loadingAnalyticsRegistrations, setLoadingAnalyticsRegistrations] = useState(false);
   const [syncingRegistrations, setSyncingRegistrations] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   // Check-in state
   const [checkinMode, setCheckinMode] = useState(false);
@@ -138,11 +146,11 @@ export default function AdminEventsPage() {
 
       // Reload events to show updated counts
       await loadEvents();
-      alert(`✅ Synced ${totalSynced} events with latest registration counts`);
+      showToast(`Synced ${totalSynced} events with latest registration counts`, 'success');
     } catch (err) {
       const errorMsg = getErrorMessage(err);
       console.error("Error syncing registrations:", errorMsg);
-      alert(`Failed to sync registrations: ${errorMsg}`);
+      showToast(`Failed to sync registrations: ${errorMsg}`, 'error');
     } finally {
       setSyncingRegistrations(false);
     }
@@ -174,12 +182,12 @@ export default function AdminEventsPage() {
 
     // Validation
     if (!formData.image || !formData.image.startsWith('http')) {
-      alert("Please enter a valid image URL (must start with http:// or https://)");
+      showToast("Please enter a valid image URL (must start with http:// or https://)", 'error');
       return;
     }
 
     if (!formData.organizerAvatar || !formData.organizerAvatar.startsWith('http')) {
-      alert("Please enter a valid organizer avatar URL (must start with http:// or https://)");
+      showToast("Please enter a valid organizer avatar URL (must start with http:// or https://)", 'error');
       return;
     }
 
@@ -194,11 +202,11 @@ export default function AdminEventsPage() {
 
       await loadEvents();
       handleCloseModal();
-      alert(editingEvent ? "Event updated successfully!" : "Event created successfully!");
+      showToast(editingEvent ? "Event updated successfully!" : "Event created successfully!", 'success');
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Error saving event:", message);
-      alert(message || "Failed to save event");
+      showToast(message || "Failed to save event", 'error');
     } finally {
       setSubmitting(false);
     }
@@ -217,10 +225,10 @@ export default function AdminEventsPage() {
     try {
       await eventService.deleteEvent(eventId);
       await loadEvents();
-      alert("Event deleted successfully!");
+      showToast("Event deleted successfully!", 'success');
     } catch (error) {
       console.error("Error deleting event:", error);
-      alert("Failed to delete event");
+      showToast("Failed to delete event", 'error');
     } finally {
       setDeletingId(null);
     }
@@ -237,7 +245,7 @@ export default function AdminEventsPage() {
       setRegistrations(regs);
     } catch (err) {
       console.error("Error loading registrations:", err);
-      alert("Failed to load registrations");
+      showToast("Failed to load registrations", 'error');
     } finally {
       setLoadingRegistrations(false);
     }
@@ -371,7 +379,7 @@ export default function AdminEventsPage() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading QR code:', error);
-      alert('Failed to download QR code');
+      showToast('Failed to download QR code', 'error');
     }
   };
 
@@ -381,10 +389,10 @@ export default function AdminEventsPage() {
     try {
       const count = await eventService.deletePastEvents();
       await loadEvents();
-      alert(`${count} past events deleted successfully!`);
+      showToast(`${count} past events deleted successfully!`, 'success');
     } catch (error) {
       console.error("Error deleting past events:", error);
-      alert("Failed to delete past events");
+      showToast("Failed to delete past events", 'error');
     }
   };
 
@@ -465,8 +473,33 @@ export default function AdminEventsPage() {
       title="Event Management"
       description="Create, edit, and manage all events"
     >
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[9999] px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-in slide-in-from-right transition-all max-w-sm ${
+          toast.type === 'success' ? 'bg-success-50 dark:bg-success-950/80 border border-success-200 dark:border-success-800 text-success-800 dark:text-success-200'
+          : toast.type === 'error' ? 'bg-danger-50 dark:bg-danger-950/80 border border-danger-200 dark:border-danger-800 text-danger-800 dark:text-danger-200'
+          : 'bg-primary-50 dark:bg-primary-950/80 border border-primary-200 dark:border-primary-800 text-primary-800 dark:text-primary-200'
+        }`}>
+          {toast.type === 'success' && <CheckCircleIcon className="w-4 h-4 flex-shrink-0" />}
+          {toast.type === 'error' && <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+          {toast.type === 'info' && <InfoIcon className="w-4 h-4 flex-shrink-0" />}
+          <span className="text-sm font-medium">{toast.message}</span>
+          <button onClick={() => setToast(null)} className="ml-2 opacity-60 hover:opacity-100"><XIcon className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
+
+      {/* Back Button */}
+      <Button
+        variant="light"
+        startContent={<ArrowLeftIcon className="w-4 h-4" />}
+        onPress={() => router.push("/admin")}
+        className="mb-4"
+      >
+        Back to Admin
+      </Button>
+
       {error && (
-        <Card className="mb-6 border-l-4 border-danger">
+        <Card className="mb-6 border-none bg-danger-50 dark:bg-danger-950/30">
           <CardBody className="gap-2">
             <div className="flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
@@ -479,8 +512,30 @@ export default function AdminEventsPage() {
         </Card>
       )}
 
+      {/* Search & Filter Row */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <Input
+          placeholder="Search events..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          startContent={<SearchIcon className="w-4 h-4 text-default-400" />}
+          className="w-full sm:max-w-xs"
+          size="sm"
+          isClearable
+          onClear={() => setSearchQuery("")}
+        />
+        <div className="flex flex-wrap gap-1.5">
+          {["all", "upcoming", "ongoing", "completed", "cancelled"].map((s) => (
+            <Button key={s} size="sm" variant={statusFilter === s ? "solid" : "flat"}
+              color={statusFilter === s ? "primary" : "default"}
+              onPress={() => setStatusFilter(s)} className="capitalize"
+            >{s}</Button>
+          ))}
+        </div>
+      </div>
+
       {/* Controls Section */}
-      < div className="flex flex-col sm:flex-row gap-2 w-full mb-6 md:mb-8" >
+      <div className="flex flex-col sm:flex-row gap-2 w-full mb-6 md:mb-8">
         <Button
           color="warning"
           variant="flat"
@@ -513,10 +568,10 @@ export default function AdminEventsPage() {
           <PlusIcon className="w-4 h-4" />
           <span className="ml-2">Add Event</span>
         </Button>
-      </div >
+      </div>
 
       {/* Stats Cards */}
-      < div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8" >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8">
         <Card className="border-none shadow-md">
           <CardBody className="p-4">
             <div className="flex items-center justify-between">
@@ -578,129 +633,135 @@ export default function AdminEventsPage() {
             </div>
           </CardBody>
         </Card>
-      </div >
+      </div>
 
       {/* Events Table */}
-      < Card className="border-none shadow-lg" >
+      <Card className="border-none shadow-lg">
         <CardBody className="p-0">
-          <div className="overflow-x-auto">
-            <Table aria-label="Events table" className="min-w-full">
-              <TableHeader>
-                <TableColumn>EVENT</TableColumn>
-                <TableColumn className="hidden md:table-cell">DATE</TableColumn>
-                <TableColumn className="hidden lg:table-cell">LOCATION</TableColumn>
-                <TableColumn className="hidden sm:table-cell">CAPACITY</TableColumn>
-                <TableColumn>STATUS</TableColumn>
-                <TableColumn>ACTIONS</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {events.map((event) => (
-                  <TableRow key={event.$id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={event.image}
-                          alt={event.title}
-                          className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-lg flex-shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <p className="font-semibold text-sm md:text-base truncate">
-                            {event.title}
-                          </p>
-                          <p className="text-xs md:text-sm text-default-500 truncate">
-                            {event.category}
-                          </p>
-                          <p className="text-xs text-default-400 md:hidden">
-                            {new Date(event.date).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {new Date(event.date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <span className="truncate max-w-xs block">
-                        {event.location}
-                      </span>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <div className="flex items-center gap-1">
-                        <UsersIcon className="w-3 h-3 text-default-400" />
-                        <span className="text-sm">
-                          {event.registered}/{event.capacity}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        color={event.status === "upcoming" ? "success" : "default"}
-                        variant="flat"
-                        size="sm"
-                        className="text-xs"
-                      >
-                        {event.status}
-                      </Chip>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1 md:gap-2">
-                        <Button
-                          size="sm"
-                          variant="light"
-                          isIconOnly
-                          title="Analytics"
-                          onPress={() => handleViewAnalytics(event)}
-                        >
-                          <TrendingUpIcon className="w-3 h-3 md:w-4 md:h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="light"
-                          isIconOnly
-                          title="QR Code"
-                          onPress={() => handleViewQRCode(event)}
-                        >
-                          <QrCode className="w-3 h-3 md:w-4 md:h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="light"
-                          isIconOnly
-                          title="View registrations"
-                          onPress={() => handleViewRegistrations(event)}
-                        >
-                          <UsersIcon className="w-3 h-3 md:w-4 md:h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="light"
-                          isIconOnly
-                          onPress={() => handleEdit(event)}
-                        >
-                          <Pencil className="w-3 h-3 md:w-4 md:h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          color="danger"
-                          variant="light"
-                          isIconOnly
-                          onPress={() => handleDelete(event.$id!)}
-                          isLoading={deletingId === event.$id}
-                        >
-                          <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          {(() => {
+            const filteredEvents = events.filter((event) => {
+              const matchesSearch = !searchQuery || event.title.toLowerCase().includes(searchQuery.toLowerCase()) || event.category?.toLowerCase().includes(searchQuery.toLowerCase()) || event.location?.toLowerCase().includes(searchQuery.toLowerCase());
+              const matchesStatus = statusFilter === "all" || event.status === statusFilter;
+              return matchesSearch && matchesStatus;
+            });
+
+            if (filteredEvents.length === 0) {
+              return (
+                <div className="text-center py-16 text-default-400">
+                  <CalendarIcon className="w-14 h-14 mx-auto mb-4 opacity-40" />
+                  <p className="text-lg font-medium">No events found</p>
+                  <p className="text-sm mt-1">
+                    {searchQuery || statusFilter !== "all" ? "Try adjusting your search or filters" : "Create your first event to get started"}
+                  </p>
+                  {!searchQuery && statusFilter === "all" && (
+                    <Button color="primary" className="mt-4" onPress={onOpen}>Create Event</Button>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <div className="overflow-x-auto">
+                <Table aria-label="Events table" className="min-w-full">
+                  <TableHeader>
+                    <TableColumn>EVENT</TableColumn>
+                    <TableColumn className="hidden md:table-cell">DATE</TableColumn>
+                    <TableColumn className="hidden lg:table-cell">LOCATION</TableColumn>
+                    <TableColumn className="hidden sm:table-cell">CAPACITY</TableColumn>
+                    <TableColumn>STATUS</TableColumn>
+                    <TableColumn>ACTIONS</TableColumn>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredEvents.map((event) => (
+                      <TableRow key={event.$id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={event.image}
+                              alt={event.title}
+                              className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-lg flex-shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm md:text-base truncate">
+                                {event.title}
+                              </p>
+                              <p className="text-xs md:text-sm text-default-500 truncate capitalize">
+                                {event.category}
+                              </p>
+                              <p className="text-xs text-default-400 md:hidden">
+                                {new Date(event.date).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {new Date(event.date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <span className="truncate max-w-xs block">
+                            {event.location}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <div className="flex items-center gap-1">
+                            <UsersIcon className="w-3 h-3 text-default-400" />
+                            <span className="text-sm">
+                              {event.registered}/{event.capacity}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            color={
+                              event.status === "upcoming" ? "success"
+                              : event.status === "ongoing" ? "primary"
+                              : event.status === "completed" ? "default"
+                              : event.status === "cancelled" ? "danger"
+                              : "default"
+                            }
+                            variant="flat"
+                            size="sm"
+                            className="text-xs capitalize"
+                          >
+                            {event.status}
+                          </Chip>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1 md:gap-2">
+                            <Button size="sm" variant="light" isIconOnly title="Analytics"
+                              onPress={() => handleViewAnalytics(event)}>
+                              <TrendingUpIcon className="w-3 h-3 md:w-4 md:h-4" />
+                            </Button>
+                            <Button size="sm" variant="light" isIconOnly title="QR Code"
+                              onPress={() => handleViewQRCode(event)}>
+                              <QrCode className="w-3 h-3 md:w-4 md:h-4" />
+                            </Button>
+                            <Button size="sm" variant="light" isIconOnly title="View registrations"
+                              onPress={() => handleViewRegistrations(event)}>
+                              <UsersIcon className="w-3 h-3 md:w-4 md:h-4" />
+                            </Button>
+                            <Button size="sm" variant="light" isIconOnly title="Edit"
+                              onPress={() => handleEdit(event)}>
+                              <Pencil className="w-3 h-3 md:w-4 md:h-4" />
+                            </Button>
+                            <Button size="sm" color="danger" variant="light" isIconOnly
+                              onPress={() => handleDelete(event.$id!)} isLoading={deletingId === event.$id}>
+                              <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            );
+          })()}
         </CardBody>
-      </Card >
+      </Card>
 
       {/* Add/Edit Modal */}
-      < Modal
+      <Modal
         isOpen={isOpen}
         onClose={handleCloseModal}
         size="3xl"
@@ -818,7 +879,7 @@ export default function AdminEventsPage() {
                       )}
                       <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                         <p className="text-xs text-blue-700 dark:text-blue-300">
-                          💡 Tip: Use free image hosting services like Imgur, Cloudinary, or Unsplash for reliable image URLs
+                          Tip: Use free image hosting services like Imgur, Cloudinary, or Unsplash for reliable image URLs
                         </p>
                       </div>
                     </div>
@@ -944,7 +1005,7 @@ export default function AdminEventsPage() {
 
                     <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
                       <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                        📍 Location Tips
+                        Location Tips
                       </p>
                       <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
                         <li>• Be specific about the venue name</li>
@@ -1004,7 +1065,7 @@ export default function AdminEventsPage() {
                     {formData.price && formData.discountPrice && formData.discountPrice < formData.price && (
                       <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
                         <p className="text-sm font-semibold text-green-900 dark:text-green-100 mb-1">
-                          💰 Discount Applied!
+                          Discount Applied!
                         </p>
                         <p className="text-sm text-green-700 dark:text-green-300">
                           Attendees save ₹{formData.price - formData.discountPrice} ({Math.round(((formData.price - formData.discountPrice) / formData.price) * 100)}% off)
@@ -1014,7 +1075,7 @@ export default function AdminEventsPage() {
 
                     <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
                       <p className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-2">
-                        💡 Pricing Tips
+                        Pricing Tips
                       </p>
                       <ul className="text-sm text-purple-700 dark:text-purple-300 space-y-1">
                         <li>• Set price to ₹0 for free events</li>
@@ -1073,7 +1134,7 @@ export default function AdminEventsPage() {
                           </Select>
                           <div className="p-3 bg-blue-100/50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
                             <p className="text-xs text-blue-700 dark:text-blue-300">
-                              💡 Recurring events will be automatically created based on the pattern. You can edit individual events later.
+                              Recurring events will be automatically created based on the pattern. You can edit individual events later.
                             </p>
                           </div>
                         </div>
@@ -1136,7 +1197,7 @@ export default function AdminEventsPage() {
                           placeholder="Add a tag (e.g., AI, Networking)"
                           value={tagInput}
                           onChange={(e) => setTagInput(e.target.value)}
-                          onKeyPress={(e) => {
+                          onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
                               handleAddTag();
@@ -1171,7 +1232,7 @@ export default function AdminEventsPage() {
 
                     <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
                       <p className="text-sm font-semibold text-orange-900 dark:text-orange-100 mb-2">
-                        🏷️ Tag Best Practices
+                        Tag Best Practices
                       </p>
                       <ul className="text-sm text-orange-700 dark:text-orange-300 space-y-1">
                         <li>• Use 3-5 relevant tags</li>
@@ -1207,7 +1268,7 @@ export default function AdminEventsPage() {
       </Modal >
 
       {/* Registrations Modal */}
-      < Modal
+      <Modal
         isOpen={isRegistrationsOpen}
         onClose={onRegistrationsClose}
         size="4xl"
@@ -1409,10 +1470,10 @@ export default function AdminEventsPage() {
             )}
           </ModalFooter>
         </ModalContent>
-      </Modal >
+      </Modal>
 
       {/* Analytics Modal */}
-      < Modal
+      <Modal
         isOpen={isAnalyticsOpen}
         onClose={onAnalyticsClose}
         size="2xl"
@@ -1538,10 +1599,10 @@ export default function AdminEventsPage() {
             </Button>
           </ModalFooter>
         </ModalContent>
-      </Modal >
+      </Modal>
 
       {/* QR Share Modal */}
-      < Modal
+      <Modal
         isOpen={isQRShareOpen}
         onClose={onQRShareClose}
         size="md"
@@ -1619,7 +1680,7 @@ export default function AdminEventsPage() {
             </Button>
           </ModalFooter>
         </ModalContent>
-      </Modal >
-    </AdminPageWrapper >
+      </Modal>
+    </AdminPageWrapper>
   );
 }
