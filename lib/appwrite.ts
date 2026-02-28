@@ -37,16 +37,11 @@ export const createAdminStorage = () => {
   return adminStorage;
 };
 
-// Export configuration (backward compat)
-export const APPWRITE_CONFIG = {
-  endpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!,
-  projectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!,
-  databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
-  projectsCollectionId: "projects",
-  eventsCollectionId: "events",
-  registrationsCollectionId: "registrations",
-  bucketId: process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!,
-};
+/**
+ * @deprecated Import from `@/config/appwrite` or `@/lib/types/appwrite` instead.
+ * Kept for backward compat only.
+ */
+export { DATABASE_ID, COLLECTION_IDS, BUCKET_IDS } from "@/lib/types/appwrite";
 
 export { ID };
 
