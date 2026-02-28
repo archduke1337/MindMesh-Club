@@ -264,11 +264,11 @@ export default function AdminSponsorsPage() {
                     <Select label="Tier" selectedKeys={[formData.tier]} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
                     >
-                      <SelectItem key="platinum">Platinum Partner</SelectItem>
-                      <SelectItem key="gold">Gold Sponsor</SelectItem>
-                      <SelectItem key="silver">Silver Sponsor</SelectItem>
-                      <SelectItem key="bronze">Bronze Sponsor</SelectItem>
-                      <SelectItem key="partner">Community Partner</SelectItem>
+                      <SelectItem key="platinum" variant="bordered">Platinum Partner</SelectItem>
+                      <SelectItem key="gold" variant="bordered">Gold Sponsor</SelectItem>
+                      <SelectItem key="silver" variant="bordered">Silver Sponsor</SelectItem>
+                      <SelectItem key="bronze" variant="bordered">Bronze Sponsor</SelectItem>
+                      <SelectItem key="partner" variant="bordered">Community Partner</SelectItem>
                     </Select>
                   </div>
 
@@ -294,11 +294,11 @@ export default function AdminSponsorsPage() {
                     <Select label="Category" selectedKeys={formData.category ? [formData.category] : []} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     >
-                      <SelectItem key="tech">Technology</SelectItem>
-                      <SelectItem key="education">Education</SelectItem>
-                      <SelectItem key="finance">Finance</SelectItem>
-                      <SelectItem key="healthcare">Healthcare</SelectItem>
-                      <SelectItem key="other">Other</SelectItem>
+                      <SelectItem key="tech" variant="bordered">Technology</SelectItem>
+                      <SelectItem key="education" variant="bordered">Education</SelectItem>
+                      <SelectItem key="finance" variant="bordered">Finance</SelectItem>
+                      <SelectItem key="healthcare" variant="bordered">Healthcare</SelectItem>
+                      <SelectItem key="other" variant="bordered">Other</SelectItem>
                     </Select>
                     <Input type="number" label="Display Order" value={String(formData.displayOrder)} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}

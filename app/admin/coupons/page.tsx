@@ -294,7 +294,7 @@ export default function AdminCouponsPage() {
               <ModalHeader>{editingCoupon ? "Edit Coupon" : "Create Coupon"}</ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  <Input
+                  <Input variant="bordered"
                     label="Coupon Code"
                     value={form.code}
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
@@ -304,7 +304,7 @@ export default function AdminCouponsPage() {
                     isDisabled={!!editingCoupon}
                     description={editingCoupon ? "Code cannot be changed" : "Must be unique"}
                   />
-                  <Input
+                  <Input variant="bordered"
                     label="Description"
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -312,16 +312,16 @@ export default function AdminCouponsPage() {
                     placeholder="e.g. Early bird discount for hackathon"
                   />
                   <div className="grid grid-cols-2 gap-4">
-                    <Select
+                    <Select variant="bordered"
                       label="Discount Type"
                       selectedKeys={[form.type]}
                       onChange={(e) => setForm({ ...form, type: e.target.value as "percentage" | "fixed" })}
                       variant="bordered"
                     >
-                      <SelectItem key="percentage">Percentage (%)</SelectItem>
-                      <SelectItem key="fixed">Fixed Amount (₹)</SelectItem>
+                      <SelectItem key="percentage" variant="bordered">Percentage (%)</SelectItem>
+                      <SelectItem key="fixed" variant="bordered">Fixed Amount (₹)</SelectItem>
                     </Select>
-                    <Input
+                    <Input variant="bordered"
                       label={form.type === "percentage" ? "Percentage Off" : "Amount Off (₹)"}
                       type="number"
                       value={String(form.value)}
@@ -330,7 +330,7 @@ export default function AdminCouponsPage() {
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input
+                    <Input variant="bordered"
                       label="Min Purchase (₹)"
                       type="number"
                       value={String(form.minPurchase)}
@@ -339,7 +339,7 @@ export default function AdminCouponsPage() {
                       description="0 = no minimum"
                     />
                     {form.type === "percentage" && (
-                      <Input
+                      <Input variant="bordered"
                         label="Max Discount (₹)"
                         type="number"
                         value={String(form.maxDiscount)}
@@ -351,17 +351,17 @@ export default function AdminCouponsPage() {
                   </div>
                   <Divider />
                   <div className="grid grid-cols-2 gap-4">
-                    <Select
+                    <Select variant="bordered"
                       label="Scope"
                       selectedKeys={[form.scope]}
                       onChange={(e) => setForm({ ...form, scope: e.target.value as "global" | "event" })}
                       variant="bordered"
                     >
-                      <SelectItem key="global">All Events (Global)</SelectItem>
-                      <SelectItem key="event">Specific Event</SelectItem>
+                      <SelectItem key="global" variant="bordered">All Events (Global)</SelectItem>
+                      <SelectItem key="event" variant="bordered">Specific Event</SelectItem>
                     </Select>
                     {form.scope === "event" && (
-                      <Select
+                      <Select variant="bordered"
                         label="Event"
                         selectedKeys={form.eventId ? [form.eventId] : []}
                         onChange={(e) => {
@@ -371,13 +371,13 @@ export default function AdminCouponsPage() {
                         variant="bordered"
                       >
                         {events.map((ev) => (
-                          <SelectItem key={ev.$id}>{ev.title}</SelectItem>
+                          <SelectItem key={ev.$id} variant="bordered">{ev.title}</SelectItem>
                         ))}
                       </Select>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input
+                    <Input variant="bordered"
                       label="Usage Limit"
                       type="number"
                       value={String(form.usageLimit)}
@@ -385,7 +385,7 @@ export default function AdminCouponsPage() {
                       variant="bordered"
                       description="0 = unlimited"
                     />
-                    <Input
+                    <Input variant="bordered"
                       label="Per User Limit"
                       type="number"
                       value={String(form.perUserLimit)}
@@ -395,14 +395,14 @@ export default function AdminCouponsPage() {
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input
+                    <Input variant="bordered"
                       label="Valid From"
                       type="datetime-local"
                       value={form.validFrom}
                       onChange={(e) => setForm({ ...form, validFrom: e.target.value })}
                       variant="bordered"
                     />
-                    <Input
+                    <Input variant="bordered"
                       label="Valid Until"
                       type="datetime-local"
                       value={form.validUntil}
