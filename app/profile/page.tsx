@@ -30,6 +30,7 @@ import {
   EditIcon,
   SparklesIcon,
   BookOpenIcon,
+  UserIcon,
 } from "lucide-react";
 
 // Profile pictures bucket ID
@@ -183,9 +184,11 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 relative">
+      <div className="absolute top-0 right-0 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-pulse -z-10" />
+      
       {/* Profile Header Card */}
-      <Card className="border-none shadow-xl mb-6">
+      <Card className="border-none shadow-2xl mb-6 bg-gradient-to-br from-background to-default-50 overflow-visible">
         <CardBody className="p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             {/* Avatar */}
@@ -345,21 +348,22 @@ export default function ProfilePage() {
             {isEditing ? (
               <form onSubmit={handleUpdateProfile} className="space-y-4">
                 <Input
+                  variant="bordered"
                   label="Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  required
-                  isDisabled={updateLoading}
-                  variant="bordered"
+                  startContent={<UserIcon className="w-4 h-4 text-default-400" />}
+                  isRequired
                   isInvalid={!!validationErrors.name}
                   errorMessage={validationErrors.name}
                 />
                 <Input
+                  variant="bordered"
                   label="Phone"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   isDisabled={updateLoading}
-                  variant="bordered"
+                  startContent={<PhoneIcon className="w-4 h-4 text-default-400" />}
                   isInvalid={!!validationErrors.phone}
                   errorMessage={validationErrors.phone}
                 />
