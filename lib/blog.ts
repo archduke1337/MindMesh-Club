@@ -2,7 +2,15 @@
 import { ID, Query } from "appwrite";
 import { databases, storage } from "./appwrite";
 import { DATABASE_ID, COLLECTION_IDS, BUCKET_IDS } from "./types/appwrite";
-import { deleteDocumentAdmin, updateDocumentAdmin } from "./adminApi";
+
+/**
+ * Lazy-load the admin Databases instance (node-appwrite).
+ * Only used by admin-only operations; keeps client bundle free of node-appwrite.
+ */
+async function getAdminDb() {
+  const { adminDb } = await import("@/lib/appwrite/server");
+  return adminDb;
+}
 
 // Re-export for backward compatibility
 export const BLOGS_COLLECTION_ID = COLLECTION_IDS.BLOG;
@@ -284,10 +292,10 @@ export const blogService = {
     }
   },
 
-  // Update blog
+  // Update blog — uses client SDK (works with user session/permissions)
   async updateBlog(blogId: string, blogData: Partial<Blog>) {
     try {
-      const response = await updateDocumentAdmin(
+      const response = await databases.updateDocument(
         DATABASE_ID,
         BLOGS_COLLECTION_ID,
         blogId,
@@ -309,8 +317,9 @@ export const blogService = {
         publishedAt: new Date().toISOString(),
       };
 
+      const db = await getAdminDb();
       try {
-        const response = await updateDocumentAdmin(
+        const response = await db.updateDocument(
           DATABASE_ID,
           BLOGS_COLLECTION_ID,
           blogId,
@@ -321,7 +330,7 @@ export const blogService = {
         // If publishedAt attribute doesn't exist, try without it
         if (error?.message?.includes("Attribute not found") || error?.message?.includes("publishedAt")) {
           console.warn("publishedAt attribute not found, updating without it");
-          const response = await updateDocumentAdmin(
+          const response = await db.updateDocument(
             DATABASE_ID,
             BLOGS_COLLECTION_ID,
             blogId,
@@ -369,8 +378,9 @@ export const blogService = {
         rejectionCount: (blog.rejectionCount || 0) + 1,
       };
 
+      const db = await getAdminDb();
       try {
-        const response = await updateDocumentAdmin(
+        const response = await db.updateDocument(
           DATABASE_ID,
           BLOGS_COLLECTION_ID,
           blogId,
@@ -381,7 +391,7 @@ export const blogService = {
         // If we get an attribute not found error, try minimal update with just status and reason
         if (error?.message?.includes("Attribute not found")) {
           console.warn("Some rejection attributes not found, updating with minimal fields:", error?.message);
-          const response = await updateDocumentAdmin(
+          const response = await db.updateDocument(
             DATABASE_ID,
             BLOGS_COLLECTION_ID,
             blogId,
@@ -411,7 +421,8 @@ export const blogService = {
         }
       }
       
-      await deleteDocumentAdmin(DATABASE_ID, BLOGS_COLLECTION_ID, blogId);
+      const db = await getAdminDb();
+      await db.deleteDocument(DATABASE_ID, BLOGS_COLLECTION_ID, blogId);
       return true;
     } catch (error) {
       console.error("Error deleting blog:", error);
@@ -509,7 +520,8 @@ export const blogService = {
         }
       }
 
-      const response = await updateDocumentAdmin(
+      const db = await getAdminDb();
+      const response = await db.updateDocument(
         DATABASE_ID,
         BLOGS_COLLECTION_ID,
         blogId,
