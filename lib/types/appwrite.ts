@@ -57,6 +57,14 @@ export const BUCKET_IDS = {
 export const DATABASE_ID =
   process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "";
 
+// Runtime guard — warn early if DATABASE_ID is not set
+if (!DATABASE_ID && typeof process !== "undefined" && process.env.NODE_ENV === "development") {
+  console.warn(
+    "⚠️  NEXT_PUBLIC_APPWRITE_DATABASE_ID is not set. " +
+    "Database operations will fail. Check your .env.local file."
+  );
+}
+
 // ═══════════════════════════════════════════
 // 1. EVENTS
 // ═══════════════════════════════════════════

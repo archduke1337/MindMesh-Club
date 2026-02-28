@@ -168,49 +168,17 @@ export default function AdminDashboardPage() {
   const fetchStats = useCallback(async () => {
     setStats((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      // Fetch blog stats
-      const blogRes = await fetch("/api/blog?limit=100", { credentials: "same-origin" });
-      let blogData = { total: 0, pending: 0, approved: 0, rejected: 0 };
-      if (blogRes.ok) {
-        const blogJson = await blogRes.json();
-        const blogs = blogJson.data || [];
-        blogData = {
-          total: blogs.length,
-          pending: blogs.filter((b: any) => b.status === "pending").length,
-          approved: blogs.filter((b: any) => b.status === "approved").length,
-          rejected: blogs.filter((b: any) => b.status === "rejected").length,
-        };
+      // Single server-side stats endpoint — no client-side filtering needed
+      const res = await fetch("/api/admin/stats", { credentials: "same-origin" });
+      if (!res.ok) {
+        throw new Error(`Stats API returned ${res.status}`);
       }
-
-      // Fetch gallery stats
-      const galleryRes = await fetch("/api/gallery", { credentials: "same-origin" });
-      let galleryData = { total: 0, pending: 0 };
-      if (galleryRes.ok) {
-        const galleryJson = await galleryRes.json();
-        const images = galleryJson.images || galleryJson.data || [];
-        galleryData = {
-          total: images.length,
-          pending: images.filter((i: any) => i.status === "pending").length,
-        };
-      }
-
-      // Fetch event stats
-      const eventsRes = await fetch("/api/events/register", { credentials: "same-origin" });
-      let eventsData = { total: 0, upcoming: 0 };
-      if (eventsRes.ok) {
-        const eventsJson = await eventsRes.json();
-        const allEvents = eventsJson.events || eventsJson || [];
-        const now = new Date();
-        eventsData = {
-          total: allEvents.length,
-          upcoming: allEvents.filter((e: any) => new Date(e.date || e.startDate) >= now).length,
-        };
-      }
+      const data = await res.json();
 
       setStats({
-        blogs: blogData,
-        gallery: galleryData,
-        events: eventsData,
+        blogs: data.blogs || { total: 0, pending: 0, approved: 0, rejected: 0 },
+        gallery: data.gallery || { total: 0, pending: 0 },
+        events: data.events || { total: 0, upcoming: 0 },
         loading: false,
         error: null,
       });
