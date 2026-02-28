@@ -54,7 +54,7 @@ export const projectService = {
 
   // Create project (Admin only)
   async createProject(
-    projectData: Omit<Project, "$id" | "$createdAt" | "$updatedAt" | "$permissions" | "$databaseId" | "$collectionId">
+    projectData: Partial<Omit<Project, "$id" | "$createdAt" | "$updatedAt" | "$permissions" | "$databaseId" | "$collectionId">>
   ): Promise<Project> {
     const dataWithStatus = {
       ...projectData,
