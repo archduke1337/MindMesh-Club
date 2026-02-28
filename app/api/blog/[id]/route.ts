@@ -79,7 +79,13 @@ export async function PATCH(
       delete data.featured;
     }
 
-    const blog = await blogService.updateBlog(id, data);
+    // Normalize tags to string format (blogService expects string)
+    const updateData = {
+      ...data,
+      ...(data.tags && { tags: Array.isArray(data.tags) ? data.tags.join(", ") : data.tags }),
+    };
+
+    const blog = await blogService.updateBlog(id, updateData);
 
     return successResponse({ blog, message: "Blog updated successfully" });
   } catch (error) {
