@@ -1,5 +1,6 @@
 // app/api/admin/club-members/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminAuth } from "@/lib/apiAuth";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = "team"; // The Appwrite collection for club/team members
@@ -24,7 +25,11 @@ async function adminFetch(path: string, options: RequestInit = {}) {
 }
 
 // GET all club members
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+  }
   try {
     const res = await adminFetch(
       `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?queries[]=${encodeURIComponent('{"method":"limit","values":[100]}')}`
@@ -41,6 +46,10 @@ export async function GET() {
 
 // POST create a new club member
 export async function POST(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const {
@@ -96,6 +105,10 @@ export async function POST(request: NextRequest) {
 
 // PATCH update a club member
 export async function PATCH(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const { memberId, ...updateData } = body;
@@ -144,6 +157,10 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE a club member
 export async function DELETE(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+  }
   try {
     const memberId = request.nextUrl.searchParams.get("id");
     if (!memberId) {

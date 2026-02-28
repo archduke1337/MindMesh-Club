@@ -5,6 +5,7 @@ import { createAdminDatabases } from "@/lib/appwrite";
 import { checkBlogRateLimit, getRemainingSubmissions } from "@/lib/rateLimiter";
 import { ID } from "appwrite";
 import { DATABASE_ID, BLOGS_COLLECTION_ID } from "@/lib/database";
+import { verifyAuth } from "@/lib/apiAuth";
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,22 +49,25 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json();
-
-    // Validate authentication - user must provide authorId to prove they're authenticated
-    if (!data.authorId || !data.authorEmail) {
+    // Verify authentication via session cookie
+    const { authenticated, user: authUser } = await verifyAuth(request);
+    if (!authenticated || !authUser) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Authentication required. You must be logged in to create a blog.",
-        },
+        { success: false, error: "Authentication required. You must be logged in to create a blog." },
         { status: 401 }
       );
     }
 
+    const data = await request.json();
+
+    // Use server-verified identity
+    const authorId = authUser.$id;
+    const authorEmail = authUser.email;
+    const authorName = data.authorName || authUser.name || "Anonymous";
+
     // Check rate limit (max 5 blogs per 24 hours)
-    if (!checkBlogRateLimit(data.authorId)) {
-      const remaining = getRemainingSubmissions(data.authorId);
+    if (!checkBlogRateLimit(authorId)) {
+      const remaining = getRemainingSubmissions(authorId);
       return NextResponse.json(
         {
           success: false,
@@ -88,13 +92,14 @@ export async function POST(request: NextRequest) {
     const slug = blogService.generateSlug(data.title);
     const readTime = blogService.calculateReadTime(data.content);
 
-    // WARNING: The Appwrite collection has content field limited to 255 chars!
-    // This needs to be increased to 65536 or more
-    // See: scripts/fix-blog-schema.js for details
-    if (data.content.length > 255) {
-      console.warn(
-        `⚠️  Blog content (${data.content.length} chars) exceeds Appwrite limit (255 chars). ` +
-        `The content will be truncated! Please update the 'content' attribute size in Appwrite to 65536.`
+    // Reject excessively long content to prevent truncation
+    if (data.content.length > 65536) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Blog content exceeds maximum length of 65536 characters.",
+        },
+        { status: 400 }
       );
     }
 
@@ -113,10 +118,10 @@ export async function POST(request: NextRequest) {
         coverImage: data.coverImage || "",
         category: data.category || "other",
         tags: Array.isArray(data.tags) ? data.tags.join(", ") : (data.tags || ""),
-        authorId: data.authorId,
-        authorName: data.authorName || "Anonymous",
-        authorEmail: data.authorEmail,
-        authorAvatar: data.authorAvatar,
+        authorId,
+        authorName,
+        authorEmail,
+        authorAvatar: data.authorAvatar || "",
         status: "pending",
         views: 0,
         likes: 0,

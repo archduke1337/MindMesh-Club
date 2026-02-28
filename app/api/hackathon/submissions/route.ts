@@ -1,6 +1,7 @@
 // app/api/hackathon/submissions/route.ts
 // Project submission API for hackathon events
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/apiAuth";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const SUBMISSIONS_COLLECTION = "submissions";

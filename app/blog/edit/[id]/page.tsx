@@ -14,8 +14,6 @@ import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
 
-export const dynamic = "force-dynamic";
-
 export default function EditBlogPage() {
   const router = useRouter();
   const params = useParams();

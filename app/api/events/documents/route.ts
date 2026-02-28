@@ -1,5 +1,6 @@
 // app/api/events/documents/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminAuth } from "@/lib/apiAuth";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = "event_documents";
@@ -52,6 +53,10 @@ export async function GET(request: NextRequest) {
 
 // POST /api/events/documents
 export async function POST(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Admin access required" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const { eventId, type, title, content, fileUrl, isRequired, isPublic, order } = body;

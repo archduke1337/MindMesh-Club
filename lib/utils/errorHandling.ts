@@ -2,24 +2,8 @@
 import { toast } from 'sonner';
 import { ZodError } from 'zod';
 
-/**
- * Extract user-friendly error message from various error types
- */
-export function getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {
-        return error.message;
-    }
-
-    if (typeof error === 'string') {
-        return error;
-    }
-
-    if (error && typeof error === 'object' && 'message' in error) {
-        return String(error.message);
-    }
-
-    return 'An unknown error occurred';
-}
+// Re-export from canonical source to avoid duplication
+export { getErrorMessage } from '../errorHandler';
 
 /**
  * Handle Zod validation errors

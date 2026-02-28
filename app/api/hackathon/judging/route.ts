@@ -1,6 +1,7 @@
 // app/api/hackathon/judging/route.ts
 // Manages judges, criteria, and scores for hackathon events
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminAuth, verifyAuth } from "@/lib/apiAuth";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 

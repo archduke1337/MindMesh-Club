@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Tabs, Tab } from "@heroui/tabs";
 import { Textarea } from "@heroui/input";
 import { Card, CardBody } from "@heroui/card";
 import { MarkdownRenderer } from './MarkdownRenderer';

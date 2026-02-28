@@ -1,6 +1,7 @@
 // app/api/hackathon/teams/route.ts
 // Server-side API for hackathon team operations
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/apiAuth";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const TEAMS_COLLECTION = "hackathon_teams";

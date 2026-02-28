@@ -274,7 +274,7 @@ export const blogService = {
         DATABASE_ID,
         BLOGS_COLLECTION_ID,
         [
-          Query.equal("userId", userId),
+          Query.equal("authorId", userId),
           Query.orderDesc("$createdAt"),
         ]
       );

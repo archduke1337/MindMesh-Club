@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { AdminAuthGuard } from "@/components/AdminAuthGuard";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard",
@@ -10,5 +11,5 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <AdminAuthGuard>{children}</AdminAuthGuard>;
 }

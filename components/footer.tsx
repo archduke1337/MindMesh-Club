@@ -148,10 +148,10 @@ export const Footer = () => {
             © {new Date().getFullYear()} Mind Mesh Club. All rights reserved.
           </p>
           <div className="flex gap-5">
-            <Link href="/privacy" className="text-xs text-default-400 hover:text-primary transition-colors">
+            <Link href="/docs" className="text-xs text-default-400 hover:text-primary transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="text-xs text-default-400 hover:text-primary transition-colors">
+            <Link href="/docs" className="text-xs text-default-400 hover:text-primary transition-colors">
               Terms of Service
             </Link>
           </div>

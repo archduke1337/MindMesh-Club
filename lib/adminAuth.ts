@@ -49,11 +49,15 @@ export function canUserPerformAction(
   // Admin can perform all actions
   if (role === "admin") return true;
   
-  // Moderator can create, edit, and approve
+  // Moderator can create, edit, and approve — but NOT delete
   if (role === "moderator") {
     return ["create", "edit", "approve"].includes(action);
   }
   
-  // Admin email users can perform all actions
-  return true;
+  // Owner role can perform all actions
+  if (role === "owner") return true;
+  
+  // Default: email-based admins with no explicit role get full access
+  // If you want to restrict, change this to false
+  return isUserAdminByEmail(user.email);
 }

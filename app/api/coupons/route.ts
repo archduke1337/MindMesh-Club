@@ -1,6 +1,7 @@
 // app/api/coupons/route.ts
 // Coupon management + validation + usage tracking
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminAuth, verifyAuth } from "@/lib/apiAuth";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 
@@ -35,6 +36,10 @@ export async function GET(request: NextRequest) {
 
     // Admin: list all coupons
     if (listAll === "true") {
+      const { isAdmin } = await verifyAdminAuth(request);
+      if (!isAdmin) {
+        return NextResponse.json({ error: "Admin access required" }, { status: 401 });
+      }
       const res = await adminFetch(
         `/databases/${DATABASE_ID}/collections/coupons/documents`
       );
@@ -132,6 +137,10 @@ export async function POST(request: NextRequest) {
 
     // Admin: create a new coupon
     if (action === "create") {
+      const { isAdmin } = await verifyAdminAuth(request);
+      if (!isAdmin) {
+        return NextResponse.json({ error: "Admin access required" }, { status: 401 });
+      }
       const {
         code, description, type, value, minPurchase, maxDiscount,
         scope, eventId, eventName, usageLimit, perUserLimit,
@@ -197,6 +206,10 @@ export async function POST(request: NextRequest) {
 
     // Apply a coupon (record usage + increment count)
     if (action === "apply") {
+      const { authenticated } = await verifyAuth(request);
+      if (!authenticated) {
+        return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      }
       const {
         couponId, couponCode, userId, userName, userEmail,
         eventId, originalPrice, discountAmount, finalPrice,
@@ -265,6 +278,10 @@ export async function POST(request: NextRequest) {
 
 // PATCH /api/coupons — toggle active, update details
 export async function PATCH(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Admin access required" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const { couponId, ...updateData } = body;
@@ -273,9 +290,16 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "couponId required" }, { status: 400 });
     }
 
+    // Whitelist allowed fields to prevent abuse (e.g., resetting usedCount)
+    const allowedFields = ["isActive", "description", "validFrom", "validUntil", "usageLimit", "perUserLimit"];
+    const safeData: Record<string, any> = {};
+    for (const key of allowedFields) {
+      if (key in updateData) safeData[key] = updateData[key];
+    }
+
     const res = await adminFetch(
       `/databases/${DATABASE_ID}/collections/coupons/documents/${couponId}`,
-      { method: "PATCH", body: JSON.stringify({ data: updateData }) }
+      { method: "PATCH", body: JSON.stringify({ data: safeData }) }
     );
 
     if (!res.ok) {

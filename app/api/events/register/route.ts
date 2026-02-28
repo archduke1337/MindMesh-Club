@@ -8,6 +8,7 @@ import { DATABASE_ID, REGISTRATIONS_COLLECTION_ID, EVENTS_COLLECTION_ID } from '
 import { getErrorMessage } from '@/lib/errorHandler';
 import { registrationSchema } from '@/lib/validation/schemas';
 import { handleZodError } from '@/lib/utils/errorHandling';
+import { verifyAuth } from '@/lib/apiAuth';
 
 interface RegisterRequestBody {
   eventId: string;
@@ -33,6 +34,15 @@ interface RegisterResponseBody {
  */
 export async function POST(request: NextRequest): Promise<NextResponse<RegisterResponseBody>> {
   try {
+    // Verify authentication via session cookie
+    const { authenticated, user: authUser } = await verifyAuth(request);
+    if (!authenticated || !authUser) {
+      return NextResponse.json(
+        { success: false, message: 'Authentication required', error: 'You must be logged in to register' },
+        { status: 401 }
+      );
+    }
+
     const body: RegisterRequestBody = await request.json();
 
     // Validate input with Zod
@@ -52,7 +62,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       throw error;
     }
 
-    const { eventId, userId, userName, userEmail } = body;
+    const { eventId } = body;
+    // Use server-verified user identity instead of trusting request body
+    const userId = authUser.$id;
+    const userName = authUser.name || body.userName;
+    const userEmail = authUser.email;
 
     console.log(`[API] Registering user ${userId} for event ${eventId}`);
 
@@ -84,7 +98,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
     // Check if already registered
     try {
       const listRes = await adminFetch(
-        `/databases/${databaseId}/collections/${registrationsCollectionId}/documents?queries[]=${encodeURIComponent(`equal("eventId", ["${eventId})"]`)}&queries[]=${encodeURIComponent(`equal("userId", ["${userId}"])`)}&queries[]=${encodeURIComponent('limit(1)')}`
+        `/databases/${databaseId}/collections/${registrationsCollectionId}/documents?queries[]=${encodeURIComponent(`equal("eventId", ["${eventId}"])`)}&queries[]=${encodeURIComponent(`equal("userId", ["${userId}"])`)}&queries[]=${encodeURIComponent('limit(1)')}`
       );
 
       if (listRes.ok) {

@@ -1,5 +1,6 @@
 // app/api/admin/resources/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminAuth } from "@/lib/apiAuth";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = "resources";
@@ -24,7 +25,11 @@ async function adminFetch(path: string, options: RequestInit = {}) {
 }
 
 // GET all resources
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+  }
   try {
     const res = await adminFetch(
       `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?queries[]=${encodeURIComponent('{"method":"limit","values":[100]}')}`
@@ -42,6 +47,10 @@ export async function GET() {
 
 // POST create resource
 export async function POST(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const documentId = `unique()`;
@@ -85,6 +94,10 @@ export async function POST(request: NextRequest) {
 
 // PATCH update resource
 export async function PATCH(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -129,6 +142,10 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE resource
 export async function DELETE(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");

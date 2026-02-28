@@ -1,20 +1,4 @@
-import { 
-  CalendarIcon, 
-  MapPinIcon, 
-  UsersIcon, 
-  ClockIcon,
-  SearchIcon,
-  FilterIcon,
-  StarIcon,
-  HeartIcon,
-  ShareIcon,
-  TicketIcon,
-  SparklesIcon,
-  CrownIcon,
-  ZapIcon,
-  TrendingUpIcon
-} from "lucide-react";
-export default function PricingLayout({
+export default function ProjectsLayout({
 
   children,
 }: {

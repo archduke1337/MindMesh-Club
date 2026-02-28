@@ -1,6 +1,7 @@
 // app/api/hackathon/teams/join/route.ts
 // Join a hackathon team via invite code
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/apiAuth";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const TEAMS_COLLECTION = "hackathon_teams";
@@ -27,6 +28,10 @@ async function adminFetch(path: string, options: RequestInit = {}) {
 
 // POST /api/hackathon/teams/join
 export async function POST(request: NextRequest) {
+  const { authenticated } = await verifyAuth(request);
+  if (!authenticated) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
   try {
     const { inviteCode, userId, userName, userEmail, eventId } = await request.json();
 

@@ -104,15 +104,36 @@ export async function PATCH(
   try {
     const { id } = await params;
     // Verify user is authenticated before allowing updates
-    const { authenticated } = await verifyUser(request);
-    if (!authenticated) {
+    const { authenticated, email } = await verifyUser(request);
+    if (!authenticated || !email) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
         { status: 401 }
       );
     }
 
+    // Verify ownership: only the author or an admin can edit
+    const existingBlog = await blogService.getBlogBySlug(id).catch(() => null);
+    if (existingBlog && existingBlog.authorEmail !== email) {
+      // Check if user is admin
+      const adminCheck = isUserAdminByEmail(email);
+      if (!adminCheck) {
+        return NextResponse.json(
+          { success: false, error: "Not authorized — you can only edit your own blog posts" },
+          { status: 403 }
+        );
+      }
+    }
+
     const data = await request.json();
+
+    // Prevent non-admins from updating sensitive fields
+    if (!isUserAdminByEmail(email)) {
+      delete data.status;
+      delete data.views;
+      delete data.likes;
+      delete data.featured;
+    }
 
     const blog = await blogService.updateBlog(id, data);
 

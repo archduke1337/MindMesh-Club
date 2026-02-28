@@ -21,7 +21,6 @@ export default function BlogPostPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const slug = params.slug as string;
-  const isAdmin = searchParams.get("admin") === "true";
 
   const [blog, setBlog] = useState<Blog | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,14 +31,12 @@ export default function BlogPostPage() {
     if (slug) {
       loadBlog();
     }
-  }, [slug, isAdmin]);
+  }, [slug]);
 
   const loadBlog = async () => {
     try {
-      // Use getBlogBySlugAny for admin preview, otherwise use regular getBlogBySlug
-      const blogData = isAdmin 
-        ? await blogService.getBlogBySlugAny(slug)
-        : await blogService.getBlogBySlug(slug);
+      // Always use the public slug lookup — admin preview is done in admin panel
+      const blogData = await blogService.getBlogBySlug(slug);
       setBlog(blogData);
 
       // Increment views (only for approved blogs)
@@ -60,7 +57,7 @@ export default function BlogPostPage() {
     } catch (error) {
       console.error("Error loading blog:", error);
       setToast({ message: "Blog not found", type: "error" });
-      setTimeout(() => router.push("/Blog"), 2000);
+      setTimeout(() => router.push("/blog"), 2000);
     } finally {
       setLoading(false);
     }
@@ -104,7 +101,7 @@ export default function BlogPostPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-xl font-semibold mb-4">Blog not found</p>
-          <Button color="primary" onPress={() => router.push("/Blog")}>
+          <Button color="primary" onPress={() => router.push("/blog")}>
             Back to Blogs
           </Button>
         </div>
@@ -120,7 +117,7 @@ export default function BlogPostPage() {
           <Button
             variant="light"
             startContent={<ArrowLeftIcon className="w-3.5 sm:w-4 md:w-5 h-3.5 sm:h-4 md:h-5" />}
-            onPress={() => router.push("/Blog")}
+            onPress={() => router.push("/blog")}
             size="lg"
             className="text-xs sm:text-small md:text-base"
           >

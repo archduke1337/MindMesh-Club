@@ -67,7 +67,7 @@ export const eventSchema = z.object({
     isPremium: z.boolean()
         .default(false),
 
-    status: z.enum(['upcoming', 'ongoing', 'completed', 'cancelled'])
+    status: z.enum(['draft', 'published', 'upcoming', 'ongoing', 'completed', 'cancelled'])
         .optional()
         .default('upcoming'),
 
@@ -75,7 +75,7 @@ export const eventSchema = z.object({
         .optional()
         .default(false),
 
-    recurringPattern: z.enum(['none', 'weekly', 'monthly', 'quarterly'])
+    recurringPattern: z.enum(['none', 'weekly', 'biweekly', 'monthly', 'quarterly'])
         .optional()
         .default('none'),
 
@@ -193,7 +193,7 @@ export const galleryImageSchema = z.object({
     imageUrl: z.string()
         .url('Invalid image URL'),
 
-    category: z.enum(['events', 'workshops', 'hackathons', 'team', 'projects']),
+    category: z.enum(['events', 'workshops', 'hackathons', 'team', 'projects', 'campus', 'achievements']),
 
     date: z.string()
         .refine((date) => !isNaN(Date.parse(date)), 'Invalid date format'),
@@ -247,7 +247,19 @@ export const blogPostSchema = z.object({
         .url('Invalid cover image URL'),
 
     author: z.string()
-        .min(1, 'Author is required'),
+        .min(1, 'Author is required')
+        .optional(),
+
+    authorId: z.string()
+        .min(1, 'Author ID is required')
+        .optional(),
+
+    authorName: z.string()
+        .optional(),
+
+    authorEmail: z.string()
+        .email('Invalid author email')
+        .optional(),
 
     authorAvatar: z.string()
         .url('Invalid author avatar URL')
@@ -260,7 +272,7 @@ export const blogPostSchema = z.object({
         .min(1, 'At least one tag is required')
         .max(10, 'Maximum 10 tags allowed'),
 
-    status: z.enum(['draft', 'published', 'archived'])
+    status: z.enum(['draft', 'pending', 'approved', 'rejected', 'archived'])
         .default('draft'),
 
     publishedAt: z.string()

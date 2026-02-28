@@ -1,6 +1,7 @@
 // app/api/members/profile/route.ts
 // Server-side API for member profile create/read/update
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/apiAuth";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = "member_profiles";
@@ -168,6 +169,10 @@ export async function POST(request: NextRequest) {
 
 // PATCH /api/members/profile — Update profile
 export async function PATCH(request: NextRequest) {
+  const { authenticated, user: authUser } = await verifyAuth(request);
+  if (!authenticated || !authUser) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const { profileId, ...updateData } = body;
@@ -176,13 +181,24 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "profileId is required" }, { status: 400 });
     }
 
+    // Whitelist safe fields — prevent users from updating memberStatus, eventsAttended, badges
+    const allowedFields = [
+      "name", "email", "phone", "whatsapp", "branch", "year", "college", "program",
+      "rollNumber", "skills", "interests", "bio", "avatar",
+      "linkedin", "github", "twitter", "portfolio",
+    ];
+    const safeData: Record<string, any> = {};
+    for (const key of allowedFields) {
+      if (key in updateData) safeData[key] = updateData[key];
+    }
+
     const endpoint = getEndpoint();
     const updateRes = await fetch(
       `${endpoint}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents/${profileId}`,
       {
         method: "PATCH",
         headers: getAdminHeaders(),
-        body: JSON.stringify({ data: updateData }),
+        body: JSON.stringify({ data: safeData }),
       }
     );
 

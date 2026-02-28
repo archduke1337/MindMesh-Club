@@ -9,8 +9,7 @@ import { Divider } from "@heroui/divider";
 import { title, subtitle } from "@/components/primitives";
 import { useAuth } from "@/context/AuthContext";
 import { eventService } from "@/lib/database";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+// jsPDF and html2canvas are dynamically imported when needed to reduce initial bundle size
 import { logger } from "@/lib/logger";
 import {
   TicketIcon,
@@ -369,8 +368,9 @@ export default function TicketsPageContent() {
       );
       logger.log("[Download] All images loaded");
 
-      // Convert HTML to canvas
+      // Convert HTML to canvas (dynamically imported for code-splitting)
       logger.log("[Download] Converting HTML to canvas...");
+      const { default: html2canvas } = await import("html2canvas");
       const canvas = await html2canvas(tempContainer, {
         scale: 2,
         logging: false,
@@ -396,7 +396,8 @@ export default function TicketsPageContent() {
       });
       logger.log("[Download] Canvas created, size:", canvas.width, "x", canvas.height);
 
-      // Create PDF
+      // Create PDF (dynamically imported for code-splitting)
+      const { jsPDF } = await import("jspdf");
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",

@@ -1,4 +1,5 @@
 import * as React from "react";
+import Image from "next/image";
 
 import { IconSvgProps } from "@/types";
 
@@ -8,12 +9,13 @@ export const Logo: React.FC<IconSvgProps> = ({
   height,
   ...props
 }) => (
- <img 
+ <Image 
   src="/logo.png" 
   alt="My Logo" 
-  width={width || size}
-  height={height || size}
-  className="w-10 h-10 md:w-12 md:h-12 object-contain" 
+  width={Number(width || size)}
+  height={Number(height || size)}
+  className="w-10 h-10 md:w-12 md:h-12 object-contain"
+  priority
 />
 
   

@@ -1,6 +1,7 @@
 // app/api/announcements/route.ts
 // Announcements API — GET active announcements, POST/DELETE for admins
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminAuth } from "@/lib/apiAuth";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = "announcements";
@@ -60,6 +61,10 @@ export async function GET() {
 
 // POST /api/announcements — Create announcement (admin)
 export async function POST(request: NextRequest) {
+  const { isAdmin, error } = await verifyAdminAuth(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const { title, content, type, priority, isPinned, eventId, link, linkText, createdBy, expiresAt } = body;

@@ -15,8 +15,6 @@ import { getErrorMessage } from "@/lib/errorHandler";
 import { draftService } from "@/lib/draftService";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
 
-export const dynamic = "force-dynamic";
-
 export default function WriteBlogPage() {
   const router = useRouter();
   const { user, loading } = useAuth();

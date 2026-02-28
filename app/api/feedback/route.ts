@@ -1,5 +1,6 @@
 // app/api/feedback/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/apiAuth";
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = "feedback";
@@ -50,6 +51,10 @@ export async function GET(request: NextRequest) {
 
 // POST /api/feedback
 export async function POST(request: NextRequest) {
+  const { authenticated, user: authUser } = await verifyAuth(request);
+  if (!authenticated || !authUser) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const {
@@ -57,12 +62,17 @@ export async function POST(request: NextRequest) {
       rating, feedback, suggestions, category, isAnonymous,
     } = body;
 
-    if (!eventId || !userId || !rating || !feedback) {
+    if (!eventId || !rating || !feedback) {
       return NextResponse.json(
-        { error: "Missing: eventId, userId, rating, feedback" },
+        { error: "Missing: eventId, rating, feedback" },
         { status: 400 }
       );
     }
+
+    // Use authenticated user data instead of request body to prevent spoofing
+    const verifiedUserId = authUser.$id;
+    const verifiedUserName = isAnonymous ? "Anonymous" : (userName || authUser.name);
+    const verifiedUserEmail = authUser.email;
 
     // Check for duplicate
     const existingRes = await adminFetch(
@@ -70,12 +80,21 @@ export async function POST(request: NextRequest) {
     );
     const existingData = await existingRes.json();
     const duplicate = (existingData.documents || []).find(
-      (f: any) => f.eventId === eventId && f.userId === userId
+      (f: any) => f.eventId === eventId && f.userId === verifiedUserId
     );
     if (duplicate) {
       return NextResponse.json(
         { error: "You have already submitted feedback for this event" },
         { status: 409 }
+      );
+    }
+
+    // Validate rating is a number between 1-5
+    const ratingNum = Number(rating);
+    if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
+      return NextResponse.json(
+        { error: "Rating must be a number between 1 and 5" },
+        { status: 400 }
       );
     }
 
@@ -87,10 +106,10 @@ export async function POST(request: NextRequest) {
           documentId: "unique()",
           data: {
             eventId,
-            userId,
-            userName: isAnonymous ? "Anonymous" : userName,
-            userEmail,
-            rating,
+            userId: verifiedUserId,
+            userName: verifiedUserName,
+            userEmail: verifiedUserEmail,
+            rating: ratingNum,
             feedback,
             suggestions: suggestions || null,
             category: category || "general",
