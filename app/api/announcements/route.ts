@@ -2,22 +2,12 @@
 // Announcements API — GET active announcements, POST/DELETE for admins
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/apiAuth";
-import { adminFetch } from "@/lib/adminApi";
-import { DATABASE_ID, COLLECTION_IDS } from "@/lib/types/appwrite";
-
-const COLLECTION_ID = COLLECTION_IDS.ANNOUNCEMENTS;
+import { adminDb, DATABASE_ID, COLLECTIONS, ID } from "@/lib/appwrite/server";
 
 // GET /api/announcements — Active announcements (or all for admins with ?all=true)
 export async function GET(request: NextRequest) {
   try {
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`
-    );
-    if (!res.ok) {
-      return NextResponse.json({ announcements: [] });
-    }
-
-    const data = await res.json();
+    const data = await adminDb.listDocuments(DATABASE_ID, COLLECTIONS.ANNOUNCEMENTS);
     const documents = data.documents || [];
 
     // If admin requests all announcements (for admin panel)
@@ -91,23 +81,13 @@ export async function POST(request: NextRequest) {
     if (linkText) docData.linkText = linkText;
     if (expiresAt) docData.expiresAt = expiresAt;
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          documentId: "unique()",
-          data: docData,
-        }),
-      }
+    const announcement = await adminDb.createDocument(
+      DATABASE_ID,
+      COLLECTIONS.ANNOUNCEMENTS,
+      ID.unique(),
+      docData
     );
 
-    if (!res.ok) {
-      const errText = await res.text();
-      return NextResponse.json({ error: errText }, { status: res.status });
-    }
-
-    const announcement = await res.json();
     return NextResponse.json({ success: true, announcement }, { status: 201 });
   } catch (error: any) {
     console.error("[API] Announcements POST error:", error);
@@ -138,20 +118,13 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents/${announcementId}`,
-      {
-        method: "PATCH",
-        body: JSON.stringify({ data }),
-      }
+    const announcement = await adminDb.updateDocument(
+      DATABASE_ID,
+      COLLECTIONS.ANNOUNCEMENTS,
+      announcementId,
+      data
     );
 
-    if (!res.ok) {
-      const errText = await res.text();
-      return NextResponse.json({ error: errText }, { status: res.status });
-    }
-
-    const announcement = await res.json();
     return NextResponse.json({ success: true, announcement });
   } catch (error: any) {
     console.error("[API] Announcements PATCH error:", error);
@@ -172,15 +145,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "announcementId is required" }, { status: 400 });
     }
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents/${announcementId}`,
-      { method: "DELETE" }
-    );
-
-    if (!res.ok) {
-      const errText = await res.text();
-      return NextResponse.json({ error: errText }, { status: res.status });
-    }
+    await adminDb.deleteDocument(DATABASE_ID, COLLECTIONS.ANNOUNCEMENTS, announcementId);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
