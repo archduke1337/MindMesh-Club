@@ -30,6 +30,7 @@ import {
   XCircleIcon,
   GavelIcon,
   TicketPercentIcon,
+  BookOpenIcon,
 } from "lucide-react";
 
 interface AdminStats {
@@ -120,6 +121,14 @@ const adminSections = [
     icon: TicketPercentIcon,
     color: "success" as const,
     gradient: "from-emerald-500 to-green-400",
+  },
+  {
+    title: "Resources",
+    description: "Manage learning resources, slides, videos, code samples, and roadmaps.",
+    href: "/admin/resources",
+    icon: BookOpenIcon,
+    color: "primary" as const,
+    gradient: "from-cyan-500 to-blue-400",
   },
 ];
 
