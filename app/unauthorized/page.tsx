@@ -1,4 +1,3 @@
-import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { ShieldX } from "lucide-react";
 import Link from "next/link";
@@ -15,9 +14,12 @@ export default function UnauthorizedPage() {
           <p className="text-default-500 text-center text-sm">
             You are not authorized to view this page. Please contact an administrator if you believe this is an error.
           </p>
-          <Button as={Link} href="/" color="primary" variant="shadow">
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center px-6 py-2 bg-primary text-primary-foreground font-medium rounded-lg shadow-lg hover:opacity-90 transition-opacity"
+          >
             Go Home
-          </Button>
+          </Link>
         </CardBody>
       </Card>
     </div>
