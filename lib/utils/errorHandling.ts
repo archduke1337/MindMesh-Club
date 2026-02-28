@@ -137,18 +137,18 @@ export function logError(error: unknown, context?: string, additionalData?: Reco
  * Async error handler wrapper
  * Wraps async functions to catch and handle errors
  */
-export function withErrorHandling<T extends (...args: unknown[]) => Promise<unknown>>(
+export function withErrorHandling<T extends (...args: never[]) => Promise<unknown>>(
     fn: T,
     context?: string
 ): T {
-    return (async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+    return (async (...args: Parameters<T>) => {
         try {
             return await fn(...args);
         } catch (error) {
             handleApiError(error, context);
             throw error; // Re-throw so caller can handle if needed
         }
-    }) as T;
+    }) as unknown as T;
 }
 
 /**

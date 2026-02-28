@@ -9,6 +9,22 @@ import { handleZodError } from '@/lib/utils/errorHandling';
 import { verifyAuth } from '@/lib/apiAuth';
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from '@/lib/appwrite/server';
 
+interface EventDocument {
+  $id: string;
+  title: string;
+  date: string;
+  time: string;
+  venue: string;
+  location: string;
+  image: string;
+  organizerName: string;
+  price: number;
+  discountPrice: number;
+  capacity: number;
+  registered: number;
+  [key: string]: unknown;
+}
+
 interface RegisterRequestBody {
   eventId: string;
   userId: string;
@@ -98,13 +114,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
     }
 
     // Get event to check capacity
-    let event: Record<string, unknown>;
+    let event: EventDocument;
     try {
       event = await adminDb.getDocument(
         DATABASE_ID,
         COLLECTIONS.EVENTS,
         eventId
-      );
+      ) as unknown as EventDocument;
     } catch (getError) {
       console.error('[API] Error fetching event:', getError);
       return NextResponse.json(
@@ -113,7 +129,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       );
     }
 
-    if (event.capacity && (event.registered as number) >= (event.capacity as number)) {
+    if (event.capacity && event.registered >= event.capacity) {
       return NextResponse.json(
         { success: false, message: 'Event is full', error: 'Event is full' },
         { status: 409 }
@@ -121,7 +137,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
     }
 
     // Create registration document with QR code data
-    let registration: Record<string, unknown>;
+    let registration: { $id: string; [key: string]: unknown };
     try {
       const ticketDocId = ID.unique();
       const eventTitle = event.title;
@@ -138,7 +154,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
           userEmail,
           registeredAt: new Date().toISOString(),
           ticketQRData,
-        }
+        } as Record<string, unknown>
       );
     } catch (createError) {
       console.error('[API] Error creating registration:', createError);
