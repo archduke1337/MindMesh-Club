@@ -197,7 +197,37 @@ export default function AdminEventsPage() {
       if (editingEvent) {
         await eventService.updateEvent(editingEvent.$id!, formData);
       } else {
-        await eventService.createEvent(formData as Omit<Event, '$id' | '$createdAt' | '$updatedAt'>);
+        const newEvent = await eventService.createEvent(formData as Omit<Event, '$id' | '$createdAt' | '$updatedAt'>);
+        
+        // Handle recurring events creation
+        if (formData.isRecurring && formData.recurringPattern && formData.date) {
+          const baseDate = new Date(formData.date);
+          const parentId = newEvent.$id;
+          const extraEvents = 4; // Generate next 4 instances
+          
+          for (let i = 1; i <= extraEvents; i++) {
+            const nextDate = new Date(baseDate);
+            if (formData.recurringPattern === "weekly") {
+              nextDate.setDate(nextDate.getDate() + (7 * i));
+            } else if (formData.recurringPattern === "biweekly") {
+              nextDate.setDate(nextDate.getDate() + (14 * i));
+            } else if (formData.recurringPattern === "monthly") {
+              nextDate.setMonth(nextDate.getMonth() + i);
+            } else if (formData.recurringPattern === "quarterly") {
+              nextDate.setMonth(nextDate.getMonth() + (3 * i));
+            }
+            
+            const newDateStr = nextDate.toISOString().split("T")[0];
+            const recurData = {
+              ...formData,
+              date: newDateStr,
+              parentEventId: parentId,
+              isRecurring: false,
+              recurringPattern: undefined
+            };
+            await eventService.createEvent(recurData as Omit<Event, '$id' | '$createdAt' | '$updatedAt'>);
+          }
+        }
       }
 
       await loadEvents();
@@ -267,7 +297,7 @@ export default function AdminEventsPage() {
     return null;
   };
 
-  const handleCheckinScan = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleCheckinScan = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       const data = checkinData.trim();
       if (!data) return;
@@ -313,24 +343,45 @@ export default function AdminEventsPage() {
       // Check for duplicates
       const isDuplicate = checkinRecords.some(
         r => r.id === parsed.ticketId && r.status === 'success'
-      );
+      ) || registration.status === "checked_in";
+
+      let status: 'duplicate' | 'success' | 'error' = isDuplicate ? 'duplicate' : 'success';
+      
+      if (!isDuplicate) {
+        try {
+          // Update DB with check-in timestamp and status
+          await eventService.updateRegistrationStatus(registration.$id!, "checked_in");
+          
+          // Update local state registrations to prevent subsequent scans from passing as "not duplicate"
+          // if we reset checkin history
+          setRegistrations(prev => prev.map(r => 
+            r.$id === registration.$id ? { ...r, status: "checked_in", checkInTime: new Date().toISOString() } : r
+          ));
+        } catch (err) {
+          console.error("Failed to commit checkin to DB", err);
+          showToast("Failed to save check-in to database", "error");
+          status = 'error';
+        }
+      }
 
       const record = {
         id: parsed.ticketId,
         name: registration.userName,
         email: registration.userEmail,
         time: new Date().toLocaleTimeString(),
-        status: isDuplicate ? ('duplicate' as const) : ('success' as const),
+        status,
       };
 
       console.log('✅ Check-in record:', record);
       setCheckinRecords([record, ...checkinRecords]);
-      if (isDuplicate) {
+      if (status === 'duplicate') {
         console.warn('⚠️ Duplicate scan detected');
         setCheckinStats(prev => ({ ...prev, duplicates: prev.duplicates + 1 }));
-      } else {
+      } else if (status === 'success') {
         console.log('✓ Successful check-in');
         setCheckinStats(prev => ({ ...prev, successful: prev.successful + 1 }));
+      } else {
+        setCheckinStats(prev => ({ ...prev, errors: prev.errors + 1 }));
       }
 
       setCheckinData('');

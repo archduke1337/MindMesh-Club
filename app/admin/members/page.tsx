@@ -6,6 +6,8 @@ import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Input } from "@heroui/input";
 import { Spinner } from "@heroui/spinner";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
+import { Divider } from "@heroui/divider";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { isUserAdminByEmail } from "@/lib/adminConfig";
@@ -17,6 +19,12 @@ import {
   ClockIcon,
   ArrowLeftIcon,
   FilterIcon,
+  EyeIcon,
+  MapPinIcon,
+  BuildingIcon,
+  MailIcon,
+  PhoneIcon,
+  LinkIcon,
 } from "lucide-react";
 
 interface MemberProfile {
@@ -29,8 +37,16 @@ interface MemberProfile {
   year: string;
   college: string;
   program: string;
+  rollNumber?: string;
   skills: string[];
+  interests?: string[];
+  bio?: string;
+  linkedin?: string;
+  github?: string;
+  portfolio?: string;
   memberStatus: string;
+  eventsAttended?: number;
+  badges?: string[];
   $createdAt: string;
 }
 
@@ -42,6 +58,9 @@ export default function AdminMembersPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string>("all");
   const [updating, setUpdating] = useState<string | null>(null);
+  
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [selectedProfile, setSelectedProfile] = useState<MemberProfile | null>(null);
 
   const isAdmin = !authLoading && user && (
     isUserAdminByEmail(user.email) || user.labels?.includes("admin")
@@ -220,6 +239,18 @@ export default function AdminMembersPage() {
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="primary"
+                      startContent={<EyeIcon className="w-3.5 h-3.5" />}
+                      onPress={() => {
+                        setSelectedProfile(profile);
+                        onOpen();
+                      }}
+                    >
+                      Details
+                    </Button>
                     {profile.memberStatus !== "approved" && (
                       <Button
                         size="sm"
@@ -258,6 +289,208 @@ export default function AdminMembersPage() {
           )}
         </div>
       )}
+
+      {/* Profile Details Modal */}
+      <Modal 
+        isOpen={isOpen} 
+        onClose={() => {
+          onClose();
+          setSelectedProfile(null);
+        }}
+        size="2xl"
+        scrollBehavior="inside"
+        classNames={{
+          base: "max-h-[95vh]",
+          wrapper: "items-center"
+        }}
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1 pb-4 border-b">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <UsersIcon className="w-5 h-5 text-primary" />
+              Member Profile Details
+            </h2>
+            <p className="text-sm font-normal text-default-500">
+              Full details and information provided during registration
+            </p>
+          </ModalHeader>
+          <ModalBody className="py-6">
+            {selectedProfile && (
+              <div className="space-y-6">
+                {/* Header Section */}
+                <div className="flex items-start gap-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xl font-bold flex-shrink-0 shadow-sm">
+                    {selectedProfile.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0 pt-1">
+                    <h3 className="text-xl font-bold truncate">{selectedProfile.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Chip
+                        size="sm"
+                        color={
+                          selectedProfile.memberStatus === "approved" ? "success" :
+                          selectedProfile.memberStatus === "suspended" ? "danger" : "warning"
+                        }
+                        variant="flat"
+                      >
+                        {selectedProfile.memberStatus}
+                      </Chip>
+                      <span className="text-sm text-default-500">Joined {new Date(selectedProfile.$createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <Divider />
+
+                {/* Contact Information */}
+                <div>
+                  <h4 className="text-sm font-semibold text-primary mb-3 uppercase tracking-wider">Contact Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-default-100 dark:bg-default-50/10 flex items-center justify-center text-default-500 shrink-0">
+                        <MailIcon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-default-500">Email Address</p>
+                        <p className="text-sm font-medium truncate" title={selectedProfile.email}>{selectedProfile.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-default-100 dark:bg-default-50/10 flex items-center justify-center text-default-500 shrink-0">
+                        <PhoneIcon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-default-500">Phone</p>
+                        <p className="text-sm font-medium truncate">{selectedProfile.phone || "Not provided"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Academic Information */}
+                <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl border border-default-100 dark:border-default-100/10">
+                  <h4 className="text-sm font-semibold text-primary mb-4 uppercase tracking-wider flex items-center gap-2">
+                    <BuildingIcon className="w-4 h-4" />
+                    Academic Details
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-xs text-default-500">College / Institution</p>
+                      <p className="text-sm font-medium">{selectedProfile.college}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-default-500">Program / Degree</p>
+                      <p className="text-sm font-medium">{selectedProfile.program}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-default-500">Branch / Major</p>
+                      <p className="text-sm font-medium">{selectedProfile.branch}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-default-500">Year</p>
+                      <p className="text-sm font-medium">{selectedProfile.year}</p>
+                    </div>
+                  </div>
+                  {selectedProfile.rollNumber && (
+                    <div className="mt-4 pt-4 border-t border-default-200 dark:border-default-50/10">
+                      <p className="text-xs text-default-500">Roll/Registration Number</p>
+                      <p className="text-sm font-medium">{selectedProfile.rollNumber}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* About & Skills */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-sm font-semibold text-primary mb-3 uppercase tracking-wider">Bio / About</h4>
+                    {selectedProfile.bio ? (
+                      <p className="text-sm text-default-600 leading-relaxed whitespace-pre-wrap bg-default-50 dark:bg-default-50/5 p-3 rounded-lg border border-default-100">
+                        {selectedProfile.bio}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-default-400 italic">No bio provided</p>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-primary mb-3 uppercase tracking-wider">Skills</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProfile.skills && selectedProfile.skills.length > 0 ? (
+                        selectedProfile.skills.map((skill, i) => (
+                          <Chip key={i} size="sm" variant="flat" color="secondary">
+                            {skill}
+                          </Chip>
+                        ))
+                      ) : (
+                        <p className="text-sm text-default-400 italic">No skills listed</p>
+                      )}
+                    </div>
+                    
+                    {selectedProfile.interests && selectedProfile.interests.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-semibold text-primary mb-3 uppercase tracking-wider">Interests</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedProfile.interests.map((interest, i) => (
+                            <Chip key={i} size="sm" variant="flat" color="warning" className="text-xs">
+                              {interest}
+                            </Chip>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Social Links */}
+                {(selectedProfile.linkedin || selectedProfile.github || selectedProfile.portfolio) && (
+                  <>
+                    <Divider />
+                    <div>
+                      <h4 className="text-sm font-semibold text-primary mb-3 uppercase tracking-wider">Profiles & Links</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {selectedProfile.linkedin && (
+                          <Button as="a" href={selectedProfile.linkedin} target="_blank" rel="noopener noreferrer" 
+                            size="sm" variant="flat" color="primary" className="justify-start" startContent={<LinkIcon className="w-3.5 h-3.5" />}>
+                            LinkedIn Profile
+                          </Button>
+                        )}
+                        {selectedProfile.github && (
+                          <Button as="a" href={selectedProfile.github} target="_blank" rel="noopener noreferrer" 
+                            size="sm" variant="flat" color="default" className="justify-start" startContent={<LinkIcon className="w-3.5 h-3.5" />}>
+                            GitHub Profile
+                          </Button>
+                        )}
+                        {selectedProfile.portfolio && (
+                          <Button as="a" href={selectedProfile.portfolio} target="_blank" rel="noopener noreferrer" 
+                            size="sm" variant="flat" color="secondary" className="justify-start" startContent={<LinkIcon className="w-3.5 h-3.5" />}>
+                            Personal Portfolio
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Additional Stats */}
+                <div className="flex gap-4 p-4 bg-primary-50 dark:bg-primary-900/10 rounded-xl">
+                  <div>
+                    <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">Events Attended</p>
+                    <p className="text-xl font-bold text-primary">{selectedProfile.eventsAttended || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">Badges Earned</p>
+                    <p className="text-xl font-bold text-primary">{(selectedProfile.badges || []).length}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter className="border-t pt-4">
+            <Button color="primary" onPress={onClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

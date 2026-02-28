@@ -36,7 +36,7 @@ export interface Event {
   isPremium: boolean;
   status?: string; // Made optional
   isRecurring?: boolean; // New: recurring events flag
-  recurringPattern?: "none" | "weekly" | "monthly" | "quarterly"; // New: recurrence pattern
+  recurringPattern?: "none" | "weekly" | "biweekly" | "monthly" | "quarterly"; // New: recurrence pattern
   parentEventId?: string; // New: reference to parent if recurring
   $createdAt?: string;
   $updatedAt?: string;
@@ -54,6 +54,7 @@ export interface Registration {
   registeredAt: string;
   status?: string; // Made optional
   ticketQRData?: string; // QR code data string (TICKET|id|name|title)
+  checkInTime?: string; // Timestamp of check in
   $createdAt?: string;
   $updatedAt?: string;
 }
@@ -423,6 +424,31 @@ export const eventService = {
       console.error("Error fetching event registrations:", error);
       return [];
     }
+  },
+
+  // Update registration (e.g., status, checkInTime)
+  async updateRegistration(registrationId: string, data: Partial<Registration>) {
+    try {
+      const response = await databases.updateDocument(
+        DATABASE_ID,
+        REGISTRATIONS_COLLECTION_ID,
+        registrationId,
+        data
+      );
+      return response as unknown as Registration;
+    } catch (error) {
+      console.error("Error updating registration:", error);
+      throw error;
+    }
+  },
+
+  // Update registration status and check-in time
+  async updateRegistrationStatus(registrationId: string, status: string) {
+    const updateData: Partial<Registration> = { status };
+    if (status === "checked_in") {
+      updateData.checkInTime = new Date().toISOString();
+    }
+    return this.updateRegistration(registrationId, updateData);
   },
 
   // Check if user is registered for an event
