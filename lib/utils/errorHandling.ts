@@ -1,9 +1,10 @@
 // lib/utils/errorHandling.ts
 import { toast } from 'sonner';
 import { ZodError } from 'zod';
+import { getErrorMessage } from '../errorHandler';
 
 // Re-export from canonical source to avoid duplication
-export { getErrorMessage } from '../errorHandler';
+export { getErrorMessage };
 
 /**
  * Handle Zod validation errors
