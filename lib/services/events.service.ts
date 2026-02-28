@@ -187,23 +187,53 @@ export const eventService = {
 
   async registerForEvent(eventId: string, userId: string, userName: string, userEmail: string) {
     try {
+      // Check if already registered
       const existing = await databases.listDocuments(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, [
         Query.equal("eventId", eventId), Query.equal("userId", userId), Query.limit(1),
       ]);
       if (existing.documents.length > 0) throw new Error("Already registered for this event");
 
+      // Get current event data
       const event = await this.getById(eventId);
-      if (event.capacity && (event as any).registered >= event.capacity) throw new Error("Event is full");
+      
+      // Check capacity BEFORE creating registration
+      if (event.capacity && (event as any).registered >= event.capacity) {
+        throw new Error("Event is full");
+      }
 
+      // Create registration with unique ticket ID
       const ticketId = ID.unique();
       const ticketQRData = `TICKET|${ticketId}|${userName}|${event.title}`;
+      
       const registration = await databases.createDocument(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, ticketId, {
-        eventId, userId, userName, userEmail, registeredAt: new Date().toISOString(), ticketQRData,
+        eventId, userId, userName, userEmail, 
+        registeredAt: new Date().toISOString(), 
+        ticketQRData,
+        status: "confirmed"
       });
 
+      // Increment registered count
+      // Note: This still has a race condition. For production, implement one of:
+      // 1. Appwrite Function with database transaction
+      // 2. Optimistic locking with version field
+      // 3. Queue-based registration processing
       try {
-        await this.updateEvent(eventId, { registered: ((event as any).registered || 0) + 1 } as any);
-      } catch { /* registration still valid */ }
+        const currentEvent = await this.getById(eventId);
+        const newCount = ((currentEvent as any).registered || 0) + 1;
+        
+        // Double-check capacity hasn't been exceeded
+        if (event.capacity && newCount > event.capacity) {
+          // Rollback registration
+          await databases.deleteDocument(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, ticketId);
+          throw new Error("Event became full during registration");
+        }
+        
+        await this.updateEvent(eventId, { registered: newCount } as any);
+      } catch (updateError) {
+        // If update fails, log but keep registration valid
+        // Admin can manually sync counts later
+        console.error("Failed to update registration count:", getErrorMessage(updateError));
+      }
 
       return registration as unknown as Registration;
     } catch (error) {
@@ -286,22 +316,45 @@ export const eventService = {
   async getUserTickets(userId: string) {
     const registrations = await this.getUserRegistrations(userId);
     if (registrations.length === 0) return [];
-    return Promise.all(
-      registrations.map(async (reg) => {
-        try {
-          const event = await this.getById(reg.eventId);
-          return this.buildTicketFromRegistration(reg, event);
-        } catch {
-          return {
-            ticketId: reg.$id || "", eventId: reg.eventId,
-            eventTitle: `Event ${reg.eventId}`, userName: reg.userName,
-            userEmail: reg.userEmail, date: "", time: "", venue: "",
-            location: "", registeredAt: reg.registeredAt, price: 0,
-            discountPrice: null, image: "", ticketQRData: reg.ticketQRData,
-          };
-        }
+    
+    // Batch fetch all unique events to avoid N+1 queries
+    const eventIds = [...new Set(registrations.map(r => r.eventId))];
+    const eventPromises = eventIds.map(id => 
+      this.getById(id).catch(error => {
+        console.error(`Failed to fetch event ${id}:`, error);
+        return null;
       })
     );
+    
+    const events = await Promise.all(eventPromises);
+    const eventMap = new Map(
+      events.filter((e): e is Event => e !== null).map(e => [e.$id, e])
+    );
+    
+    // Build tickets with fetched event data
+    return registrations.map(reg => {
+      const event = eventMap.get(reg.eventId);
+      if (event) {
+        return this.buildTicketFromRegistration(reg, event);
+      }
+      // Fallback for missing events
+      return {
+        ticketId: reg.$id || "",
+        eventId: reg.eventId,
+        eventTitle: `Event ${reg.eventId}`,
+        userName: reg.userName,
+        userEmail: reg.userEmail,
+        date: "",
+        time: "",
+        venue: "",
+        location: "",
+        registeredAt: reg.registeredAt,
+        price: 0,
+        discountPrice: null,
+        image: "",
+        ticketQRData: reg.ticketQRData,
+      };
+    });
   },
 
   async getTicketById(ticketId: string) {

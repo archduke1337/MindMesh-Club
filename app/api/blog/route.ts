@@ -1,47 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { blogService } from "@/lib/blog";
-import { getErrorMessage } from "@/lib/errorHandler";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID } from "@/lib/appwrite/server";
 import { checkBlogRateLimit, getRemainingSubmissions } from "@/lib/rateLimiter";
 import { verifyAuth } from "@/lib/apiAuth";
+import { handleApiError, validateRequestBody, successResponse, ApiError } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Validation schema for blog creation
+const createBlogSchema = z.object({
+  title: z.string()
+    .min(5, "Title must be at least 5 characters")
+    .max(150, "Title must be less than 150 characters"),
+  content: z.string()
+    .min(100, "Content must be at least 100 characters")
+    .max(65536, "Content exceeds maximum length of 65536 characters"),
+  excerpt: z.string()
+    .max(300, "Excerpt must be less than 300 characters")
+    .optional(),
+  coverImage: z.string().url("Invalid cover image URL").optional(),
+  category: z.string().min(1, "Category is required").default("other"),
+  tags: z.union([
+    z.array(z.string()),
+    z.string()
+  ]).optional(),
+  authorName: z.string().optional(),
+  authorAvatar: z.string().url("Invalid avatar URL").optional(),
+});
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
     const featured = searchParams.get("featured");
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100); // Cap at 100
 
     let blogs: unknown[] = [];
 
-    try {
-      if (featured === "true") {
-        blogs = await blogService.getFeaturedBlogs(limit);
-      } else if (category && category !== "all") {
-        blogs = await blogService.getBlogsByCategory(category, limit);
-      } else {
-        blogs = await blogService.getPublishedBlogs(limit);
-      }
-    } catch (error) {
-      // Fallback to empty array if query fails
-      console.error("Blog fetch error:", error);
-      blogs = [];
+    if (featured === "true") {
+      blogs = await blogService.getFeaturedBlogs(limit);
+    } else if (category && category !== "all") {
+      blogs = await blogService.getBlogsByCategory(category, limit);
+    } else {
+      blogs = await blogService.getPublishedBlogs(limit);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: blogs,
-      total: blogs.length,
-    });
+    return successResponse({ blogs, total: blogs.length });
   } catch (error) {
-    console.error("Blog API error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "GET /api/blog");
   }
 }
 
@@ -50,13 +55,11 @@ export async function POST(request: NextRequest) {
     // Verify authentication via session cookie
     const { authenticated, user: authUser } = await verifyAuth(request);
     if (!authenticated || !authUser) {
-      return NextResponse.json(
-        { success: false, error: "Authentication required. You must be logged in to create a blog." },
-        { status: 401 }
-      );
+      throw new ApiError(401, "Authentication required. You must be logged in to create a blog.");
     }
 
-    const data = await request.json();
+    // Validate request body
+    const data = await validateRequestBody(request, createBlogSchema);
 
     // Use server-verified identity
     const authorId = authUser.$id;
@@ -66,23 +69,10 @@ export async function POST(request: NextRequest) {
     // Check rate limit (max 5 blogs per 24 hours)
     if (!(await checkBlogRateLimit(authorId))) {
       const remaining = await getRemainingSubmissions(authorId);
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Rate limit exceeded. You have ${remaining} submissions remaining. Try again later.`,
-        },
-        { status: 429 }
-      );
-    }
-
-    // Validate required fields
-    if (!data.title || !data.content) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Missing required fields: title, content, authorEmail",
-        },
-        { status: 400 }
+      throw new ApiError(
+        429,
+        `Rate limit exceeded. You have ${remaining} submissions remaining. Try again later.`,
+        "RATE_LIMIT_EXCEEDED"
       );
     }
 
@@ -90,18 +80,7 @@ export async function POST(request: NextRequest) {
     const slug = blogService.generateSlug(data.title);
     const readTime = blogService.calculateReadTime(data.content);
 
-    // Reject excessively long content to prevent truncation
-    if (data.content.length > 65536) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Blog content exceeds maximum length of 65536 characters.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Use admin client for server-side database operations
+    // Create blog document
     const blog = await adminDb.createDocument(
       DATABASE_ID,
       COLLECTIONS.BLOG,
@@ -112,7 +91,7 @@ export async function POST(request: NextRequest) {
         excerpt: data.excerpt || data.content.substring(0, 150),
         content: data.content,
         coverImage: data.coverImage || "",
-        category: data.category || "other",
+        category: data.category,
         tags: Array.isArray(data.tags) ? data.tags.join(", ") : (data.tags || ""),
         authorId,
         authorName,
@@ -126,22 +105,11 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: blog,
-        message: "Blog created successfully and pending approval",
-      },
-      { status: 201 }
+    return successResponse(
+      { blog, message: "Blog created successfully and pending approval" },
+      201
     );
   } catch (error) {
-    console.error("Error creating blog:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: getErrorMessage(error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "POST /api/blog");
   }
 }

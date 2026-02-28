@@ -4,12 +4,11 @@
  * Extracts the session from the Appwrite cookie and verifies admin status.
  *
  * Usage in any API route:
- *   import { verifyAuth, verifyAdmin } from "@/lib/apiAuth";
+ *   import { verifyAuth, verifyAdminAuth } from "@/lib/apiAuth";
  *   const { authenticated, user, error } = await verifyAuth(request);
- *   const { isAdmin, user, error } = await verifyAdmin(request);
+ *   const { isAdmin, user, error } = await verifyAdminAuth(request);
  */
 import { NextRequest } from "next/server";
-import { isUserAdminByEmail } from "./adminConfig";
 
 export interface AuthResult {
   authenticated: boolean;
@@ -67,7 +66,7 @@ export async function verifyAuth(request: NextRequest): Promise<AuthResult> {
 
 /**
  * Verify that the request comes from an authenticated admin user.
- * Checks both Appwrite labels and email-based admin config.
+ * Checks Appwrite labels ONLY.
  *
  * Fast-path: if the Edge middleware already verified admin status
  * (for /api/admin/* routes) it sets x-user-is-admin: "true" and
@@ -94,9 +93,8 @@ export async function verifyAdminAuth(request: NextRequest): Promise<AdminResult
 
   const user = authResult.user;
   const hasAdminLabel = user.labels?.includes("admin") ?? false;
-  const hasAdminEmail = isUserAdminByEmail(user.email);
 
-  if (!hasAdminLabel && !hasAdminEmail) {
+  if (!hasAdminLabel) {
     return { isAdmin: false, user, error: "Not authorized — admin access required" };
   }
 

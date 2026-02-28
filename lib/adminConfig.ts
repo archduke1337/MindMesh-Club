@@ -1,32 +1,30 @@
 // lib/adminConfig.ts
 /**
- * Centralized admin configuration.
+ * Admin configuration.
  *
- * PREFERRED: Assign the "admin" label to users in Appwrite Console.
- * This file provides a FALLBACK email-based check for backward compatibility.
+ * SECURITY: Admin access is ONLY granted via Appwrite user labels.
+ * To grant admin access:
+ * 1. Go to Appwrite Console → Authentication → Users
+ * 2. Select the user
+ * 3. Go to Labels tab
+ * 4. Add label: "admin"
  *
- * Client-side admin checks (UI) use AuthContext.isAdmin which checks
- * both user.labels.includes("admin") AND this email list.
- * Server-side admin checks are handled by middleware.ts + verifyAdminAuth.
+ * Email-based admin checks have been removed for security reasons.
  */
 
-// Server-side admin emails (not exposed to client)
-const SERVER_ADMIN_EMAILS: string[] = process.env.ADMIN_EMAILS
-  ? process.env.ADMIN_EMAILS.split(",").map(e => e.trim())
-  : [];
+/**
+ * Check if user has admin access via Appwrite labels.
+ * This is the ONLY source of truth for admin authorization.
+ */
+export function isUserAdminByLabel(labels: string[] | undefined): boolean {
+  if (!labels || labels.length === 0) return false;
+  return labels.includes("admin");
+}
 
-// Client-side admin emails (for UI-only checks like showing admin buttons)
-const CLIENT_ADMIN_EMAILS: string[] = process.env.NEXT_PUBLIC_ADMIN_EMAILS
-  ? process.env.NEXT_PUBLIC_ADMIN_EMAILS.split(",").map(e => e.trim())
-  : [];
-
-// Combine both sources for backward compatibility
-export const ADMIN_EMAILS: string[] = Array.from(new Set([...SERVER_ADMIN_EMAILS, ...CLIENT_ADMIN_EMAILS]));
-
+/**
+ * @deprecated Use isUserAdminByLabel instead. Email-based checks removed for security.
+ */
 export function isUserAdminByEmail(email: string | undefined): boolean {
-  if (!email) return false;
-  if (ADMIN_EMAILS.length === 0) return false;
-  // Case-insensitive email comparison
-  const normalizedEmail = email.toLowerCase().trim();
-  return ADMIN_EMAILS.some(adminEmail => adminEmail.toLowerCase() === normalizedEmail);
+  console.warn("isUserAdminByEmail is deprecated and always returns false. Use Appwrite labels instead.");
+  return false;
 }

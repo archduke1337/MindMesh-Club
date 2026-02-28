@@ -2,8 +2,8 @@
 /**
  * Admin Authentication and Authorization utilities.
  *
- * PRIMARY: Appwrite labels (user.labels includes "admin")
- * FALLBACK: Email-based check from lib/adminConfig.ts
+ * SECURITY: Admin access is ONLY granted via Appwrite user labels.
+ * Email-based checks have been removed for security reasons.
  *
  * To promote a user to admin, add the "admin" label in the Appwrite Console
  * (Authentication → Users → select user → Labels → add "admin").
@@ -11,7 +11,6 @@
  */
 
 import { Models } from "appwrite";
-import { isUserAdminByEmail } from "./adminConfig";
 
 export const ADMIN_ROLES = ["admin", "moderator", "owner"];
 
@@ -21,16 +20,12 @@ export interface AdminUser extends Models.User<Models.Preferences> {
 }
 
 /**
- * Check if user has admin access.
- * 1. Appwrite label "admin" (preferred — no redeploy needed)
- * 2. Email in ADMIN_EMAILS / NEXT_PUBLIC_ADMIN_EMAILS env var (legacy fallback)
+ * Check if user has admin access via Appwrite labels.
+ * This is the ONLY source of truth for admin authorization.
  */
 export function isUserAdmin(user: Models.User<Models.Preferences> | null): boolean {
   if (!user) return false;
-  // Primary: Appwrite label
-  if (user.labels?.includes("admin")) return true;
-  // Fallback: email list
-  return isUserAdminByEmail(user.email);
+  return user.labels?.includes("admin") ?? false;
 }
 
 /**
@@ -65,11 +60,6 @@ export function canUserPerformAction(
   // Owner role can perform all actions
   if (role === "owner") return true;
   
-  // Default: email-based admins with no explicit role get create/edit only
-  // They cannot delete or approve without an explicit role assignment
-  if (isUserAdminByEmail(user.email)) {
-    return ["create", "edit"].includes(action);
-  }
-
-  return false;
+  // Default: users with admin label but no explicit role get create/edit only
+  return ["create", "edit"].includes(action);
 }

@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ success: true });
     response.cookies.set(COOKIE_NAME, secret, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: true, // Always secure, even in development
+      sameSite: "strict", // Prevent CSRF attacks
       path: "/",
       maxAge: MAX_AGE,
     });
@@ -42,8 +42,8 @@ export async function DELETE() {
   const response = NextResponse.json({ success: true });
   response.cookies.set(COOKIE_NAME, "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: true,
+    sameSite: "strict",
     path: "/",
     maxAge: 0,
   });

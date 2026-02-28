@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Models } from "appwrite";
 import { authService } from "@/lib/appwrite";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 
 interface MemberProfile {
   $id: string;
@@ -82,13 +81,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
 
-  // Derive admin status from BOTH Appwrite labels AND email-based config
-  const isAdmin = Boolean(
-    user && (
-      user.labels?.includes("admin") ||
-      isUserAdminByEmail(user.email)
-    )
-  );
+  // Derive admin status from Appwrite labels ONLY
+  const isAdmin = Boolean(user && user.labels?.includes("admin"));
 
   const isProfileComplete = Boolean(profile);
 

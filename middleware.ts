@@ -39,20 +39,8 @@ async function getSessionUser(request: NextRequest) {
 
 function isAdmin(user: any): boolean {
   if (!user) return false;
-
-  // Primary: Appwrite "admin" label
-  if (user.labels?.includes("admin")) return true;
-
-  // Secondary: env-based email list (as fallback)
-  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "")
-    .split(",")
-    .map((e: string) => e.trim().toLowerCase())
-    .filter(Boolean);
-  if (adminEmails.length && adminEmails.includes(user.email?.toLowerCase())) {
-    return true;
-  }
-
-  return false;
+  // Admin access via Appwrite "admin" label ONLY
+  return user.labels?.includes("admin") ?? false;
 }
 
 // ── Middleware handler ──────────────────────────────────
