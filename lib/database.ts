@@ -179,11 +179,14 @@ export const eventService = {
         status: eventData.status || "upcoming",
       };
       
+      // Strip out attributes that might not be in the Appwrite schema yet
+      const { isRecurring, recurringPattern, parentEventId, ...appwritePayload } = dataWithDefaults;
+      
       const response = await databases.createDocument(
         DATABASE_ID,
         EVENTS_COLLECTION_ID,
         ID.unique(),
-        dataWithDefaults
+        appwritePayload
       );
       return response as unknown as Event;
     } catch (error) {
@@ -201,11 +204,14 @@ export const eventService = {
         ...(eventData.status !== undefined ? { status: eventData.status } : {}),
       };
       
+      // Strip out attributes that might not be in the Appwrite schema yet
+      const { isRecurring, recurringPattern, parentEventId, ...appwritePayload } = dataWithDefaults;
+      
       const response = await databases.updateDocument(
         DATABASE_ID,
         EVENTS_COLLECTION_ID,
         eventId,
-        dataWithDefaults
+        appwritePayload
       );
       return response as unknown as Event;
     } catch (error) {
