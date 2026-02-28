@@ -985,6 +985,7 @@ export default function AdminEventsPage() {
                     >
                       <SelectItem key="conference" variant="bordered">Conference</SelectItem>
                       <SelectItem key="workshop" variant="bordered">Workshop</SelectItem>
+                      <SelectItem key="hackathon" variant="bordered">Hackathon</SelectItem>
                       <SelectItem key="masterclass" variant="bordered">Masterclass</SelectItem>
                       <SelectItem key="competition" variant="bordered">Competition</SelectItem>
                       <SelectItem key="bootcamp" variant="bordered">Bootcamp</SelectItem>
