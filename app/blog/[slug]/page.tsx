@@ -8,7 +8,7 @@ import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Avatar } from "@heroui/avatar";
 import { blogService, Blog } from "@/lib/blog";
-import MarkdownRenderer from "@/components/MarkdownRenderer";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import {
   ArrowLeftIcon,
   ClockIcon,
