@@ -3,7 +3,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
-import { getErrorMessage } from "@/lib/errorHandler";
+import { handleApiError, ApiError, successResponse, validateRequestBody } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Validation schemas
+const createTeamSchema = z.object({
+  eventId: z.string().min(1, "Event ID is required"),
+  teamName: z.string().min(2, "Team name must be at least 2 characters").max(100, "Team name too long"),
+  description: z.string().max(500, "Description too long").optional(),
+  leaderId: z.string().min(1, "Leader ID is required"),
+  leaderName: z.string().min(2, "Leader name is required"),
+  leaderEmail: z.string().email("Invalid email"),
+  maxSize: z.number().int().min(1).max(10).default(5),
+});
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -35,7 +47,7 @@ export async function GET(request: NextRequest) {
 
       const team = teamsResult.documents[0];
       if (!team) {
-        return NextResponse.json({ error: "Invalid invite code" }, { status: 404 });
+        throw new ApiError(404, "Invalid invite code");
       }
 
       // Also fetch team members
@@ -45,13 +57,11 @@ export async function GET(request: NextRequest) {
         [Query.equal("teamId", team.$id)]
       );
 
-      return NextResponse.json({ team, members: membersResult.documents });
+      return successResponse({ team, members: membersResult.documents });
     }
 
     if (userId && eventId) {
       // Check if user already has a team for this event
-
-      // Check as leader
       const leaderResult = await adminDb.listDocuments(
         DATABASE_ID,
         COLLECTIONS.HACKATHON_TEAMS,
@@ -83,7 +93,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      return NextResponse.json({ team: userTeam });
+      return successResponse({ team: userTeam });
     }
 
     if (eventId) {
@@ -94,13 +104,12 @@ export async function GET(request: NextRequest) {
         [Query.equal("eventId", eventId)]
       );
 
-      return NextResponse.json({ teams: result.documents });
+      return successResponse({ teams: result.documents });
     }
 
-    return NextResponse.json({ error: "eventId or inviteCode required" }, { status: 400 });
+    throw new ApiError(400, "eventId or inviteCode required");
   } catch (error: unknown) {
-    console.error("[API] Teams GET error:", getErrorMessage(error));
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return handleApiError(error, "GET /api/hackathon/teams");
   }
 }
 
@@ -109,18 +118,10 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await verifyAuth(request);
     if (!auth.authenticated) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      throw new ApiError(401, "Authentication required");
     }
 
-    const body = await request.json();
-    const { eventId, teamName, description, leaderId, leaderName, leaderEmail, maxSize } = body;
-
-    if (!eventId || !teamName || !leaderId || !leaderName || !leaderEmail) {
-      return NextResponse.json(
-        { error: "Missing: eventId, teamName, leaderId, leaderName, leaderEmail" },
-        { status: 400 }
-      );
-    }
+    const body = await validateRequestBody(request, createTeamSchema);
 
     const inviteCode = generateInviteCode();
 
@@ -130,17 +131,17 @@ export async function POST(request: NextRequest) {
       COLLECTIONS.HACKATHON_TEAMS,
       ID.unique(),
       {
-        eventId,
-        teamName,
-        description: description || null,
-        leaderId,
-        leaderName,
-        leaderEmail,
+        eventId: body.eventId,
+        teamName: body.teamName,
+        description: body.description || null,
+        leaderId: body.leaderId,
+        leaderName: body.leaderName,
+        leaderEmail: body.leaderEmail,
         inviteCode,
         problemStatementId: null,
         problemStatement: null,
         memberCount: 1,
-        maxSize: maxSize || 5,
+        maxSize: body.maxSize,
         status: "forming",
         submissionId: null,
         teamLogo: null,
@@ -154,19 +155,18 @@ export async function POST(request: NextRequest) {
       ID.unique(),
       {
         teamId: team.$id,
-        eventId,
-        userId: leaderId,
-        name: leaderName,
-        email: leaderEmail,
+        eventId: body.eventId,
+        userId: body.leaderId,
+        name: body.leaderName,
+        email: body.leaderEmail,
         role: "leader",
         status: "accepted",
         joinedAt: new Date().toISOString(),
       }
     );
 
-    return NextResponse.json({ success: true, team }, { status: 201 });
+    return successResponse({ team }, 201);
   } catch (error: unknown) {
-    console.error("[API] Teams POST error:", getErrorMessage(error));
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return handleApiError(error, "POST /api/hackathon/teams");
   }
 }

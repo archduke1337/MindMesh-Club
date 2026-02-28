@@ -1,12 +1,33 @@
 ﻿// app/api/members/profile/route.ts
 // Server-side API for member profile create/read/update
 import { NextRequest, NextResponse } from "next/server";
-import { ZodError } from "zod";
 import { verifyAuth } from "@/lib/apiAuth";
 import { adminDb, adminUsers, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
 import { memberProfileSchema } from "@/lib/validation/schemas";
-import { getErrorMessage } from "@/lib/errorHandler";
-import { handleZodError } from "@/lib/utils/errorHandling";
+import { handleApiError, ApiError, successResponse, validateRequestBody } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Update schema for PATCH
+const updateProfileSchema = z.object({
+  profileId: z.string().min(1, "Profile ID is required"),
+  name: z.string().min(2).max(100).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().min(5).optional(),
+  whatsapp: z.string().min(5).optional(),
+  branch: z.string().min(1).optional(),
+  year: z.string().min(1).optional(),
+  college: z.string().min(1).optional(),
+  program: z.string().min(1).optional(),
+  rollNumber: z.string().optional().nullable(),
+  skills: z.array(z.string()).optional(),
+  interests: z.array(z.string()).optional(),
+  bio: z.string().max(1000).optional().nullable(),
+  avatar: z.string().url().optional().nullable(),
+  linkedin: z.string().url().optional().nullable(),
+  github: z.string().url().optional().nullable(),
+  twitter: z.string().url().optional().nullable(),
+  portfolio: z.string().url().optional().nullable(),
+});
 
 // GET /api/members/profile?userId=xxx
 export async function GET(request: NextRequest) {
@@ -14,9 +35,8 @@ export async function GET(request: NextRequest) {
     let userId = request.nextUrl.searchParams.get("userId");
 
     // If userId is __SELF__, we can't resolve server-side without auth cookies
-    // Just return null profile — the AuthContext will use actual userId
     if (!userId || userId === "__SELF__") {
-      return NextResponse.json({ profile: null });
+      return successResponse({ profile: null });
     }
 
     const { documents } = await adminDb.listDocuments(
@@ -25,45 +45,23 @@ export async function GET(request: NextRequest) {
       [Query.equal("userId", userId), Query.limit(1)]
     );
 
-    return NextResponse.json({ profile: documents[0] || null });
+    return successResponse({ profile: documents[0] || null });
   } catch (error: unknown) {
-    console.error("[API] Profile GET error:", error);
-    return NextResponse.json({ profile: null });
+    return handleApiError(error, "GET /api/members/profile");
   }
 }
 
 // POST /api/members/profile — Create profile
 export async function POST(request: NextRequest) {
-  // Verify authentication — prevent unauthenticated profile creation
   const { authenticated, user: authUser } = await verifyAuth(request);
   if (!authenticated || !authUser) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    throw new ApiError(401, "Authentication required");
   }
 
   try {
-    const body = await request.json();
+    const validated = await validateRequestBody(request, memberProfileSchema);
 
-    // Validate with Zod schema
-    let validated;
-    try {
-      validated = memberProfileSchema.parse(body);
-    } catch (validationError) {
-      if (validationError instanceof ZodError) {
-        return NextResponse.json(
-          { error: handleZodError(validationError) },
-          { status: 400 }
-        );
-      }
-      throw validationError;
-    }
-
-    const {
-      name, email, phone, whatsapp, branch, year,
-      college, program, rollNumber, skills, interests,
-      bio, linkedin, github, twitter, portfolio,
-    } = validated;
-
-    // Use server-verified userId instead of trusting request body
+    // Use server-verified userId
     const userId = authUser.$id;
 
     // Check for existing profile
@@ -80,18 +78,25 @@ export async function POST(request: NextRequest) {
         COLLECTIONS.MEMBER_PROFILES,
         existing[0].$id,
         {
-          name, email, phone, whatsapp, branch, year, college, program,
-          rollNumber: rollNumber || null,
-          skills: skills || [],
-          interests: interests || [],
-          bio: bio || null,
-          linkedin: linkedin || null,
-          github: github || null,
-          twitter: twitter || null,
-          portfolio: portfolio || null,
+          name: validated.name,
+          email: validated.email,
+          phone: validated.phone,
+          whatsapp: validated.whatsapp,
+          branch: validated.branch,
+          year: validated.year,
+          college: validated.college,
+          program: validated.program,
+          rollNumber: validated.rollNumber || null,
+          skills: validated.skills || [],
+          interests: validated.interests || [],
+          bio: validated.bio || null,
+          linkedin: validated.linkedin || null,
+          github: validated.github || null,
+          twitter: validated.twitter || null,
+          portfolio: validated.portfolio || null,
         }
       );
-      return NextResponse.json({ success: true, profile });
+      return successResponse({ profile });
     }
 
     // Create new profile
@@ -100,16 +105,24 @@ export async function POST(request: NextRequest) {
       COLLECTIONS.MEMBER_PROFILES,
       ID.unique(),
       {
-        userId, name, email, phone, whatsapp, branch, year, college, program,
-        rollNumber: rollNumber || null,
-        skills: skills || [],
-        interests: interests || [],
-        bio: bio || null,
+        userId,
+        name: validated.name,
+        email: validated.email,
+        phone: validated.phone,
+        whatsapp: validated.whatsapp,
+        branch: validated.branch,
+        year: validated.year,
+        college: validated.college,
+        program: validated.program,
+        rollNumber: validated.rollNumber || null,
+        skills: validated.skills || [],
+        interests: validated.interests || [],
+        bio: validated.bio || null,
         avatar: null,
-        linkedin: linkedin || null,
-        github: github || null,
-        twitter: twitter || null,
-        portfolio: portfolio || null,
+        linkedin: validated.linkedin || null,
+        github: validated.github || null,
+        twitter: validated.twitter || null,
+        portfolio: validated.portfolio || null,
         memberStatus: "pending",
         eventsAttended: 0,
         badges: [],
@@ -123,14 +136,9 @@ export async function POST(request: NextRequest) {
       // Non-critical
     }
 
-    return NextResponse.json({ success: true, profile }, { status: 201 });
+    return successResponse({ profile }, 201);
   } catch (error: unknown) {
-    console.error("[API] Profile POST error:", error);
-    const appwriteErr = error as { code?: number; message?: string };
-    if (appwriteErr.code === 409) {
-      return NextResponse.json({ error: "Profile already exists" }, { status: 409 });
-    }
-    return NextResponse.json({ error: appwriteErr.message || "Internal server error" }, { status: 500 });
+    return handleApiError(error, "POST /api/members/profile");
   }
 }
 
@@ -138,38 +146,22 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const { authenticated, user: authUser } = await verifyAuth(request);
   if (!authenticated || !authUser) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    throw new ApiError(401, "Authentication required");
   }
+  
   try {
-    const body = await request.json();
+    const body = await validateRequestBody(request, updateProfileSchema);
     const { profileId, ...updateData } = body;
-
-    if (!profileId) {
-      return NextResponse.json({ error: "profileId is required" }, { status: 400 });
-    }
-
-    // Whitelist safe fields — prevent users from updating memberStatus, eventsAttended, badges
-    const allowedFields = [
-      "name", "email", "phone", "whatsapp", "branch", "year", "college", "program",
-      "rollNumber", "skills", "interests", "bio", "avatar",
-      "linkedin", "github", "twitter", "portfolio",
-    ];
-    const safeData: Record<string, any> = {};
-    for (const key of allowedFields) {
-      if (key in updateData) safeData[key] = updateData[key];
-    }
 
     const profile = await adminDb.updateDocument(
       DATABASE_ID,
       COLLECTIONS.MEMBER_PROFILES,
       profileId,
-      safeData
+      updateData
     );
 
-    return NextResponse.json({ success: true, profile });
+    return successResponse({ profile });
   } catch (error: unknown) {
-    console.error("[API] Profile PATCH error:", error);
-    const appwriteErr = error as { code?: number; message?: string };
-    return NextResponse.json({ error: appwriteErr.message || "Internal server error" }, { status: appwriteErr.code || 500 });
+    return handleApiError(error, "PATCH /api/members/profile");
   }
 }

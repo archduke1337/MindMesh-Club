@@ -1,12 +1,10 @@
 // app/api/events/register/route.ts
 // Server-side endpoint for atomic event registration to prevent race conditions
 import { NextRequest, NextResponse } from 'next/server';
-import { ZodError } from 'zod';
 import { sendRegistrationEmail } from '@/lib/emailService';
-import { getErrorMessage } from '@/lib/errorHandler';
 import { registrationSchema } from '@/lib/validation/schemas';
-import { handleZodError } from '@/lib/utils/errorHandling';
 import { verifyAuth } from '@/lib/apiAuth';
+import { handleApiError, ApiError, successResponse } from '@/lib/apiErrorHandler';
 import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from '@/lib/appwrite/server';
 
 interface EventDocument {
@@ -52,30 +50,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
     // Verify authentication via session cookie
     const { authenticated, user: authUser } = await verifyAuth(request);
     if (!authenticated || !authUser) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required', error: 'You must be logged in to register' },
-        { status: 401 }
-      );
+      throw new ApiError(401, "Authentication required");
     }
 
     const body: RegisterRequestBody = await request.json();
 
     // Validate input with Zod
-    try {
-      registrationSchema.parse(body);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: 'Validation failed',
-            error: handleZodError(error),
-          },
-          { status: 400 }
-        );
-      }
-      throw error;
-    }
+    registrationSchema.parse(body);
 
     const { eventId } = body;
     // Use server-verified user identity instead of trusting request body
@@ -100,14 +81,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       if (existingRegistrations.documents.length > 0) {
         const existingRegistration = existingRegistrations.documents[0];
         console.log(`[API] Found existing registration: ${existingRegistration.$id}`);
-        return NextResponse.json(
-          {
-            success: true,
-            message: 'Already registered for this event',
-            ticketId: existingRegistration.$id,
-          },
-          { status: 200 }
-        );
+        return successResponse({
+          message: 'Already registered for this event',
+          ticketId: existingRegistration.$id,
+        });
       }
     } catch (listError) {
       console.error('[API] Error checking existing registrations:', listError);
@@ -123,17 +100,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       ) as unknown as EventDocument;
     } catch (getError) {
       console.error('[API] Error fetching event:', getError);
-      return NextResponse.json(
-        { success: false, message: 'Event not found', error: 'The event does not exist' },
-        { status: 404 }
-      );
+      throw new ApiError(404, 'Event not found');
     }
 
     if (event.capacity && event.registered >= event.capacity) {
-      return NextResponse.json(
-        { success: false, message: 'Event is full', error: 'Event is full' },
-        { status: 409 }
-      );
+      throw new ApiError(409, 'Event is full');
     }
 
     // Create registration document with QR code data
@@ -158,10 +129,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       );
     } catch (createError) {
       console.error('[API] Error creating registration:', createError);
-      return NextResponse.json(
-        { success: false, message: 'Failed to create registration', error: getErrorMessage(createError) },
-        { status: 500 }
-      );
+      throw new ApiError(500, 'Failed to create registration');
     }
 
     const ticketId = registration.$id || '';
@@ -221,37 +189,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       // Don't fail the entire request if email fails
     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Registration successful',
-        ticketId,
-      },
-      { status: 200 }
-    );
+    return successResponse({
+      message: 'Registration successful',
+      ticketId,
+    });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : getErrorMessage(error);
-    console.error('[API] Registration error:', errorMessage);
-
-    // Determine HTTP status based on error type
-    let statusCode = 500;
-    if (errorMessage.includes('Already registered')) {
-      statusCode = 409; // Conflict
-    } else if (errorMessage.includes('Event is full')) {
-      statusCode = 409; // Conflict
-    } else if (errorMessage.includes('not found')) {
-      statusCode = 404;
-    } else if (errorMessage.includes('unauthorized') || errorMessage.includes('not authorized')) {
-      statusCode = 403;
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: errorMessage,
-        error: errorMessage,
-      },
-      { status: statusCode }
-    );
+    return handleApiError(error, "POST /api/events/register");
   }
 }

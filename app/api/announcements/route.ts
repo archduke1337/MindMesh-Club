@@ -1,12 +1,29 @@
 // app/api/announcements/route.ts
 // Announcements API — GET active announcements, POST/DELETE for admins
 import { NextRequest, NextResponse } from "next/server";
-import { ZodError } from "zod";
 import { verifyAdminAuth } from "@/lib/apiAuth";
 import { adminDb, DATABASE_ID, COLLECTIONS, ID } from "@/lib/appwrite/server";
 import { announcementSchema } from "@/lib/validation/schemas";
-import { getErrorMessage } from "@/lib/errorHandler";
-import { handleZodError } from "@/lib/utils/errorHandling";
+import { handleApiError, ApiError, successResponse, validateRequestBody } from "@/lib/apiErrorHandler";
+import { z } from "zod";
+
+// Update schema for PATCH
+const updateAnnouncementSchema = z.object({
+  announcementId: z.string().min(1, "Announcement ID is required"),
+  title: z.string().min(1).max(200).optional(),
+  content: z.string().min(1).max(2000).optional(),
+  type: z.enum(['info', 'event', 'urgent', 'update']).optional(),
+  priority: z.enum(['low', 'normal', 'high', 'critical']).optional(),
+  isPinned: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  link: z.string().url().optional().nullable(),
+  linkText: z.string().max(100).optional().nullable(),
+  expiresAt: z.string().optional().nullable(),
+});
+
+const deleteAnnouncementSchema = z.object({
+  announcementId: z.string().min(1, "Announcement ID is required"),
+});
 
 // GET /api/announcements — Active announcements (or all for admins with ?all=true)
 export async function GET(request: NextRequest) {
@@ -25,7 +42,7 @@ export async function GET(request: NextRequest) {
           if (!a.isPinned && b.isPinned) return 1;
           return new Date(b.$createdAt as string).getTime() - new Date(a.$createdAt as string).getTime();
         });
-        return NextResponse.json({ announcements: documents });
+        return successResponse({ announcements: documents });
       }
     }
 
@@ -45,10 +62,9 @@ export async function GET(request: NextRequest) {
       return new Date(b.$createdAt as string).getTime() - new Date(a.$createdAt as string).getTime();
     });
 
-    return NextResponse.json({ announcements: active });
+    return successResponse({ announcements: active });
   } catch (error: unknown) {
-    console.error("[API] Announcements GET error:", error);
-    return NextResponse.json({ announcements: [] });
+    return handleApiError(error, "GET /api/announcements");
   }
 }
 
@@ -56,27 +72,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const { isAdmin, error } = await verifyAdminAuth(request);
   if (!isAdmin) {
-    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+    throw new ApiError(403, error || "Not authorized");
   }
+  
   try {
-    const body = await request.json();
+    const validated = await validateRequestBody(request, announcementSchema);
 
-    // Validate with Zod schema
-    let validated;
-    try {
-      validated = announcementSchema.parse(body);
-    } catch (validationError) {
-      if (validationError instanceof ZodError) {
-        return NextResponse.json(
-          { error: handleZodError(validationError) },
-          { status: 400 }
-        );
-      }
-      throw validationError;
-    }
-
-    // Build document data — only include optional fields if they have values
-    // to avoid Appwrite schema errors for attributes that may not exist
+    // Build document data
     const docData: Record<string, unknown> = {
       title: validated.title,
       content: validated.content,
@@ -98,10 +100,9 @@ export async function POST(request: NextRequest) {
       docData
     );
 
-    return NextResponse.json({ success: true, announcement }, { status: 201 });
+    return successResponse({ announcement }, 201);
   } catch (error: unknown) {
-    console.error("[API] Announcements POST error:", error);
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return handleApiError(error, "POST /api/announcements");
   }
 }
 
@@ -109,36 +110,23 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const { isAdmin, error } = await verifyAdminAuth(request);
   if (!isAdmin) {
-    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+    throw new ApiError(403, error || "Not authorized");
   }
+  
   try {
-    const body = await request.json();
+    const body = await validateRequestBody(request, updateAnnouncementSchema);
     const { announcementId, ...updateFields } = body;
-
-    if (!announcementId) {
-      return NextResponse.json({ error: "announcementId is required" }, { status: 400 });
-    }
-
-    // Whitelist allowed fields
-    const allowed = ["title", "content", "type", "priority", "isPinned", "isActive", "link", "linkText", "expiresAt"];
-    const data: Record<string, unknown> = {};
-    for (const key of allowed) {
-      if (key in updateFields) {
-        data[key] = updateFields[key];
-      }
-    }
 
     const announcement = await adminDb.updateDocument(
       DATABASE_ID,
       COLLECTIONS.ANNOUNCEMENTS,
       announcementId,
-      data
+      updateFields
     );
 
-    return NextResponse.json({ success: true, announcement });
+    return successResponse({ announcement });
   } catch (error: unknown) {
-    console.error("[API] Announcements PATCH error:", error);
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return handleApiError(error, "PATCH /api/announcements");
   }
 }
 
@@ -146,20 +134,16 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const { isAdmin, error } = await verifyAdminAuth(request);
   if (!isAdmin) {
-    return NextResponse.json({ error: error || "Not authorized" }, { status: 401 });
+    throw new ApiError(403, error || "Not authorized");
   }
+  
   try {
-    const { announcementId } = await request.json();
-
-    if (!announcementId) {
-      return NextResponse.json({ error: "announcementId is required" }, { status: 400 });
-    }
+    const { announcementId } = await validateRequestBody(request, deleteAnnouncementSchema);
 
     await adminDb.deleteDocument(DATABASE_ID, COLLECTIONS.ANNOUNCEMENTS, announcementId);
 
-    return NextResponse.json({ success: true });
+    return successResponse({ message: "Announcement deleted successfully" });
   } catch (error: unknown) {
-    console.error("[API] Announcements DELETE error:", error);
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return handleApiError(error, "DELETE /api/announcements");
   }
 }
