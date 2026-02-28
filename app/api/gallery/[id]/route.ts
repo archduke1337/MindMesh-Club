@@ -8,7 +8,7 @@ import { z } from "zod";
 const updateGallerySchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(1000).optional(),
-  category: z.string().optional(),
+  category: z.enum(["events", "workshops", "hackathons", "team", "projects", "campus", "achievements"]).optional(),
   tags: z.array(z.string()).optional(),
   status: z.enum(["pending", "approved", "rejected"]).optional(),
   featured: z.boolean().optional(),
