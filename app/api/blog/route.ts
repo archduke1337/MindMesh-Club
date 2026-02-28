@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     const authorName = data.authorName || authUser.name || "Anonymous";
 
     // Check rate limit (max 5 blogs per 24 hours)
-    if (!checkBlogRateLimit(authorId)) {
-      const remaining = getRemainingSubmissions(authorId);
+    if (!(await checkBlogRateLimit(authorId))) {
+      const remaining = await getRemainingSubmissions(authorId);
       return NextResponse.json(
         {
           success: false,

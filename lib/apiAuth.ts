@@ -68,8 +68,25 @@ export async function verifyAuth(request: NextRequest): Promise<AuthResult> {
 /**
  * Verify that the request comes from an authenticated admin user.
  * Checks both Appwrite labels and email-based admin config.
+ *
+ * Fast-path: if the Edge middleware already verified admin status
+ * (for /api/admin/* routes) it sets x-user-is-admin: "true" and
+ * we skip the extra Appwrite round-trip.
  */
 export async function verifyAdminAuth(request: NextRequest): Promise<AdminResult> {
+  // Fast-path: middleware already verified admin for /api/admin/* routes
+  if (request.headers.get("x-user-is-admin") === "true") {
+    return {
+      isAdmin: true,
+      user: {
+        $id: request.headers.get("x-user-id") || "",
+        email: request.headers.get("x-user-email") || "",
+        name: request.headers.get("x-user-name") || "",
+        labels: ["admin"],
+      },
+    };
+  }
+
   const authResult = await verifyAuth(request);
   if (!authResult.authenticated || !authResult.user) {
     return { isAdmin: false, error: authResult.error || "Not authenticated" };

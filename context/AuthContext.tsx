@@ -132,39 +132,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkUser();
   }, [checkUser]);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     await authService.login(email, password);
     await checkUser();
-  };
+  }, [checkUser]);
 
-  const register = async (
+  const register = useCallback(async (
     email: string,
     password: string,
     name: string
   ) => {
     await authService.createAccount(email, password, name);
     await checkUser();
-  };
+  }, [checkUser]);
 
-  const loginWithGoogle = () => {
+  const loginWithGoogle = useCallback(() => {
     authService.loginWithGoogle();
-  };
+  }, []);
 
-  const loginWithGitHub = () => {
+  const loginWithGitHub = useCallback(() => {
     authService.loginWithGitHub();
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await authService.logout();
     setUser(null);
     setProfile(null);
-  };
+  }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
       await fetchProfile(user.$id);
     }
-  };
+  }, [user, fetchProfile]);
 
   return (
     <AuthContext.Provider

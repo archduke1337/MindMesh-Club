@@ -8,6 +8,7 @@ import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Avatar } from "@heroui/avatar";
 import { blogService, Blog } from "@/lib/blog";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 import {
   ArrowLeftIcon,
   ClockIcon,
@@ -202,8 +203,7 @@ export default function BlogPostPage() {
           <Card className="mb-6 sm:mb-7 md:mb-8 lg:mb-10">
             <CardBody className="p-4 sm:p-6 md:p-8 lg:p-12">
               <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none">
-                {/* Simple content rendering - for Markdown, use a library like react-markdown */}
-                <div className="whitespace-pre-wrap text-xs sm:text-small md:text-base lg:text-lg leading-relaxed">{blog.content}</div>
+                <MarkdownRenderer content={blog.content} />
               </div>
             </CardBody>
           </Card>
