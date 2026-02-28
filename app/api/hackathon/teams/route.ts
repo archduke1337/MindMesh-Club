@@ -2,11 +2,7 @@
 // Server-side API for hackathon team operations
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
-import { adminFetch } from "@/lib/adminApi";
-import { DATABASE_ID, COLLECTION_IDS } from "@/lib/types/appwrite";
-
-const TEAMS_COLLECTION = COLLECTION_IDS.HACKATHON_TEAMS;
-const MEMBERS_COLLECTION = COLLECTION_IDS.TEAM_MEMBERS;
+import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -16,7 +12,6 @@ function generateInviteCode(): string {
   }
   return code;
 }
-
 
 // GET /api/hackathon/teams?eventId=xxx
 // GET /api/hackathon/teams?inviteCode=xxx
@@ -29,77 +24,74 @@ export async function GET(request: NextRequest) {
 
     if (inviteCode) {
       // Fetch team by invite code
-      const res = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/${TEAMS_COLLECTION}/documents`
+      const teamsResult = await adminDb.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.HACKATHON_TEAMS,
+        [Query.equal("inviteCode", inviteCode)]
       );
-      if (!res.ok) {
-        return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
-      }
-      const data = await res.json();
-      const team = data.documents?.find((d: any) => d.inviteCode === inviteCode);
+
+      const team = teamsResult.documents[0];
       if (!team) {
         return NextResponse.json({ error: "Invalid invite code" }, { status: 404 });
       }
 
       // Also fetch team members
-      const membersRes = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/${MEMBERS_COLLECTION}/documents`
-      );
-      const membersData = await membersRes.json();
-      const members = (membersData.documents || []).filter(
-        (m: any) => m.teamId === team.$id
+      const membersResult = await adminDb.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.TEAM_MEMBERS,
+        [Query.equal("teamId", team.$id)]
       );
 
-      return NextResponse.json({ team, members });
+      return NextResponse.json({ team, members: membersResult.documents });
     }
 
     if (userId && eventId) {
       // Check if user already has a team for this event
-      const teamsRes = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/${TEAMS_COLLECTION}/documents`
-      );
-      const teamsData = await teamsRes.json();
-      
+
       // Check as leader
-      let userTeam = teamsData.documents?.find(
-        (t: any) => t.eventId === eventId && t.leaderId === userId
+      const leaderResult = await adminDb.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.HACKATHON_TEAMS,
+        [Query.equal("eventId", eventId), Query.equal("leaderId", userId)]
       );
+
+      let userTeam = leaderResult.documents[0] || null;
 
       if (!userTeam) {
         // Check as member
-        const membersRes = await adminFetch(
-          `/databases/${DATABASE_ID}/collections/${MEMBERS_COLLECTION}/documents`
+        const memberResult = await adminDb.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.TEAM_MEMBERS,
+          [
+            Query.equal("eventId", eventId),
+            Query.equal("userId", userId),
+            Query.equal("status", "accepted"),
+          ]
         );
-        const membersData = await membersRes.json();
-        const membership = membersData.documents?.find(
-          (m: any) =>
-            m.eventId === eventId &&
-            m.userId === userId &&
-            m.status === "accepted"
-        );
+
+        const membership = memberResult.documents[0];
         if (membership) {
-          userTeam = teamsData.documents?.find(
-            (t: any) => t.$id === membership.teamId
+          const teamDoc = await adminDb.getDocument(
+            DATABASE_ID,
+            COLLECTIONS.HACKATHON_TEAMS,
+            membership.teamId as string
           );
+          userTeam = teamDoc;
         }
       }
 
-      return NextResponse.json({ team: userTeam || null });
+      return NextResponse.json({ team: userTeam });
     }
 
     if (eventId) {
       // Fetch all teams for event
-      const res = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/${TEAMS_COLLECTION}/documents`
+      const result = await adminDb.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.HACKATHON_TEAMS,
+        [Query.equal("eventId", eventId)]
       );
-      if (!res.ok) {
-        return NextResponse.json({ error: "Failed to fetch teams" }, { status: 500 });
-      }
-      const data = await res.json();
-      const teams = (data.documents || []).filter(
-        (t: any) => t.eventId === eventId
-      );
-      return NextResponse.json({ teams });
+
+      return NextResponse.json({ teams: result.documents });
     }
 
     return NextResponse.json({ error: "eventId or inviteCode required" }, { status: 400 });
@@ -130,58 +122,42 @@ export async function POST(request: NextRequest) {
     const inviteCode = generateInviteCode();
 
     // Create team
-    const teamRes = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${TEAMS_COLLECTION}/documents`,
+    const team = await adminDb.createDocument(
+      DATABASE_ID,
+      COLLECTIONS.HACKATHON_TEAMS,
+      ID.unique(),
       {
-        method: "POST",
-        body: JSON.stringify({
-          documentId: "unique()",
-          data: {
-            eventId,
-            teamName,
-            description: description || null,
-            leaderId,
-            leaderName,
-            leaderEmail,
-            inviteCode,
-            problemStatementId: null,
-            problemStatement: null,
-            memberCount: 1,
-            maxSize: maxSize || 5,
-            status: "forming",
-            submissionId: null,
-            teamLogo: null,
-          },
-        }),
+        eventId,
+        teamName,
+        description: description || null,
+        leaderId,
+        leaderName,
+        leaderEmail,
+        inviteCode,
+        problemStatementId: null,
+        problemStatement: null,
+        memberCount: 1,
+        maxSize: maxSize || 5,
+        status: "forming",
+        submissionId: null,
+        teamLogo: null,
       }
     );
 
-    if (!teamRes.ok) {
-      const errText = await teamRes.text();
-      console.error("[API] Create team error:", errText);
-      return NextResponse.json({ error: errText }, { status: teamRes.status });
-    }
-
-    const team = await teamRes.json();
-
     // Auto-add leader as member
-    await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${MEMBERS_COLLECTION}/documents`,
+    await adminDb.createDocument(
+      DATABASE_ID,
+      COLLECTIONS.TEAM_MEMBERS,
+      ID.unique(),
       {
-        method: "POST",
-        body: JSON.stringify({
-          documentId: "unique()",
-          data: {
-            teamId: team.$id,
-            eventId,
-            userId: leaderId,
-            name: leaderName,
-            email: leaderEmail,
-            role: "leader",
-            status: "accepted",
-            joinedAt: new Date().toISOString(),
-          },
-        }),
+        teamId: team.$id,
+        eventId,
+        userId: leaderId,
+        name: leaderName,
+        email: leaderEmail,
+        role: "leader",
+        status: "accepted",
+        joinedAt: new Date().toISOString(),
       }
     );
 

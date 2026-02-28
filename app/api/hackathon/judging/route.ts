@@ -2,11 +2,16 @@
 // Manages judges, criteria, and scores for hackathon events
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth, verifyAuth } from "@/lib/apiAuth";
-import { adminFetch } from "@/lib/adminApi";
-import { DATABASE_ID } from "@/lib/types/appwrite";
+import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
 
 function generateInviteCode() {
   return Math.random().toString(36).substring(2, 10).toUpperCase();
+}
+
+function getCollectionId(type: string): string {
+  if (type === "criteria") return COLLECTIONS.JUDGING_CRITERIA;
+  if (type === "scores") return COLLECTIONS.JUDGE_SCORES;
+  return COLLECTIONS.JUDGES;
 }
 
 // GET /api/hackathon/judging?eventId=xxx&type=judges|criteria|scores
@@ -19,20 +24,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "eventId required" }, { status: 400 });
     }
 
-    let collectionId = "judges";
-    if (type === "criteria") collectionId = "judging_criteria";
-    if (type === "scores") collectionId = "judge_scores";
+    const collectionId = getCollectionId(type);
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${collectionId}/documents`
+    const result = await adminDb.listDocuments(
+      DATABASE_ID,
+      collectionId,
+      [Query.equal("eventId", eventId)]
     );
 
-    if (!res.ok) {
-      return NextResponse.json({ items: [] });
-    }
-
-    const data = await res.json();
-    const items = (data.documents || []).filter((d: any) => d.eventId === eventId);
+    const items = result.documents;
 
     // Sort by order for judges/criteria
     if (type !== "scores") {
@@ -75,39 +75,29 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "eventId, name, email required" }, { status: 400 });
       }
 
-      const res = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/judges/documents`,
+      const doc = await adminDb.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.JUDGES,
+        ID.unique(),
         {
-          method: "POST",
-          body: JSON.stringify({
-            documentId: "unique()",
-            data: {
-              eventId,
-              userId: null,
-              name,
-              email,
-              avatar: null,
-              bio: bio || null,
-              expertise: expertise || [],
-              organization: organization || null,
-              designation: designation || null,
-              linkedin: linkedin || null,
-              status: "invited",
-              inviteCode: generateInviteCode(),
-              assignedTeams: assignedTeams || [],
-              isLead: isLead || false,
-              order: body.order || 0,
-            },
-          }),
+          eventId,
+          userId: null,
+          name,
+          email,
+          avatar: null,
+          bio: bio || null,
+          expertise: expertise || [],
+          organization: organization || null,
+          designation: designation || null,
+          linkedin: linkedin || null,
+          status: "invited",
+          inviteCode: generateInviteCode(),
+          assignedTeams: assignedTeams || [],
+          isLead: isLead || false,
+          order: body.order || 0,
         }
       );
 
-      if (!res.ok) {
-        const err = await res.text();
-        return NextResponse.json({ error: err }, { status: res.status });
-      }
-
-      const doc = await res.json();
       return NextResponse.json({ judge: doc }, { status: 201 });
     }
 
@@ -118,30 +108,20 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "eventId, name, maxScore, weight required" }, { status: 400 });
       }
 
-      const res = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/judging_criteria/documents`,
+      const doc = await adminDb.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.JUDGING_CRITERIA,
+        ID.unique(),
         {
-          method: "POST",
-          body: JSON.stringify({
-            documentId: "unique()",
-            data: {
-              eventId,
-              name,
-              description: description || null,
-              maxScore,
-              weight,
-              order: order || 0,
-            },
-          }),
+          eventId,
+          name,
+          description: description || null,
+          maxScore,
+          weight,
+          order: order || 0,
         }
       );
 
-      if (!res.ok) {
-        const err = await res.text();
-        return NextResponse.json({ error: err }, { status: res.status });
-      }
-
-      const doc = await res.json();
       return NextResponse.json({ criteria: doc }, { status: 201 });
     }
 
@@ -158,62 +138,47 @@ export async function POST(request: NextRequest) {
       }
 
       // Check for existing score (upsert)
-      const existRes = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/judge_scores/documents`
+      const existResult = await adminDb.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.JUDGE_SCORES,
+        [
+          Query.equal("judgeId", judgeId),
+          Query.equal("submissionId", submissionId),
+          Query.equal("criteriaId", criteriaId),
+        ]
       );
-      if (existRes.ok) {
-        const existData = await existRes.json();
-        const existing = (existData.documents || []).find(
-          (d: any) =>
-            d.judgeId === judgeId && d.submissionId === submissionId && d.criteriaId === criteriaId
+
+      if (existResult.documents.length > 0) {
+        // Update existing score
+        const existing = existResult.documents[0];
+        const updatedDoc = await adminDb.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.JUDGE_SCORES,
+          existing.$id,
+          { score, comment: comment || null, scoredAt: new Date().toISOString() }
         );
-        if (existing) {
-          // Update existing score
-          const updateRes = await adminFetch(
-            `/databases/${DATABASE_ID}/collections/judge_scores/documents/${existing.$id}`,
-            {
-              method: "PATCH",
-              body: JSON.stringify({
-                data: { score, comment: comment || null, scoredAt: new Date().toISOString() },
-              }),
-            }
-          );
-          if (updateRes.ok) {
-            const doc = await updateRes.json();
-            return NextResponse.json({ score: doc });
-          }
-        }
+        return NextResponse.json({ score: updatedDoc });
       }
 
       // Create new score
-      const res = await adminFetch(
-        `/databases/${DATABASE_ID}/collections/judge_scores/documents`,
+      const doc = await adminDb.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.JUDGE_SCORES,
+        ID.unique(),
         {
-          method: "POST",
-          body: JSON.stringify({
-            documentId: "unique()",
-            data: {
-              eventId,
-              judgeId,
-              judgeName: judgeName || "",
-              submissionId,
-              teamId: teamId || null,
-              criteriaId,
-              criteriaName: criteriaName || "",
-              score,
-              comment: comment || null,
-              scoredAt: new Date().toISOString(),
-            },
-          }),
+          eventId,
+          judgeId,
+          judgeName: judgeName || "",
+          submissionId,
+          teamId: teamId || null,
+          criteriaId,
+          criteriaName: criteriaName || "",
+          score,
+          comment: comment || null,
+          scoredAt: new Date().toISOString(),
         }
       );
 
-      if (!res.ok) {
-        const err = await res.text();
-        return NextResponse.json({ error: err }, { status: res.status });
-      }
-
-      const doc = await res.json();
       return NextResponse.json({ score: doc }, { status: 201 });
     }
 
@@ -238,60 +203,44 @@ export async function POST(request: NextRequest) {
 
         try {
           // Check for existing score (upsert)
-          const existRes = await adminFetch(
-            `/databases/${DATABASE_ID}/collections/judge_scores/documents`
+          const existResult = await adminDb.listDocuments(
+            DATABASE_ID,
+            COLLECTIONS.JUDGE_SCORES,
+            [
+              Query.equal("judgeId", judgeId),
+              Query.equal("submissionId", submissionId),
+              Query.equal("criteriaId", criteriaId),
+            ]
           );
-          let upserted = false;
-          if (existRes.ok) {
-            const existData = await existRes.json();
-            const existing = (existData.documents || []).find(
-              (d: any) =>
-                d.judgeId === judgeId && d.submissionId === submissionId && d.criteriaId === criteriaId
-            );
-            if (existing) {
-              const updateRes = await adminFetch(
-                `/databases/${DATABASE_ID}/collections/judge_scores/documents/${existing.$id}`,
-                {
-                  method: "PATCH",
-                  body: JSON.stringify({
-                    data: { score, comment: comment || null, scoredAt: new Date().toISOString() },
-                  }),
-                }
-              );
-              if (updateRes.ok) {
-                results.push({ score: await updateRes.json() });
-                upserted = true;
-              }
-            }
-          }
 
-          if (!upserted) {
-            const createRes = await adminFetch(
-              `/databases/${DATABASE_ID}/collections/judge_scores/documents`,
+          if (existResult.documents.length > 0) {
+            const existing = existResult.documents[0];
+            const updatedDoc = await adminDb.updateDocument(
+              DATABASE_ID,
+              COLLECTIONS.JUDGE_SCORES,
+              existing.$id,
+              { score, comment: comment || null, scoredAt: new Date().toISOString() }
+            );
+            results.push({ score: updatedDoc });
+          } else {
+            const createdDoc = await adminDb.createDocument(
+              DATABASE_ID,
+              COLLECTIONS.JUDGE_SCORES,
+              ID.unique(),
               {
-                method: "POST",
-                body: JSON.stringify({
-                  documentId: "unique()",
-                  data: {
-                    eventId: sEventId,
-                    judgeId,
-                    judgeName: judgeName || "",
-                    submissionId,
-                    teamId: teamId || null,
-                    criteriaId,
-                    criteriaName: criteriaName || "",
-                    score,
-                    comment: comment || null,
-                    scoredAt: new Date().toISOString(),
-                  },
-                }),
+                eventId: sEventId,
+                judgeId,
+                judgeName: judgeName || "",
+                submissionId,
+                teamId: teamId || null,
+                criteriaId,
+                criteriaName: criteriaName || "",
+                score,
+                comment: comment || null,
+                scoredAt: new Date().toISOString(),
               }
             );
-            if (createRes.ok) {
-              results.push({ score: await createRes.json() });
-            } else {
-              results.push({ error: await createRes.text() });
-            }
+            results.push({ score: createdDoc });
           }
         } catch (err: any) {
           results.push({ error: err.message });
@@ -322,23 +271,15 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "type and id required" }, { status: 400 });
     }
 
-    let collectionId = "judges";
-    if (type === "criteria") collectionId = "judging_criteria";
+    const collectionId = getCollectionId(type);
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${collectionId}/documents/${id}`,
-      {
-        method: "PATCH",
-        body: JSON.stringify({ data: updateData }),
-      }
+    const doc = await adminDb.updateDocument(
+      DATABASE_ID,
+      collectionId,
+      id,
+      updateData
     );
 
-    if (!res.ok) {
-      const err = await res.text();
-      return NextResponse.json({ error: err }, { status: res.status });
-    }
-
-    const doc = await res.json();
     return NextResponse.json({ item: doc });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -359,18 +300,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "type and id required" }, { status: 400 });
     }
 
-    let collectionId = "judges";
-    if (type === "criteria") collectionId = "judging_criteria";
+    const collectionId = getCollectionId(type);
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${collectionId}/documents/${id}`,
-      { method: "DELETE" }
-    );
-
-    if (!res.ok) {
-      const err = await res.text();
-      return NextResponse.json({ error: err }, { status: res.status });
-    }
+    await adminDb.deleteDocument(DATABASE_ID, collectionId, id);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

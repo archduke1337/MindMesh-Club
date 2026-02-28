@@ -2,11 +2,7 @@
 // Project submission API for hackathon events
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
-import { adminFetch } from "@/lib/adminApi";
-import { DATABASE_ID, COLLECTION_IDS } from "@/lib/types/appwrite";
-
-const SUBMISSIONS_COLLECTION = COLLECTION_IDS.SUBMISSIONS;
-const TEAMS_COLLECTION = COLLECTION_IDS.HACKATHON_TEAMS;
+import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
 
 // GET /api/hackathon/submissions?eventId=xxx or ?teamId=xxx
 export async function GET(request: NextRequest) {
@@ -15,24 +11,17 @@ export async function GET(request: NextRequest) {
     const eventId = searchParams.get("eventId");
     const teamId = searchParams.get("teamId");
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${SUBMISSIONS_COLLECTION}/documents`
+    const queries: string[] = [];
+    if (eventId) queries.push(Query.equal("eventId", eventId));
+    if (teamId) queries.push(Query.equal("teamId", teamId));
+
+    const data = await adminDb.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.SUBMISSIONS,
+      queries
     );
-    if (!res.ok) {
-      return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
-    }
 
-    const data = await res.json();
-    let submissions = data.documents || [];
-
-    if (eventId) {
-      submissions = submissions.filter((s: any) => s.eventId === eventId);
-    }
-    if (teamId) {
-      submissions = submissions.filter((s: any) => s.teamId === teamId);
-    }
-
-    return NextResponse.json({ submissions });
+    return NextResponse.json({ submissions: data.documents });
   } catch (error: any) {
     console.error("[API] Submissions GET error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -74,16 +63,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for existing submission from this team/user
-    const existingRes = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${SUBMISSIONS_COLLECTION}/documents`
-    );
-    const existingData = await existingRes.json();
-    
     if (teamId) {
-      const existing = existingData.documents?.find(
-        (s: any) => s.eventId === eventId && s.teamId === teamId
+      const existing = await adminDb.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.SUBMISSIONS,
+        [Query.equal("eventId", eventId), Query.equal("teamId", teamId)]
       );
-      if (existing) {
+      if (existing.total > 0) {
         return NextResponse.json(
           { error: "Your team has already submitted a project for this event" },
           { status: 409 }
@@ -115,35 +101,20 @@ export async function POST(request: NextRequest) {
       totalScore: 0,
     };
 
-    const createRes = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${SUBMISSIONS_COLLECTION}/documents`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          documentId: "unique()",
-          data: submissionData,
-        }),
-      }
+    const submission = await adminDb.createDocument(
+      DATABASE_ID,
+      COLLECTIONS.SUBMISSIONS,
+      ID.unique(),
+      submissionData
     );
-
-    if (!createRes.ok) {
-      const errText = await createRes.text();
-      console.error("[API] Create submission error:", errText);
-      return NextResponse.json({ error: errText }, { status: createRes.status });
-    }
-
-    const submission = await createRes.json();
 
     // Update team status to "submitted" if teamId provided
     if (teamId) {
-      await adminFetch(
-        `/databases/${DATABASE_ID}/collections/${TEAMS_COLLECTION}/documents/${teamId}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify({
-            data: { submissionId: submission.$id, status: "submitted" },
-          }),
-        }
+      await adminDb.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.HACKATHON_TEAMS,
+        teamId,
+        { submissionId: submission.$id, status: "submitted" }
       );
     }
 
@@ -175,20 +146,13 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${SUBMISSIONS_COLLECTION}/documents/${submissionId}`,
-      {
-        method: "PATCH",
-        body: JSON.stringify({ data: updateData }),
-      }
+    const submission = await adminDb.updateDocument(
+      DATABASE_ID,
+      COLLECTIONS.SUBMISSIONS,
+      submissionId,
+      updateData
     );
 
-    if (!res.ok) {
-      const errText = await res.text();
-      return NextResponse.json({ error: errText }, { status: res.status });
-    }
-
-    const submission = await res.json();
     return NextResponse.json({ success: true, submission });
   } catch (error: any) {
     console.error("[API] Submissions PATCH error:", error);
