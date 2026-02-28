@@ -13,7 +13,7 @@ const updateBlogSchema = z.object({
   category: z.string().min(1).optional(),
   tags: z.union([z.array(z.string()), z.string()]).optional(),
   // Admin-only fields (will be filtered if not admin)
-  status: z.enum(["draft", "pending", "published", "rejected"]).optional(),
+  status: z.enum(["draft", "pending", "approved", "rejected"]).optional(),
   views: z.number().int().min(0).optional(),
   likes: z.number().int().min(0).optional(),
   featured: z.boolean().optional(),
