@@ -1,30 +1,16 @@
 // app/api/team/route.ts
 // Public API to get active club/team members (no auth required)
 import { NextResponse } from "next/server";
+import { adminFetch } from "@/lib/adminApi";
+import { DATABASE_ID, COLLECTION_IDS } from "@/lib/types/appwrite";
 
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const COLLECTION_ID = "team";
-
-function getHeaders() {
-  return {
-    "Content-Type": "application/json",
-    "X-Appwrite-Project": process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!,
-    "X-Appwrite-Key": process.env.APPWRITE_API_KEY!,
-  };
-}
-
-function getEndpoint() {
-  return process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
-}
+const COLLECTION_ID = COLLECTION_IDS.TEAM;
 
 export async function GET() {
   try {
-    const res = await fetch(
-      `${getEndpoint()}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?queries[]=${encodeURIComponent('{"method":"limit","values":[100]}')}`,
-      {
-        headers: getHeaders(),
-        cache: "no-store",
-      }
+    const res = await adminFetch(
+      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?queries[]=${encodeURIComponent('{"method":"limit","values":[100]}')}`,
+      { cache: "no-store" }
     );
 
     if (!res.ok) {

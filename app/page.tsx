@@ -1,7 +1,8 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
 import FeaturedSection from '@/components/FeaturedSection';
 import GuitarStringDivider from '@/components/GuitarStringDivider';
 
@@ -15,19 +16,23 @@ const ThreeScene = dynamic(() => import('@/components/ThreeScene'), {
   ),
 });
 
+// ── Framer Motion variants ──────────────────────────────
+const fadeUp = {
+  hidden: { opacity: 0, y: 32 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" } },
+};
+
+const fadeRight = {
+  hidden: { opacity: 0, x: 32 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut", delay: 0.3 } },
+};
+
+const staggerChildren = {
+  visible: { transition: { staggerChildren: 0.12 } },
+};
+
 export default function Home() {
   const router = useRouter();
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // Simple CSS animation instead of GSAP
-  useEffect(() => {
-    // Add a small delay to ensure DOM is ready, then trigger animation
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
     <div className="w-full">
@@ -38,11 +43,17 @@ export default function Home() {
           <div className="absolute bottom-1/4 right-1/4 w-64 sm:w-80 md:w-96 h-64 sm:h-80 md:h-96 bg-pink-500/20 rounded-full blur-3xl animate-float-delayed" />
         </div>
 
-        <div className="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12 items-center relative z-10">
-          {/* Hero Content - Simple fade in with CSS */}
-          <div className={`space-y-4 sm:space-y-5 md:space-y-6 text-center lg:text-left transition-all duration-700 ease-out ${
-            isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+        <motion.div
+          className="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12 items-center relative z-10"
+          initial="hidden"
+          animate="visible"
+          variants={staggerChildren}
+        >
+          {/* Hero Content */}
+          <motion.div
+            className="space-y-4 sm:space-y-5 md:space-y-6 text-center lg:text-left"
+            variants={fadeUp}
+          >
             <div className="space-y-3 sm:space-y-4 md:space-y-5">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold">
                 <span className="bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 bg-clip-text text-transparent">
@@ -59,31 +70,39 @@ export default function Home() {
               Connect, collaborate, and bring your ideas to life.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start pt-2 sm:pt-3 md:pt-4">
-              <button 
+            <motion.div
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start pt-2 sm:pt-3 md:pt-4"
+              variants={fadeUp}
+            >
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/register')}
-                className="px-6 sm:px-7 md:px-8 py-3 sm:py-3.5 md:py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-sm sm:text-base md:text-lg active:scale-95"
+                className="px-6 sm:px-7 md:px-8 py-3 sm:py-3.5 md:py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-shadow duration-200 text-sm sm:text-base md:text-lg"
               >
                 Join the Club
-              </button>
-              <button 
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/about')}
-                className="px-6 sm:px-7 md:px-8 py-3 sm:py-3.5 md:py-4 border-2 border-purple-600 text-purple-600 dark:text-purple-400 dark:border-purple-400 font-semibold rounded-full hover:bg-purple-50 dark:hover:bg-purple-950 transition-all duration-200 text-sm sm:text-base md:text-lg active:scale-95"
+                className="px-6 sm:px-7 md:px-8 py-3 sm:py-3.5 md:py-4 border-2 border-purple-600 text-purple-600 dark:text-purple-400 dark:border-purple-400 font-semibold rounded-full hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors duration-200 text-sm sm:text-base md:text-lg"
               >
                 Explore More
-              </button>
-            </div>
-          </div>
+              </motion.button>
+            </motion.div>
+          </motion.div>
 
-          {/* 3D Model Canvas - Fade in separately */}
-          <div className={`flex justify-center lg:justify-end transition-all duration-700 ease-out delay-300 ${
-            isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
-          }`}>
+          {/* 3D Model Canvas */}
+          <motion.div
+            className="flex justify-center lg:justify-end"
+            variants={fadeRight}
+          >
             <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl">
               <ThreeScene />
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
       
       <GuitarStringDivider />

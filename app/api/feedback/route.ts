@@ -1,28 +1,10 @@
 // app/api/feedback/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
+import { adminFetch } from "@/lib/adminApi";
+import { DATABASE_ID, COLLECTION_IDS } from "@/lib/types/appwrite";
 
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const COLLECTION_ID = "feedback";
-
-function getHeaders() {
-  return {
-    "Content-Type": "application/json",
-    "X-Appwrite-Project": process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!,
-    "X-Appwrite-Key": process.env.APPWRITE_API_KEY!,
-  };
-}
-
-function getEndpoint() {
-  return process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
-}
-
-async function adminFetch(path: string, options: RequestInit = {}) {
-  return fetch(`${getEndpoint()}${path}`, {
-    ...options,
-    headers: { ...getHeaders(), ...(options.headers as Record<string, string> || {}) },
-  });
-}
+const COLLECTION_ID = COLLECTION_IDS.FEEDBACK;
 
 // GET /api/feedback?eventId=xxx
 export async function GET(request: NextRequest) {

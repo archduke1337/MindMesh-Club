@@ -1,10 +1,13 @@
 // lib/adminConfig.ts
 /**
- * Centralized admin configuration
- * Used by both layout and AdminPageWrapper for consistent auth
- * 
- * NOTE: For client-side admin checks (UI display only), NEXT_PUBLIC_ADMIN_EMAILS is used.
- * For server-side auth, always verify via session cookie + Appwrite account API.
+ * Centralized admin configuration.
+ *
+ * PREFERRED: Assign the "admin" label to users in Appwrite Console.
+ * This file provides a FALLBACK email-based check for backward compatibility.
+ *
+ * Client-side admin checks (UI) use AuthContext.isAdmin which checks
+ * both user.labels.includes("admin") AND this email list.
+ * Server-side admin checks are handled by middleware.ts + verifyAdminAuth.
  */
 
 // Server-side admin emails (not exposed to client)

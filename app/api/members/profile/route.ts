@@ -1,22 +1,8 @@
-// app/api/members/profile/route.ts
+﻿// app/api/members/profile/route.ts
 // Server-side API for member profile create/read/update
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
-
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const COLLECTION_ID = "member_profiles";
-
-function getAdminHeaders() {
-  return {
-    "Content-Type": "application/json",
-    "X-Appwrite-Project": process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!,
-    "X-Appwrite-Key": process.env.APPWRITE_API_KEY!,
-  };
-}
-
-function getEndpoint() {
-  return process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
-}
+import { adminDb, adminUsers, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite/server";
 
 // GET /api/members/profile?userId=xxx
 export async function GET(request: NextRequest) {
@@ -29,27 +15,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ profile: null });
     }
 
-    const endpoint = getEndpoint();
-
-    // Fetch all profiles and filter (Appwrite REST query syntax can be finicky)
-    const res = await fetch(
-      `${endpoint}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`,
-      {
-        headers: getAdminHeaders(),
-        cache: "no-store",
-      }
+    const { documents } = await adminDb.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.MEMBER_PROFILES,
+      [Query.equal("userId", userId), Query.limit(1)]
     );
 
-    if (!res.ok) {
-      return NextResponse.json({ profile: null });
-    }
-
-    const data = await res.json();
-    const profile = data.documents?.find(
-      (doc: any) => doc.userId === userId
-    );
-
-    return NextResponse.json({ profile: profile || null });
+    return NextResponse.json({ profile: documents[0] || null });
   } catch (error: any) {
     console.error("[API] Profile GET error:", error);
     return NextResponse.json({ profile: null });
@@ -74,88 +46,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const endpoint = getEndpoint();
-
     // Check for existing profile
-    const existRes = await fetch(
-      `${endpoint}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`,
-      { headers: getAdminHeaders(), cache: "no-store" }
+    const { documents: existing } = await adminDb.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.MEMBER_PROFILES,
+      [Query.equal("userId", userId), Query.limit(1)]
     );
-    if (existRes.ok) {
-      const existData = await existRes.json();
-      const existing = existData.documents?.find((d: any) => d.userId === userId);
-      if (existing) {
-        // Update instead of duplicate
-        const updateRes = await fetch(
-          `${endpoint}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents/${existing.$id}`,
-          {
-            method: "PATCH",
-            headers: getAdminHeaders(),
-            body: JSON.stringify({
-              data: {
-                name, email, phone, whatsapp, branch, year, college, program,
-                rollNumber: rollNumber || null,
-                skills: skills || [],
-                interests: interests || [],
-                bio: bio || null,
-                linkedin: linkedin || null,
-                github: github || null,
-                twitter: twitter || null,
-                portfolio: portfolio || null,
-              },
-            }),
-          }
-        );
-        if (updateRes.ok) {
-          const profile = await updateRes.json();
-          return NextResponse.json({ success: true, profile });
+
+    if (existing.length > 0) {
+      // Update instead of duplicate
+      const profile = await adminDb.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.MEMBER_PROFILES,
+        existing[0].$id,
+        {
+          name, email, phone, whatsapp, branch, year, college, program,
+          rollNumber: rollNumber || null,
+          skills: skills || [],
+          interests: interests || [],
+          bio: bio || null,
+          linkedin: linkedin || null,
+          github: github || null,
+          twitter: twitter || null,
+          portfolio: portfolio || null,
         }
-      }
+      );
+      return NextResponse.json({ success: true, profile });
     }
 
     // Create new profile
-    const profileData = {
-      userId, name, email, phone, whatsapp, branch, year, college, program,
-      rollNumber: rollNumber || null,
-      skills: skills || [],
-      interests: interests || [],
-      bio: bio || null,
-      avatar: null,
-      linkedin: linkedin || null,
-      github: github || null,
-      twitter: twitter || null,
-      portfolio: portfolio || null,
-      memberStatus: "pending",
-      eventsAttended: 0,
-      badges: [],
-    };
-
-    const createRes = await fetch(
-      `${endpoint}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents`,
+    const profile = await adminDb.createDocument(
+      DATABASE_ID,
+      COLLECTIONS.MEMBER_PROFILES,
+      ID.unique(),
       {
-        method: "POST",
-        headers: getAdminHeaders(),
-        body: JSON.stringify({ documentId: "unique()", data: profileData }),
+        userId, name, email, phone, whatsapp, branch, year, college, program,
+        rollNumber: rollNumber || null,
+        skills: skills || [],
+        interests: interests || [],
+        bio: bio || null,
+        avatar: null,
+        linkedin: linkedin || null,
+        github: github || null,
+        twitter: twitter || null,
+        portfolio: portfolio || null,
+        memberStatus: "pending",
+        eventsAttended: 0,
+        badges: [],
       }
     );
 
-    if (!createRes.ok) {
-      const errText = await createRes.text();
-      if (createRes.status === 409) {
-        return NextResponse.json({ error: "Profile already exists" }, { status: 409 });
-      }
-      return NextResponse.json({ error: errText }, { status: createRes.status });
-    }
-
-    const profile = await createRes.json();
-
     // Update user prefs to mark profile as completed
     try {
-      await fetch(`${endpoint}/users/${userId}/prefs`, {
-        method: "PATCH",
-        headers: getAdminHeaders(),
-        body: JSON.stringify({ profileCompleted: true }),
-      });
+      await adminUsers.updatePrefs(userId, { profileCompleted: true });
     } catch {
       // Non-critical
     }
@@ -163,6 +106,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, profile }, { status: 201 });
   } catch (error: any) {
     console.error("[API] Profile POST error:", error);
+    if (error.code === 409) {
+      return NextResponse.json({ error: "Profile already exists" }, { status: 409 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -192,25 +138,16 @@ export async function PATCH(request: NextRequest) {
       if (key in updateData) safeData[key] = updateData[key];
     }
 
-    const endpoint = getEndpoint();
-    const updateRes = await fetch(
-      `${endpoint}/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents/${profileId}`,
-      {
-        method: "PATCH",
-        headers: getAdminHeaders(),
-        body: JSON.stringify({ data: safeData }),
-      }
+    const profile = await adminDb.updateDocument(
+      DATABASE_ID,
+      COLLECTIONS.MEMBER_PROFILES,
+      profileId,
+      safeData
     );
 
-    if (!updateRes.ok) {
-      const errText = await updateRes.text();
-      return NextResponse.json({ error: errText }, { status: updateRes.status });
-    }
-
-    const profile = await updateRes.json();
     return NextResponse.json({ success: true, profile });
   } catch (error: any) {
     console.error("[API] Profile PATCH error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: error.code || 500 });
   }
 }

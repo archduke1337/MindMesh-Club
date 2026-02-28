@@ -2,29 +2,11 @@
 // Project submission API for hackathon events
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
+import { adminFetch } from "@/lib/adminApi";
+import { DATABASE_ID, COLLECTION_IDS } from "@/lib/types/appwrite";
 
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const SUBMISSIONS_COLLECTION = "submissions";
-const TEAMS_COLLECTION = "hackathon_teams";
-
-function getHeaders() {
-  return {
-    "Content-Type": "application/json",
-    "X-Appwrite-Project": process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!,
-    "X-Appwrite-Key": process.env.APPWRITE_API_KEY!,
-  };
-}
-
-function getEndpoint() {
-  return process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
-}
-
-async function adminFetch(path: string, options: RequestInit = {}) {
-  return fetch(`${getEndpoint()}${path}`, {
-    ...options,
-    headers: { ...getHeaders(), ...(options.headers as Record<string, string> || {}) },
-  });
-}
+const SUBMISSIONS_COLLECTION = COLLECTION_IDS.SUBMISSIONS;
+const TEAMS_COLLECTION = COLLECTION_IDS.HACKATHON_TEAMS;
 
 // GET /api/hackathon/submissions?eventId=xxx or ?teamId=xxx
 export async function GET(request: NextRequest) {

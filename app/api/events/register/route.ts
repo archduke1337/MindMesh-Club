@@ -1,14 +1,13 @@
 // app/api/events/register/route.ts
 // Server-side endpoint for atomic event registration to prevent race conditions
 import { NextRequest, NextResponse } from 'next/server';
-import { ID } from 'appwrite';
 import { ZodError } from 'zod';
 import { sendRegistrationEmail } from '@/lib/emailService';
-import { DATABASE_ID, REGISTRATIONS_COLLECTION_ID, EVENTS_COLLECTION_ID } from '@/lib/database';
 import { getErrorMessage } from '@/lib/errorHandler';
 import { registrationSchema } from '@/lib/validation/schemas';
 import { handleZodError } from '@/lib/utils/errorHandling';
 import { verifyAuth } from '@/lib/apiAuth';
+import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from '@/lib/appwrite/server';
 
 interface RegisterRequestBody {
   eventId: string;
@@ -70,51 +69,29 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
 
     console.log(`[API] Registering user ${userId} for event ${eventId}`);
 
-    // Use REST API with admin API key for server-side database operations
-    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
-    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!;
-    const apiKey = process.env.APPWRITE_API_KEY;
-
-    // Helper for admin REST API calls
-    const adminHeaders: Record<string, string> = {
-      "Content-Type": "application/json",
-      "X-Appwrite-Project": projectId,
-    };
-    if (apiKey) {
-      adminHeaders["X-Appwrite-Key"] = apiKey;
-    }
-
-    const adminFetch = async (path: string, options: RequestInit = {}) => {
-      const res = await fetch(`${endpoint}${path}`, {
-        ...options,
-        headers: { ...adminHeaders, ...(options.headers || {}) },
-      });
-      return res;
-    };
-
-    const databaseId = DATABASE_ID;
-    const registrationsCollectionId = REGISTRATIONS_COLLECTION_ID;
-
     // Check if already registered
     try {
-      const listRes = await adminFetch(
-        `/databases/${databaseId}/collections/${registrationsCollectionId}/documents?queries[]=${encodeURIComponent(`equal("eventId", ["${eventId}"])`)}&queries[]=${encodeURIComponent(`equal("userId", ["${userId}"])`)}&queries[]=${encodeURIComponent('limit(1)')}`
+      const existingRegistrations = await adminDb.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.REGISTRATIONS,
+        [
+          Query.equal("eventId", eventId),
+          Query.equal("userId", userId),
+          Query.limit(1),
+        ]
       );
 
-      if (listRes.ok) {
-        const existingRegistrations = await listRes.json();
-        if (existingRegistrations.documents?.length > 0) {
-          const existingRegistration = existingRegistrations.documents[0];
-          console.log(`[API] Found existing registration: ${existingRegistration.$id}`);
-          return NextResponse.json(
-            {
-              success: true,
-              message: 'Already registered for this event',
-              ticketId: existingRegistration.$id,
-            },
-            { status: 200 }
-          );
-        }
+      if (existingRegistrations.documents.length > 0) {
+        const existingRegistration = existingRegistrations.documents[0];
+        console.log(`[API] Found existing registration: ${existingRegistration.$id}`);
+        return NextResponse.json(
+          {
+            success: true,
+            message: 'Already registered for this event',
+            ticketId: existingRegistration.$id,
+          },
+          { status: 200 }
+        );
       }
     } catch (listError) {
       console.error('[API] Error checking existing registrations:', listError);
@@ -123,16 +100,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
     // Get event to check capacity
     let event: any;
     try {
-      const eventRes = await adminFetch(
-        `/databases/${databaseId}/collections/${EVENTS_COLLECTION_ID}/documents/${eventId}`
+      event = await adminDb.getDocument(
+        DATABASE_ID,
+        COLLECTIONS.EVENTS,
+        eventId
       );
-      if (!eventRes.ok) {
-        return NextResponse.json(
-          { success: false, message: 'Event not found', error: 'The event does not exist' },
-          { status: 404 }
-        );
-      }
-      event = await eventRes.json();
     } catch (getError) {
       console.error('[API] Error fetching event:', getError);
       return NextResponse.json(
@@ -155,34 +127,19 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
       const eventTitle = event.title;
       const ticketQRData = `TICKET|${ticketDocId}|${userName}|${eventTitle}`;
 
-      const createRes = await adminFetch(
-        `/databases/${databaseId}/collections/${registrationsCollectionId}/documents`,
+      registration = await adminDb.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.REGISTRATIONS,
+        ticketDocId,
         {
-          method: "POST",
-          body: JSON.stringify({
-            documentId: ticketDocId,
-            data: {
-              eventId,
-              userId,
-              userName,
-              userEmail,
-              registeredAt: new Date().toISOString(),
-              ticketQRData,
-            },
-          }),
+          eventId,
+          userId,
+          userName,
+          userEmail,
+          registeredAt: new Date().toISOString(),
+          ticketQRData,
         }
       );
-
-      if (!createRes.ok) {
-        const errorText = await createRes.text();
-        console.error('[API] Error creating registration:', errorText);
-        return NextResponse.json(
-          { success: false, message: 'Failed to create registration', error: errorText },
-          { status: 500 }
-        );
-      }
-
-      registration = await createRes.json();
     } catch (createError) {
       console.error('[API] Error creating registration:', createError);
       return NextResponse.json(
@@ -201,19 +158,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<RegisterR
 
     // Update event registered count - re-read to minimize race condition window
     try {
-      const freshEventRes = await adminFetch(
-        `/databases/${databaseId}/collections/${EVENTS_COLLECTION_ID}/documents/${eventId}`
+      const freshEvent = await adminDb.getDocument(
+        DATABASE_ID,
+        COLLECTIONS.EVENTS,
+        eventId
       );
-      const freshEvent = freshEventRes.ok ? await freshEventRes.json() : event;
-      
-      await adminFetch(
-        `/databases/${databaseId}/collections/${EVENTS_COLLECTION_ID}/documents/${eventId}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify({
-            data: { registered: (freshEvent.registered || 0) + 1 },
-          }),
-        }
+
+      await adminDb.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.EVENTS,
+        eventId,
+        { registered: (freshEvent.registered || 0) + 1 }
       );
       console.log(`[API] Updated event registered count`);
     } catch (updateError) {

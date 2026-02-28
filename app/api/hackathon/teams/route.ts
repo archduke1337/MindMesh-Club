@@ -2,22 +2,11 @@
 // Server-side API for hackathon team operations
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/apiAuth";
+import { adminFetch } from "@/lib/adminApi";
+import { DATABASE_ID, COLLECTION_IDS } from "@/lib/types/appwrite";
 
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const TEAMS_COLLECTION = "hackathon_teams";
-const MEMBERS_COLLECTION = "team_members";
-
-function getEndpoint() {
-  return process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
-}
-
-function getHeaders() {
-  return {
-    "Content-Type": "application/json",
-    "X-Appwrite-Project": process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!,
-    "X-Appwrite-Key": process.env.APPWRITE_API_KEY!,
-  };
-}
+const TEAMS_COLLECTION = COLLECTION_IDS.HACKATHON_TEAMS;
+const MEMBERS_COLLECTION = COLLECTION_IDS.TEAM_MEMBERS;
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -28,13 +17,6 @@ function generateInviteCode(): string {
   return code;
 }
 
-async function adminFetch(path: string, options: RequestInit = {}) {
-  const endpoint = getEndpoint();
-  return fetch(`${endpoint}${path}`, {
-    ...options,
-    headers: { ...getHeaders(), ...(options.headers as Record<string, string> || {}) },
-  });
-}
 
 // GET /api/hackathon/teams?eventId=xxx
 // GET /api/hackathon/teams?inviteCode=xxx

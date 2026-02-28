@@ -1,25 +1,13 @@
 // app/api/resources/route.ts
 import { NextResponse } from "next/server";
-
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-
-function getHeaders() {
-  return {
-    "Content-Type": "application/json",
-    "X-Appwrite-Project": process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!,
-    "X-Appwrite-Key": process.env.APPWRITE_API_KEY!,
-  };
-}
-
-function getEndpoint() {
-  return process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
-}
+import { adminFetch } from "@/lib/adminApi";
+import { DATABASE_ID } from "@/lib/types/appwrite";
 
 export async function GET() {
   try {
-    const res = await fetch(
-      `${getEndpoint()}/databases/${DATABASE_ID}/collections/resources/documents`,
-      { headers: getHeaders(), cache: "no-store" }
+    const res = await adminFetch(
+      `/databases/${DATABASE_ID}/collections/resources/documents`,
+      { cache: "no-store" }
     );
     if (!res.ok) {
       return NextResponse.json({ resources: [] });

@@ -10,6 +10,10 @@ export { announcementService } from "./announcements.service";
 export { resourceService } from "./resources.service";
 export { feedbackService } from "./feedback.service";
 export { clubService } from "./club.service";
+export { projectService } from "./projects.service";
+export { galleryService } from "./gallery.service";
+export { teamService } from "./team.service";
+export { blogService, blogCategories } from "./blog.service";
 
 // Re-export types for convenience
 export type {

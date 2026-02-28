@@ -1,92 +1,13 @@
 // lib/blogs.ts
 import { ID, Query } from "appwrite";
 import { databases, storage } from "./appwrite";
-import { DATABASE_ID } from "./database";
+import { DATABASE_ID, COLLECTION_IDS, BUCKET_IDS } from "./types/appwrite";
+import { deleteDocumentAdmin, updateDocumentAdmin } from "./adminApi";
 
-// Re-export BLOGS_COLLECTION_ID from database.ts for consistency
-import { BLOGS_COLLECTION_ID } from "./database";
-export { BLOGS_COLLECTION_ID };
-export const BLOG_IMAGES_BUCKET_ID = process.env.NEXT_PUBLIC_BLOG_IMAGES_BUCKET_ID || "";
+// Re-export for backward compatibility
+export const BLOGS_COLLECTION_ID = COLLECTION_IDS.BLOG;
+export const BLOG_IMAGES_BUCKET_ID = BUCKET_IDS.BLOG_IMAGES;
 
-// Helper to delete documents using admin API
-const deleteDocumentAdmin = async (databaseId: string, collectionId: string, documentId: string) => {
-  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-  const apiKey = process.env.APPWRITE_API_KEY;
-
-  if (!endpoint || !projectId || !apiKey) {
-    console.warn("[Blog] Admin API not available for delete, using regular client");
-    return databases.deleteDocument(databaseId, collectionId, documentId);
-  }
-
-  const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents/${documentId}`;
-  
-  console.log("[Blog] Admin API delete - document:", documentId);
-  
-  const response = await fetch(url, {
-    method: "DELETE",
-    headers: {
-      "X-Appwrite-Key": apiKey,
-      "X-Appwrite-Project": projectId,
-    },
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[Blog] Admin API delete error - Status:", response.status, "Message:", errorText);
-    
-    // If it fails, try with regular client as fallback
-    console.warn("[Blog] Admin API delete failed, falling back to regular client");
-    try {
-      return await databases.deleteDocument(databaseId, collectionId, documentId);
-    } catch (fallbackError) {
-      throw new Error(`Admin API: ${errorText}`);
-    }
-  }
-  
-  return true;
-};
-
-// Helper to update documents using admin API
-const updateDocumentAdmin = async (databaseId: string, collectionId: string, documentId: string, data: any) => {
-  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-  const apiKey = process.env.APPWRITE_API_KEY;
-
-  if (!endpoint || !projectId || !apiKey) {
-    console.warn("[Blog] Admin API not available, using regular client");
-    return databases.updateDocument(databaseId, collectionId, documentId, data);
-  }
-
-  const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents/${documentId}`;
-  
-  console.log("[Blog] Admin API update - document:", documentId);
-  
-  const response = await fetch(url, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Appwrite-Key": apiKey,
-      "X-Appwrite-Project": projectId,
-    },
-    body: JSON.stringify(data),
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[Blog] Admin API error - Status:", response.status, "Message:", errorText);
-    
-    // If it fails, try with regular client as fallback
-    console.warn("[Blog] Admin API failed, falling back to regular client");
-    try {
-      return await databases.updateDocument(databaseId, collectionId, documentId, data);
-    } catch (fallbackError) {
-      throw new Error(`Admin API: ${errorText}`);
-    }
-  }
-  
-  return response.json();
-};
 
 // Blog Interface
 export interface Blog {

@@ -1,8 +1,13 @@
 // lib/adminAuth.ts
 /**
- * Admin Authentication and Authorization utilities
- * NOTE: The main admin auth uses email-based checks from lib/adminConfig.ts
- * This file provides role-based checks as a supplement for future role-based RBAC
+ * Admin Authentication and Authorization utilities.
+ *
+ * PRIMARY: Appwrite labels (user.labels includes "admin")
+ * FALLBACK: Email-based check from lib/adminConfig.ts
+ *
+ * To promote a user to admin, add the "admin" label in the Appwrite Console
+ * (Authentication → Users → select user → Labels → add "admin").
+ * No redeployment required.
  */
 
 import { Models } from "appwrite";
@@ -16,12 +21,15 @@ export interface AdminUser extends Models.User<Models.Preferences> {
 }
 
 /**
- * Check if user has admin access (uses email-based system)
- * This is the primary method used throughout the app
+ * Check if user has admin access.
+ * 1. Appwrite label "admin" (preferred — no redeploy needed)
+ * 2. Email in ADMIN_EMAILS / NEXT_PUBLIC_ADMIN_EMAILS env var (legacy fallback)
  */
 export function isUserAdmin(user: Models.User<Models.Preferences> | null): boolean {
   if (!user) return false;
-  // Use email-based admin check from adminConfig
+  // Primary: Appwrite label
+  if (user.labels?.includes("admin")) return true;
+  // Fallback: email list
   return isUserAdminByEmail(user.email);
 }
 

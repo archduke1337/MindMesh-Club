@@ -2,27 +2,8 @@
 // Manages judges, criteria, and scores for hackathon events
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth, verifyAuth } from "@/lib/apiAuth";
-
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-
-function getHeaders() {
-  return {
-    "Content-Type": "application/json",
-    "X-Appwrite-Project": process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!,
-    "X-Appwrite-Key": process.env.APPWRITE_API_KEY!,
-  };
-}
-
-function getEndpoint() {
-  return process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
-}
-
-async function adminFetch(path: string, options: RequestInit = {}) {
-  return fetch(`${getEndpoint()}${path}`, {
-    ...options,
-    headers: { ...getHeaders(), ...(options.headers as Record<string, string> || {}) },
-  });
-}
+import { adminFetch } from "@/lib/adminApi";
+import { DATABASE_ID } from "@/lib/types/appwrite";
 
 function generateInviteCode() {
   return Math.random().toString(36).substring(2, 10).toUpperCase();

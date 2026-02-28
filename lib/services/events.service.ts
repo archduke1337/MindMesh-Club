@@ -10,10 +10,12 @@ import {
   COLLECTION_IDS,
   BUCKET_IDS,
   type Event,
+  type Registration,
   type CreateEvent,
   type UpdateEvent,
   type EventType,
 } from "../types/appwrite";
+import { getErrorMessage } from "../errorHandler";
 
 export const eventService = {
   // ── QUERIES ──
@@ -124,5 +126,187 @@ export const eventService = {
     return storage
       .getFilePreview(BUCKET_IDS.EVENT_IMAGES, fileId, width, height)
       .toString();
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // Legacy aliases — backward compat with old database.ts API
+  // New code should use the shorter names above.
+  // ══════════════════════════════════════════════════════════
+
+  /** @deprecated Use `getAll()` */
+  async getAllEvents(queries: string[] = []): Promise<Event[]> {
+    return this.getAll(queries);
+  },
+
+  /** @deprecated Use `getUpcoming()` */
+  async getUpcomingEvents(): Promise<Event[]> {
+    const res = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTION_IDS.EVENTS,
+      [Query.orderAsc("date"), Query.limit(100)]
+    );
+    return res.documents as unknown as Event[];
+  },
+
+  /** @deprecated Use `getById()` */
+  async getEventById(eventId: string): Promise<Event> {
+    return this.getById(eventId);
+  },
+
+  /** @deprecated Use `create()` */
+  async createEvent(eventData: Omit<Event, "$id" | "$createdAt" | "$updatedAt" | "$permissions" | "$databaseId" | "$collectionId">): Promise<Event> {
+    const dataWithDefaults = { ...eventData, status: eventData.status || "upcoming" };
+    const { isRecurring, recurringPattern, parentEventId, ...payload } = dataWithDefaults as any;
+    const res = await databases.createDocument(DATABASE_ID, COLLECTION_IDS.EVENTS, ID.unique(), payload);
+    return res as unknown as Event;
+  },
+
+  /** @deprecated Use `update()` */
+  async updateEvent(eventId: string, eventData: Partial<Event>): Promise<Event> {
+    const data = { ...eventData, ...(eventData.status !== undefined ? { status: eventData.status } : {}) };
+    const { isRecurring, recurringPattern, parentEventId, ...payload } = data as any;
+    const res = await databases.updateDocument(DATABASE_ID, COLLECTION_IDS.EVENTS, eventId, payload);
+    return res as unknown as Event;
+  },
+
+  /** @deprecated Use `delete()` */
+  async deleteEvent(eventId: string): Promise<boolean> {
+    await this.delete(eventId);
+    return true;
+  },
+
+  /** @deprecated Use `uploadImage()` */
+  async uploadEventImage(file: File): Promise<string> {
+    if (!file || file.size === 0) throw new Error("Invalid file: file is empty or missing");
+    const res = await storage.createFile(BUCKET_IDS.EVENT_IMAGES, ID.unique(), file);
+    const fileUrl = storage.getFileView(BUCKET_IDS.EVENT_IMAGES, res.$id);
+    return String(fileUrl);
+  },
+
+  // ── REGISTRATION METHODS ──
+
+  async registerForEvent(eventId: string, userId: string, userName: string, userEmail: string) {
+    try {
+      const existing = await databases.listDocuments(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, [
+        Query.equal("eventId", eventId), Query.equal("userId", userId), Query.limit(1),
+      ]);
+      if (existing.documents.length > 0) throw new Error("Already registered for this event");
+
+      const event = await this.getById(eventId);
+      if (event.capacity && (event as any).registered >= event.capacity) throw new Error("Event is full");
+
+      const ticketId = ID.unique();
+      const ticketQRData = `TICKET|${ticketId}|${userName}|${event.title}`;
+      const registration = await databases.createDocument(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, ticketId, {
+        eventId, userId, userName, userEmail, registeredAt: new Date().toISOString(), ticketQRData,
+      });
+
+      try {
+        await this.updateEvent(eventId, { registered: ((event as any).registered || 0) + 1 } as any);
+      } catch { /* registration still valid */ }
+
+      return registration as unknown as Registration;
+    } catch (error) {
+      console.error("Error registering for event:", getErrorMessage(error));
+      throw error;
+    }
+  },
+
+  async unregisterFromEvent(eventId: string, userId: string) {
+    try {
+      const regs = await databases.listDocuments(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, [
+        Query.equal("eventId", eventId), Query.equal("userId", userId), Query.limit(1),
+      ]);
+      if (regs.documents.length === 0) throw new Error("Registration not found");
+      await databases.deleteDocument(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, regs.documents[0].$id);
+      const event = await this.getById(eventId);
+      await this.updateEvent(eventId, { registered: Math.max(0, ((event as any).registered || 1) - 1) } as any);
+      return true;
+    } catch (error) {
+      console.error("Error unregistering:", getErrorMessage(error));
+      throw error;
+    }
+  },
+
+  async getUserRegistrations(userId: string): Promise<Registration[]> {
+    const res = await databases.listDocuments(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, [
+      Query.equal("userId", userId), Query.orderDesc("registeredAt"),
+    ]);
+    return res.documents as unknown as Registration[];
+  },
+
+  async getEventRegistrations(eventId: string): Promise<Registration[]> {
+    try {
+      const res = await databases.listDocuments(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, [
+        Query.equal("eventId", eventId), Query.orderDesc("registeredAt"),
+      ]);
+      return res.documents as unknown as Registration[];
+    } catch { return []; }
+  },
+
+  async updateRegistration(registrationId: string, data: Partial<Registration>): Promise<Registration> {
+    const res = await databases.updateDocument(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, registrationId, data);
+    return res as unknown as Registration;
+  },
+
+  async updateRegistrationStatus(registrationId: string, status: string): Promise<Registration> {
+    const updateData: Record<string, any> = { status };
+    if (status === "checked_in") updateData.checkInTime = new Date().toISOString();
+    return this.updateRegistration(registrationId, updateData as Partial<Registration>);
+  },
+
+  async isUserRegistered(eventId: string, userId: string): Promise<boolean> {
+    try {
+      const res = await databases.listDocuments(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, [
+        Query.equal("eventId", eventId), Query.equal("userId", userId), Query.limit(1),
+      ]);
+      return res.documents.length > 0;
+    } catch { return false; }
+  },
+
+  buildTicketFromRegistration(registration: Registration, event: Event) {
+    return {
+      ticketId: registration.$id || "",
+      eventId: registration.eventId,
+      eventTitle: event.title,
+      userName: registration.userName,
+      userEmail: registration.userEmail,
+      date: event.date,
+      time: event.time,
+      venue: event.venue,
+      location: event.location,
+      registeredAt: registration.registeredAt,
+      price: event.price,
+      discountPrice: event.discountPrice,
+      image: event.image,
+      ticketQRData: registration.ticketQRData,
+    };
+  },
+
+  async getUserTickets(userId: string) {
+    const registrations = await this.getUserRegistrations(userId);
+    if (registrations.length === 0) return [];
+    return Promise.all(
+      registrations.map(async (reg) => {
+        try {
+          const event = await this.getById(reg.eventId);
+          return this.buildTicketFromRegistration(reg, event);
+        } catch {
+          return {
+            ticketId: reg.$id || "", eventId: reg.eventId,
+            eventTitle: `Event ${reg.eventId}`, userName: reg.userName,
+            userEmail: reg.userEmail, date: "", time: "", venue: "",
+            location: "", registeredAt: reg.registeredAt, price: 0,
+            discountPrice: null, image: "", ticketQRData: reg.ticketQRData,
+          };
+        }
+      })
+    );
+  },
+
+  async getTicketById(ticketId: string) {
+    const reg = await databases.getDocument(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, ticketId) as unknown as Registration;
+    const event = await this.getById(reg.eventId);
+    return this.buildTicketFromRegistration(reg, event);
   },
 };

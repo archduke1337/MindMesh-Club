@@ -1,4 +1,10 @@
 // lib/appwrite.ts
+// ──────────────────────────────────────────────────────
+// Backward-compatibility shim.
+// New code should import from:
+//   "@/lib/appwrite/client"  — browser / "use client"
+//   "@/lib/appwrite/server"  — API routes / server components
+// ──────────────────────────────────────────────────────
 import { Client, Account, Databases, Storage, ID, OAuthProvider } from "appwrite";
 
 const client = new Client()
@@ -9,204 +15,34 @@ export const account = new Account(client);
 export const storage = new Storage(client);
 export const databases = new Databases(client);
 
-// Server-side admin access via REST API with headers
+// ── Deprecated admin helpers — use @/lib/appwrite/server instead ──
+
+/**
+ * @deprecated Use `adminDb` from `@/lib/appwrite/server` instead.
+ * Kept for backward compat — returns a node-appwrite Databases instance.
+ */
 export const createAdminDatabases = () => {
-  // In server-side API routes, we'll make direct REST calls with API key header
-  // instead of using the SDK client
-  return {
-    createDocument: async (databaseId: string, collectionId: string, documentId: string, data: any) => {
-      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-      const apiKey = process.env.APPWRITE_API_KEY;
-
-      if (!endpoint || !projectId || !apiKey) {
-        throw new Error("Missing required environment variables: APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, or APPWRITE_API_KEY");
-      }
-
-      const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents`;
-      
-      console.log("Creating document at:", url);
-      console.log("With headers - X-Appwrite-Key:", apiKey ? "***" : "MISSING", "X-Appwrite-Project:", projectId);
-      
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Appwrite-Key": apiKey,
-          "X-Appwrite-Project": projectId,
-        },
-        body: JSON.stringify({
-          documentId,
-          data,
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Appwrite API Error - Status:", response.status, "Body:", errorText);
-        try {
-          const error = JSON.parse(errorText);
-          throw new Error(error.message || `HTTP ${response.status}: Failed to create document`);
-        } catch {
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-      }
-      
-      return response.json();
-    },
-
-    updateDocument: async (databaseId: string, collectionId: string, documentId: string, data: any) => {
-      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-      const apiKey = process.env.APPWRITE_API_KEY;
-
-      if (!endpoint || !projectId || !apiKey) {
-        throw new Error("Missing required environment variables: APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, or APPWRITE_API_KEY");
-      }
-
-      const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents/${documentId}`;
-      
-      console.log("[AdminAPI] Updating document at:", url.substring(0, 100) + "...");
-      
-      const response = await fetch(url, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Appwrite-Key": apiKey,
-          "X-Appwrite-Project": projectId,
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[AdminAPI] Appwrite API Error - Status:", response.status, "Body:", errorText);
-        try {
-          const error = JSON.parse(errorText);
-          throw new Error(error.message || `HTTP ${response.status}: Failed to update document`);
-        } catch {
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-      }
-      
-      return response.json();
-    },
-
-    deleteDocument: async (databaseId: string, collectionId: string, documentId: string) => {
-      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-      const apiKey = process.env.APPWRITE_API_KEY;
-
-      if (!endpoint || !projectId || !apiKey) {
-        throw new Error("Missing required environment variables: APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, or APPWRITE_API_KEY");
-      }
-
-      const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents/${documentId}`;
-
-      const response = await fetch(url, {
-        method: "DELETE",
-        headers: {
-          "X-Appwrite-Key": apiKey,
-          "X-Appwrite-Project": projectId,
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[AdminAPI] Delete error - Status:", response.status, "Body:", errorText);
-        try {
-          const error = JSON.parse(errorText);
-          throw new Error(error.message || `HTTP ${response.status}: Failed to delete document`);
-        } catch (e) {
-          if (e instanceof Error && e.message.startsWith('HTTP')) throw e;
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-      }
-
-      return true;
-    },
-
-    listDocuments: async (databaseId: string, collectionId: string, queries: string[] = []) => {
-      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-      const apiKey = process.env.APPWRITE_API_KEY;
-
-      if (!endpoint || !projectId || !apiKey) {
-        throw new Error("Missing required environment variables");
-      }
-
-      const params = new URLSearchParams();
-      queries.forEach(q => params.append('queries[]', q));
-      const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents?${params.toString()}`;
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "X-Appwrite-Key": apiKey,
-          "X-Appwrite-Project": projectId,
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-
-      return response.json();
-    },
-  } as any;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { adminDb } = require("@/lib/appwrite/server");
+  return adminDb;
 };
 
+/**
+ * @deprecated Use `adminStorage` from `@/lib/appwrite/server` instead.
+ * Kept for backward compat — returns a node-appwrite Storage instance.
+ */
 export const createAdminStorage = () => {
-  return {
-    createFile: async (bucketId: string, fileId: string, file: File) => {
-      const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-      const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-      const apiKey = process.env.APPWRITE_API_KEY;
-
-      if (!endpoint || !projectId || !apiKey) {
-        throw new Error("Missing required environment variables for admin storage access");
-      }
-
-      const formData = new FormData();
-      formData.append("fileId", fileId);
-      formData.append("file", file);
-      
-      const url = `${endpoint}/storage/buckets/${bucketId}/files`;
-
-      console.log("Uploading file to:", url);
-      
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "X-Appwrite-Key": apiKey,
-          "X-Appwrite-Project": projectId,
-        },
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Appwrite Storage Error - Status:", response.status, "Body:", errorText);
-        try {
-          const error = JSON.parse(errorText);
-          throw new Error(error.message || `HTTP ${response.status}: Failed to upload file`);
-        } catch {
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-      }
-      
-      return response.json();
-    },
-  } as any;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { adminStorage } = require("@/lib/appwrite/server");
+  return adminStorage;
 };
 
-// Export configuration
+// Export configuration (backward compat)
 export const APPWRITE_CONFIG = {
   endpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!,
   projectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!,
   databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
-  projectsCollectionId: "projects", // Make sure this matches your Appwrite collection ID
+  projectsCollectionId: "projects",
   eventsCollectionId: "events",
   registrationsCollectionId: "registrations",
   bucketId: process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!,
@@ -214,82 +50,5 @@ export const APPWRITE_CONFIG = {
 
 export { ID };
 
-// Auth service functions
-export const authService = {
-  // Create a new account
-  async createAccount(email: string, password: string, name: string) {
-    const userAccount = await account.create(ID.unique(), email, password, name);
-    if (userAccount) {
-      return this.login(email, password);
-    }
-    return userAccount;
-  },
-
-  // Login
-  async login(email: string, password: string) {
-    return await account.createEmailPasswordSession(email, password);
-  },
-
-  // Google OAuth Login
-  loginWithGoogle() {
-    const successUrl = typeof window !== 'undefined' 
-      ? `${window.location.origin}/auth/callback`
-      : '/auth/callback';
-    
-    const failureUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/login`
-      : '/login';
-
-    account.createOAuth2Token(
-      OAuthProvider.Google,
-      successUrl,
-      failureUrl
-    );
-  },
-
-  // GitHub OAuth Login
-  loginWithGitHub() {
-    const successUrl = typeof window !== 'undefined' 
-      ? `${window.location.origin}/auth/callback`
-      : '/auth/callback';
-    
-    const failureUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/login`
-      : '/login';
-
-    account.createOAuth2Token(
-      OAuthProvider.Github,
-      successUrl,
-      failureUrl
-    );
-  },
-
-  // Get current user
-  async getCurrentUser() {
-    try {
-      return await account.get();
-    } catch (error) {
-      return null;
-    }
-  },
-
-  // Logout
-  async logout() {
-    return await account.deleteSession("current");
-  },
-
-  // Phone verification (Appwrite SDK v22+: uses createPhoneToken + updatePhoneSession)
-  async createPhoneVerification(phone?: string) {
-    // createPhoneToken creates a token that sends an SMS verification code
-    // The phone param should be in E.164 format (e.g., +911234567890)
-    return await account.createPhoneToken(ID.unique(), phone || "");
-  },
-
-  async updatePhoneVerification(userId: string, secret: string) {
-    return await account.updatePhoneSession(userId, secret);
-  },
-
-  async updatePhone(phone: string, password: string) {
-    return await account.updatePhone(phone, password);
-  },
-};
+// Re-export authService from the new client module
+export { authService } from "@/lib/appwrite/client";
