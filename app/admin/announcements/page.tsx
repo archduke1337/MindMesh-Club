@@ -240,14 +240,14 @@ export default function AdminAnnouncementsPage() {
               <ModalHeader>Create Announcement</ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  <Input variant="bordered"
+                  <Input
                     label="Title"
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
                     isRequired
                     variant="bordered"
                   />
-                  <Textarea variant="bordered"
+                  <Textarea
                     label="Content"
                     value={form.content}
                     onChange={(e) => setForm({ ...form, content: e.target.value })}
@@ -256,7 +256,7 @@ export default function AdminAnnouncementsPage() {
                     minRows={2}
                   />
                   <div className="grid grid-cols-2 gap-4">
-                    <Select variant="bordered"
+                    <Select
                       label="Type"
                       selectedKeys={[form.type]}
                       onChange={(e) => setForm({ ...form, type: e.target.value })}
@@ -266,7 +266,7 @@ export default function AdminAnnouncementsPage() {
                         <SelectItem key={opt.value} variant="bordered">{opt.label}</SelectItem>
                       ))}
                     </Select>
-                    <Select variant="bordered"
+                    <Select
                       label="Priority"
                       selectedKeys={[form.priority]}
                       onChange={(e) => setForm({ ...form, priority: e.target.value })}
@@ -278,14 +278,14 @@ export default function AdminAnnouncementsPage() {
                     </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input variant="bordered"
+                    <Input
                       label="Link (optional)"
                       value={form.link}
                       onChange={(e) => setForm({ ...form, link: e.target.value })}
                       variant="bordered"
                       placeholder="https://..."
                     />
-                    <Input variant="bordered"
+                    <Input
                       label="Link Text (optional)"
                       value={form.linkText}
                       onChange={(e) => setForm({ ...form, linkText: e.target.value })}
@@ -293,7 +293,7 @@ export default function AdminAnnouncementsPage() {
                       placeholder="e.g. Register Now"
                     />
                   </div>
-                  <Input variant="bordered"
+                  <Input
                     label="Expires At (optional)"
                     type="datetime-local"
                     value={form.expiresAt}

@@ -580,7 +580,7 @@ export default function AdminProjectsPage() {
             <ModalBody className="p-6 gap-6">
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Input variant="bordered"
+                  <Input
                     label="Project Title"
                     placeholder="Enter project title"
                     value={formData.title}
@@ -591,7 +591,7 @@ export default function AdminProjectsPage() {
                       label: "text-gray-700 dark:text-gray-300",
                     }}
                   />
-                  <Input variant="bordered"
+                  <Input
                     label="Duration"
                     placeholder="3 months"
                     value={formData.duration}
@@ -604,7 +604,7 @@ export default function AdminProjectsPage() {
                   />
                 </div>
 
-                <Textarea variant="bordered"
+                <Textarea
                   label="Description"
                   placeholder="Describe your project goals, features, and impact..."
                   value={formData.description}
@@ -617,7 +617,7 @@ export default function AdminProjectsPage() {
                   }}
                 />
 
-                <Input variant="bordered"
+                <Input
                   label="Image URL"
                   placeholder="https://images.unsplash.com/photo-..."
                   value={formData.image}
@@ -632,7 +632,7 @@ export default function AdminProjectsPage() {
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Select variant="bordered"
+                  <Select
                     label="Category"
                     selectedKeys={[formData.category]}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -648,7 +648,7 @@ export default function AdminProjectsPage() {
                     ))}
                   </Select>
 
-                  <Select variant="bordered"
+                  <Select
                     label="Status"
                     selectedKeys={[formData.status]}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -680,7 +680,7 @@ export default function AdminProjectsPage() {
                         className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                       />
                     </div>
-                    <Input variant="bordered"
+                    <Input
                       type="number"
                       min="0"
                       max="100"
@@ -695,7 +695,7 @@ export default function AdminProjectsPage() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
-                    <Input variant="bordered"
+                    <Input
                       label="Stars"
                       type="number"
                       min="0"
@@ -707,7 +707,7 @@ export default function AdminProjectsPage() {
                         label: "text-gray-700 dark:text-gray-300",
                       }}
                     />
-                    <Input variant="bordered"
+                    <Input
                       label="Forks"
                       type="number"
                       min="0"
@@ -719,7 +719,7 @@ export default function AdminProjectsPage() {
                         label: "text-gray-700 dark:text-gray-300",
                       }}
                     />
-                    <Input variant="bordered"
+                    <Input
                       label="Contributors"
                       type="number"
                       min="1"
@@ -734,7 +734,7 @@ export default function AdminProjectsPage() {
                   </div>
                 </div>
 
-                <Textarea variant="bordered"
+                <Textarea
                   label="Technologies"
                   placeholder="React, Node.js, MongoDB, TypeScript..."
                   value={formData.technologies}
@@ -749,7 +749,7 @@ export default function AdminProjectsPage() {
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Input variant="bordered"
+                  <Input
                     label="Demo URL"
                     placeholder="https://demo.example.com"
                     value={formData.demoUrl}
@@ -760,7 +760,7 @@ export default function AdminProjectsPage() {
                     }}
                   />
 
-                  <Input variant="bordered"
+                  <Input
                     label="Repository URL"
                     placeholder="https://github.com/username/repo"
                     value={formData.repoUrl}
@@ -772,7 +772,7 @@ export default function AdminProjectsPage() {
                   />
                 </div>
 
-                <Textarea variant="bordered"
+                <Textarea
                   label="Team Members"
                   placeholder="John Doe, Jane Smith, Alex Johnson..."
                   value={formData.teamMembers}
