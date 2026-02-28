@@ -1,18 +1,13 @@
 // app/api/resources/roadmaps/route.ts
 import { NextResponse } from "next/server";
-import { adminFetch } from "@/lib/adminApi";
-import { DATABASE_ID } from "@/lib/types/appwrite";
+import { adminDb, DATABASE_ID, COLLECTIONS } from "@/lib/appwrite/server";
 
 export async function GET() {
   try {
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/roadmaps/documents`,
-      { cache: "no-store" }
+    const data = await adminDb.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.ROADMAPS
     );
-    if (!res.ok) {
-      return NextResponse.json({ roadmaps: [] });
-    }
-    const data = await res.json();
     return NextResponse.json({ roadmaps: data.documents || [] });
   } catch {
     return NextResponse.json({ roadmaps: [] });

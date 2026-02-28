@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { blogService } from "@/lib/blog";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { createAdminDatabases } from "@/lib/appwrite";
+import { adminDb, DATABASE_ID, COLLECTIONS, ID } from "@/lib/appwrite/server";
 import { checkBlogRateLimit, getRemainingSubmissions } from "@/lib/rateLimiter";
-import { ID } from "appwrite";
-import { DATABASE_ID, BLOGS_COLLECTION_ID } from "@/lib/database";
 import { verifyAuth } from "@/lib/apiAuth";
 
 export async function GET(request: NextRequest) {
@@ -104,11 +102,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Use admin client for server-side database operations
-    const adminDatabases = createAdminDatabases();
-
-    const blog = await adminDatabases.createDocument(
+    const blog = await adminDb.createDocument(
       DATABASE_ID,
-      BLOGS_COLLECTION_ID,
+      COLLECTIONS.BLOG,
       ID.unique(),
       {
         title: data.title,

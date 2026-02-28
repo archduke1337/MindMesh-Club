@@ -1,23 +1,15 @@
 // app/api/team/route.ts
 // Public API to get active club/team members (no auth required)
 import { NextResponse } from "next/server";
-import { adminFetch } from "@/lib/adminApi";
-import { DATABASE_ID, COLLECTION_IDS } from "@/lib/types/appwrite";
-
-const COLLECTION_ID = COLLECTION_IDS.TEAM;
+import { adminDb, DATABASE_ID, COLLECTIONS, Query } from "@/lib/appwrite/server";
 
 export async function GET() {
   try {
-    const res = await adminFetch(
-      `/databases/${DATABASE_ID}/collections/${COLLECTION_ID}/documents?queries[]=${encodeURIComponent('{"method":"limit","values":[100]}')}`,
-      { cache: "no-store" }
+    const data = await adminDb.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.TEAM,
+      [Query.limit(100)]
     );
-
-    if (!res.ok) {
-      return NextResponse.json({ members: [] });
-    }
-
-    const data = await res.json();
     const documents = data.documents || [];
 
     // Only return active members, strip any sensitive fields
