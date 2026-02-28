@@ -86,15 +86,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-      <Card className="w-full max-w-sm md:max-w-md shadow-lg">
-        <CardHeader className="flex flex-col gap-1 items-start px-4 sm:px-6 md:px-8 pt-6 sm:pt-8 pb-0">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Welcome Back</h1>
-          <p className="text-xs sm:text-small text-default-500">Login to your Mind Mesh account</p>
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4 sm:px-6 lg:px-8 py-6 md:py-8 relative">
+      <div className="absolute top-0 left-1/4 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
+      <Card className="w-full max-w-sm md:max-w-md border-none shadow-2xl relative z-10">
+        <CardHeader className="flex flex-col gap-1 items-center justify-center px-4 sm:px-6 md:px-8 pt-8 sm:pt-10 pb-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent transform transition-all">Welcome Back</h1>
+          <p className="text-xs sm:text-sm text-default-500 mt-2">Login to your Mind Mesh account</p>
         </CardHeader>
-        <CardBody className="p-4 sm:p-6 md:p-8 gap-3 md:gap-4">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3 md:gap-4">
+        <CardBody className="p-6 md:p-8 gap-4 md:gap-5">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
+              variant="bordered"
               label="Email"
               placeholder="Enter your email"
               type="email"
@@ -112,6 +115,7 @@ export default function LoginPage() {
               errorMessage={validationErrors.email}
             />
             <Input
+              variant="bordered"
               label="Password"
               placeholder="Enter your password"
               type={showPassword ? "text" : "password"}
@@ -138,10 +142,10 @@ export default function LoginPage() {
             )}
             <Button
               type="submit"
-              color="primary"
               isLoading={loading}
-              className="w-full"
+              className="w-full bg-gradient-to-tr from-purple-600 to-pink-500 text-white font-bold shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:-translate-y-0.5 transition-all mt-2"
               size="lg"
+              radius="md"
             >
               Login
             </Button>
