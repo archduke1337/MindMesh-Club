@@ -40,7 +40,7 @@ export const galleryService = {
     return res as unknown as GalleryImage;
   },
   async createImage(
-    imageData: Omit<GalleryImage, "$id" | "$createdAt" | "$updatedAt" | "$permissions" | "$databaseId" | "$collectionId">
+    imageData: Partial<Omit<GalleryImage, "$id" | "$createdAt" | "$updatedAt" | "$permissions" | "$databaseId" | "$collectionId">>
   ): Promise<GalleryImage> {
     const data = {
       ...imageData,

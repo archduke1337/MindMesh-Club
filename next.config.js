@@ -20,6 +20,11 @@ const nextConfig = {
   typescript: {
     tsconfigPath: './tsconfig.json'
   },
+  eslint: {
+    // ESLint flat config (eslint.config.mjs) is incompatible with Next.js's
+    // built-in ESLint runner. Run `npx eslint .` separately instead.
+    ignoreDuringBuilds: true,
+  },
   webpack: (config) => {
     config.resolve.fallback = { fs: false, path: false };
     return config;
