@@ -5,9 +5,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { FormInput, FormTextarea, FormSelect } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
 import { blogService, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
@@ -159,11 +158,11 @@ export default function WriteBlogPage() {
         body: JSON.stringify(payload),
       });
 
-      const result = await res.json();
       if (!res.ok) {
-        const errMsg = result?.error || "Failed to submit blog";
-        throw new Error(errMsg);
+        const result = await res.json().catch(() => ({}));
+        throw new Error(result?.error || "Failed to submit blog");
       }
+      const result = await res.json();
 
       // Clear draft on successful submission
       draftService.clearDraft();
@@ -296,7 +295,7 @@ export default function WriteBlogPage() {
         <CardBody className="p-4 sm:p-6 md:p-8">
           <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6 lg:space-y-8">
             {/* Title */}
-            <Input
+            <FormInput
               label="Blog Title"
               placeholder="Enter an engaging title..."
               value={formData.title}
@@ -306,31 +305,23 @@ export default function WriteBlogPage() {
               required
               isRequired
               size="lg"
-              classNames={{
-                input: "text-sm md:text-base",
-                label: "text-xs md:text-small font-semibold"
-              }}
             />
 
             {/* Excerpt */}
-            <Textarea
+            <FormTextarea
               label="Excerpt (Optional)"
               placeholder="Brief summary of your blog..."
               value={formData.excerpt}
               onChange={(e) =>
                 setFormData({ ...formData, excerpt: e.target.value })
               }
-              rows={3}
+              minRows={3}
               description="If not provided, first 150 characters will be used"
               size="lg"
-              classNames={{
-                input: "text-sm md:text-base",
-                label: "text-xs md:text-small font-semibold"
-              }}
             />
 
             {/* Category */}
-            <Select
+            <FormSelect
               label="Category"
               placeholder="Select a category"
               selectedKeys={formData.category ? [formData.category] : []}
@@ -340,17 +331,14 @@ export default function WriteBlogPage() {
               required
               isRequired
               size="lg"
-              classNames={{
-                label: "text-xs md:text-small font-semibold"
-              }}
             >
               {blogCategories.map((cat) => (
                 <SelectItem key={cat.value}>{cat.label}</SelectItem>
               ))}
-            </Select>
+            </FormSelect>
 
             {/* Tags */}
-            <Input
+            <FormInput
               label="Tags"
               placeholder="react, javascript, tutorial (comma separated)"
               value={formData.tags}
@@ -359,10 +347,6 @@ export default function WriteBlogPage() {
               }
               description="Add relevant tags separated by commas"
               size="lg"
-              classNames={{
-                input: "text-sm md:text-base",
-                label: "text-xs md:text-small font-semibold"
-              }}
             />
 
             {/* Cover Image */}
@@ -402,16 +386,13 @@ export default function WriteBlogPage() {
                 </div>
 
                 {/* Or URL Input */}
-                <Input
+                <FormInput
                   placeholder="Or paste image URL"
                   value={formData.coverImage}
                   onChange={(e) =>
                     setFormData({ ...formData, coverImage: e.target.value })
                   }
                   size="lg"
-                  classNames={{
-                    input: "text-sm md:text-base"
-                  }}
                 />
               </div>
 
@@ -433,7 +414,7 @@ export default function WriteBlogPage() {
             </div>
 
             {/* Content */}
-            <Textarea
+            <FormTextarea
               label="Blog Content"
               placeholder="Write your blog content here... (Markdown supported)"
               value={formData.content}
@@ -442,13 +423,9 @@ export default function WriteBlogPage() {
               }
               required
               isRequired
-              rows={15}
+              minRows={15}
               description="Write in plain text or Markdown format"
               size="lg"
-              classNames={{
-                input: "text-sm md:text-base",
-                label: "text-xs md:text-small font-semibold"
-              }}
             />
 
             {/* Word Count */}

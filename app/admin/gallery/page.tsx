@@ -7,8 +7,8 @@ import { galleryService, type GalleryImage } from "@/lib/database";
 import { Card, CardBody, CardFooter } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
-import { Input, Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { FormInput, FormTextarea, FormSelect } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import {
@@ -361,15 +361,15 @@ export default function AdminGalleryPage() {
               <ModalHeader>{editingId ? "Edit Image" : "Upload New Image"}</ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  <Input label="Title" value={formData.title} variant="bordered" isRequired
+                  <FormInput label="Title" value={formData.title} variant="bordered" isRequired
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="e.g. Tech Summit 2024"
                   />
-                  <Textarea label="Description" value={formData.description} variant="bordered"
+                  <FormTextarea label="Description" value={formData.description} variant="bordered"
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     minRows={2}
                   />
-                  <Input label="Image URL" value={formData.imageUrl} variant="bordered" isRequired
+                  <FormInput label="Image URL" value={formData.imageUrl} variant="bordered" isRequired
                     onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                     placeholder="https://example.com/image.jpg"
                   />
@@ -384,31 +384,31 @@ export default function AdminGalleryPage() {
                   )}
 
                   <div className="grid grid-cols-2 gap-4">
-                    <Select label="Category" selectedKeys={[formData.category]} variant="bordered"
+                    <FormSelect label="Category" selectedKeys={[formData.category]} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, category: e.target.value as GalleryCategory })}
                     >
                       {CATEGORIES.map((cat) => (
                         <SelectItem key={cat.key} variant="bordered">{cat.label}</SelectItem>
                       ))}
-                    </Select>
-                    <Input label="Date" type="date" value={formData.date} variant="bordered"
+                    </FormSelect>
+                    <FormInput label="Date" type="date" value={formData.date} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input label="Event Name" value={formData.eventName} variant="bordered"
+                    <FormInput label="Event Name" value={formData.eventName} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
                       placeholder="Optional"
                     />
-                    <Input label="Photographer" value={formData.photographer} variant="bordered"
+                    <FormInput label="Photographer" value={formData.photographer} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, photographer: e.target.value })}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input label="Attendees" type="number" value={String(formData.attendees)} variant="bordered"
+                    <FormInput label="Attendees" type="number" value={String(formData.attendees)} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, attendees: parseInt(e.target.value) || 0 })}
                     />
-                    <Input label="Tags" value={formData.tags} variant="bordered"
+                    <FormInput label="Tags" value={formData.tags} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                       placeholder="tag1, tag2, tag3"
                     />

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Input } from "@heroui/input";
+import { FormInput } from "@/components/ui/form";
 import { Tabs, Tab } from "@heroui/tabs";
 import {
   BookOpenIcon,
@@ -132,12 +132,11 @@ export default function ResourcesPage() {
 
       {/* Search */}
       <div className="max-w-md mx-auto mb-8">
-        <Input
+        <FormInput
           placeholder="Search resources..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           startContent={<SearchIcon className="w-4 h-4 text-default-400" />}
-          variant="bordered"
           size="lg"
         />
       </div>

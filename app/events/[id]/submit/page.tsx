@@ -2,7 +2,7 @@
 
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input, Textarea } from "@heroui/input";
+import { FormInput, FormTextarea } from "@/components/ui/form";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import {
@@ -59,6 +59,7 @@ export default function SubmitProjectPage() {
       const teamRes = await fetch(
         `/api/hackathon/teams?eventId=${eventId}&userId=${user.$id}`
       );
+      if (!teamRes.ok) return;
       const teamData = await teamRes.json();
       setUserTeam(teamData.team || null);
 
@@ -67,6 +68,7 @@ export default function SubmitProjectPage() {
         const subRes = await fetch(
           `/api/hackathon/submissions?teamId=${teamData.team.$id}`
         );
+        if (!subRes.ok) return;
         const subData = await subRes.json();
         if (subData.submissions?.length > 0) {
           setExistingSubmission(subData.submissions[0]);
@@ -141,11 +143,10 @@ export default function SubmitProjectPage() {
         body: JSON.stringify(body),
       });
 
-      const data = await res.json();
-
       if (res.ok) {
         setSuccess(true);
       } else {
+        const data = await res.json().catch(() => ({}));
         setError(data.error || "Submission failed");
       }
     } catch (err: any) {
@@ -238,28 +239,25 @@ export default function SubmitProjectPage() {
             </h2>
           </CardHeader>
           <CardBody className="px-6 pb-6 space-y-4">
-            <Input
+            <FormInput
               label="Project Title"
               value={formData.projectTitle}
               onChange={(e) => handleChange("projectTitle", e.target.value)}
               isRequired
-              variant="bordered"
               placeholder="e.g. EcoTrack - Carbon Footprint Tracker"
             />
-            <Textarea
+            <FormTextarea
               label="Project Description"
               value={formData.projectDescription}
               onChange={(e) => handleChange("projectDescription", e.target.value)}
               isRequired
-              variant="bordered"
               placeholder="Describe your project, what problem it solves, and how it works..."
               minRows={4}
             />
-            <Input
+            <FormInput
               label="Tech Stack (comma-separated)"
               value={formData.techStack}
               onChange={(e) => handleChange("techStack", e.target.value)}
-              variant="bordered"
               placeholder="React, Node.js, MongoDB, Tailwind CSS..."
               startContent={<CodeIcon className="w-4 h-4 text-default-400" />}
             />
@@ -275,35 +273,31 @@ export default function SubmitProjectPage() {
             </h2>
           </CardHeader>
           <CardBody className="px-6 pb-6 space-y-4">
-            <Input
+            <FormInput
               label="GitHub / Repository URL"
               value={formData.repoUrl}
               onChange={(e) => handleChange("repoUrl", e.target.value)}
-              variant="bordered"
               placeholder="https://github.com/..."
               startContent={<CodeIcon className="w-4 h-4 text-default-400" />}
             />
-            <Input
+            <FormInput
               label="Live Demo URL"
               value={formData.demoUrl}
               onChange={(e) => handleChange("demoUrl", e.target.value)}
-              variant="bordered"
               placeholder="https://your-demo.vercel.app"
               startContent={<LinkIcon className="w-4 h-4 text-default-400" />}
             />
-            <Input
+            <FormInput
               label="Video Demo URL (YouTube/Loom)"
               value={formData.videoUrl}
               onChange={(e) => handleChange("videoUrl", e.target.value)}
-              variant="bordered"
               placeholder="https://youtube.com/watch?v=..."
               startContent={<VideoIcon className="w-4 h-4 text-default-400" />}
             />
-            <Input
+            <FormInput
               label="Presentation URL (Google Slides/Canva)"
               value={formData.presentationUrl}
               onChange={(e) => handleChange("presentationUrl", e.target.value)}
-              variant="bordered"
               placeholder="https://docs.google.com/presentation/..."
               startContent={<FileTextIcon className="w-4 h-4 text-default-400" />}
             />
@@ -313,11 +307,10 @@ export default function SubmitProjectPage() {
         {/* Additional Notes */}
         <Card className="border-none shadow-lg">
           <CardBody className="px-6 py-6">
-            <Textarea
+            <FormTextarea
               label="Additional Notes (optional)"
               value={formData.additionalNotes}
               onChange={(e) => handleChange("additionalNotes", e.target.value)}
-              variant="bordered"
               placeholder="Any additional information for the judges..."
               minRows={3}
             />

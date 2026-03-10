@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
+import { FormInput, FormPasswordInput, ErrorMessage } from "@/components/ui/form";
 import { Switch } from "@heroui/switch";
 import { Divider } from "@heroui/divider";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { account, authService } from "@/lib/appwrite";
-import { EyeIcon, EyeOffIcon, LockIcon, PhoneIcon, ShieldIcon, BellIcon, Trash2Icon } from "lucide-react";
+import { LockIcon, PhoneIcon, ShieldIcon, BellIcon, Trash2Icon } from "lucide-react";
 
 export default function SettingsPage() {
   const { user, loading, logout } = useAuth();
@@ -25,9 +25,6 @@ export default function SettingsPage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState(false);
-  const [showOldPassword, setShowOldPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Email verification state
   const [verificationLoading, setVerificationLoading] = useState(false);
@@ -233,9 +230,8 @@ export default function SettingsPage() {
           <div>
             <h3 className="text-base md:text-lg font-semibold mb-4">Change Password</h3>
             <form onSubmit={handlePasswordChange} className="space-y-4 md:space-y-5">
-              <Input
+              <FormPasswordInput
                 label="Current Password"
-                type={showOldPassword ? "text" : "password"}
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
                 placeholder="Enter current password"
@@ -243,19 +239,9 @@ export default function SettingsPage() {
                 isDisabled={passwordLoading}
                 size="lg"
                 startContent={<LockIcon className="w-4 h-4 text-default-400" />}
-                endContent={
-                  <button type="button" onClick={() => setShowOldPassword(!showOldPassword)} className="focus:outline-none">
-                    {showOldPassword ? <EyeOffIcon className="w-4 h-4 text-default-400" /> : <EyeIcon className="w-4 h-4 text-default-400" />}
-                  </button>
-                }
-                classNames={{
-                  input: "text-sm md:text-base",
-                  label: "text-xs md:text-small font-semibold"
-                }}
               />
-              <Input
+              <FormPasswordInput
                 label="New Password"
-                type={showNewPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter new password (min 8 characters)"
@@ -263,19 +249,9 @@ export default function SettingsPage() {
                 isDisabled={passwordLoading}
                 size="lg"
                 startContent={<LockIcon className="w-4 h-4 text-default-400" />}
-                endContent={
-                  <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="focus:outline-none">
-                    {showNewPassword ? <EyeOffIcon className="w-4 h-4 text-default-400" /> : <EyeIcon className="w-4 h-4 text-default-400" />}
-                  </button>
-                }
-                classNames={{
-                  input: "text-sm md:text-base",
-                  label: "text-xs md:text-small font-semibold"
-                }}
               />
-              <Input
+              <FormPasswordInput
                 label="Confirm New Password"
-                type={showConfirmPassword ? "text" : "password"}
                 value={confirmNewPassword}
                 onChange={(e) => setConfirmNewPassword(e.target.value)}
                 placeholder="Confirm new password"
@@ -283,15 +259,6 @@ export default function SettingsPage() {
                 isDisabled={passwordLoading}
                 size="lg"
                 startContent={<LockIcon className="w-4 h-4 text-default-400" />}
-                endContent={
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="focus:outline-none">
-                    {showConfirmPassword ? <EyeOffIcon className="w-4 h-4 text-default-400" /> : <EyeIcon className="w-4 h-4 text-default-400" />}
-                  </button>
-                }
-                classNames={{
-                  input: "text-sm md:text-base",
-                  label: "text-xs md:text-small font-semibold"
-                }}
               />
 
               {passwordError && (
@@ -477,7 +444,7 @@ export default function SettingsPage() {
               {user.phone ? "Update" : "Add"} Phone Number
             </ModalHeader>
             <ModalBody className="space-y-4">
-              <Input
+              <FormInput
                 label="Phone Number"
                 placeholder="+911234567890"
                 value={phoneNumber}
@@ -486,12 +453,8 @@ export default function SettingsPage() {
                 required
                 isDisabled={phoneLoading}
                 size="lg"
-                classNames={{
-                  input: "text-sm md:text-base",
-                  label: "text-xs md:text-small font-semibold"
-                }}
               />
-              <Input
+              <FormInput
                 label="Password"
                 type="password"
                 placeholder="Enter your password"
@@ -501,10 +464,6 @@ export default function SettingsPage() {
                 required
                 isDisabled={phoneLoading}
                 size="lg"
-                classNames={{
-                  input: "text-sm md:text-base",
-                  label: "text-xs md:text-small font-semibold"
-                }}
               />
               {phoneError && (
                 <div className="text-danger text-sm">{phoneError}</div>
@@ -533,7 +492,7 @@ export default function SettingsPage() {
               <p className="text-xs md:text-small text-default-500">
                 Enter the verification code sent to your phone number
               </p>
-              <Input
+              <FormInput
                 label="Verification Code"
                 placeholder="Enter 6-digit code"
                 value={verificationCode}
@@ -542,10 +501,6 @@ export default function SettingsPage() {
                 maxLength={6}
                 isDisabled={phoneVerifyLoading}
                 size="lg"
-                classNames={{
-                  input: "text-sm md:text-base",
-                  label: "text-xs md:text-small font-semibold"
-                }}
               />
               {phoneVerifyError && (
                 <div className="text-danger text-xs md:text-small bg-danger/10 p-2 md:p-3 rounded">{phoneVerifyError}</div>

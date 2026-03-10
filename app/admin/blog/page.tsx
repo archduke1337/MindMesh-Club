@@ -8,7 +8,7 @@ import { Chip } from "@heroui/chip";
 import { Avatar } from "@heroui/avatar";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
-import { Textarea } from "@heroui/input";
+import { FormTextarea } from "@/components/ui/form";
 import { useAuth } from "@/context/AuthContext";
 import { blogService, Blog } from "@/lib/blog";
 import AdminPageWrapper from "@/components/AdminPageWrapper";
@@ -570,7 +570,7 @@ export default function AdminBlogsPage() {
             <p className="mb-4">
               Please provide a reason for rejecting this blog:
             </p>
-            <Textarea
+            <FormTextarea
               placeholder="E.g., Content doesn't meet quality standards, inappropriate content, etc."
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}

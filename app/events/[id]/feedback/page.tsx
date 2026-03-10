@@ -2,7 +2,7 @@
 
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input, Textarea } from "@heroui/input";
+import { FormTextarea } from "@/components/ui/form";
 import { Divider } from "@heroui/divider";
 import {
   MessageCircleIcon,
@@ -203,23 +203,21 @@ export default function FeedbackPage() {
             ))}
           </div>
 
-          <Textarea
+          <FormTextarea
             label="Your Feedback *"
             value={feedback}
             onChange={(e) => {
               setFeedback(e.target.value);
               setError("");
             }}
-            variant="bordered"
             placeholder="What did you like or dislike about the event?"
             minRows={4}
           />
 
-          <Textarea
+          <FormTextarea
             label="Suggestions for Improvement (optional)"
             value={suggestions}
             onChange={(e) => setSuggestions(e.target.value)}
-            variant="bordered"
             placeholder="How could we make future events better?"
             minRows={3}
           />

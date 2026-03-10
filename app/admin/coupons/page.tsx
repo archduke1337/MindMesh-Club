@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { FormInput, FormSelect } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Switch } from "@heroui/switch";
 import { Spinner } from "@heroui/spinner";
 import { Divider } from "@heroui/divider";
@@ -318,7 +318,7 @@ export default function AdminCouponsPage() {
               <ModalHeader>{editingCoupon ? "Edit Coupon" : "Create Coupon"}</ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  <Input
+                  <FormInput
                     label="Coupon Code"
                     value={form.code}
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
@@ -328,7 +328,7 @@ export default function AdminCouponsPage() {
                     isDisabled={!!editingCoupon}
                     description={editingCoupon ? "Code cannot be changed" : "Must be unique"}
                   />
-                  <Input
+                  <FormInput
                     label="Description"
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -336,7 +336,7 @@ export default function AdminCouponsPage() {
                     placeholder="e.g. Early bird discount for hackathon"
                   />
                   <div className="grid grid-cols-2 gap-4">
-                    <Select
+                    <FormSelect
                       label="Discount Type"
                       selectedKeys={[form.type]}
                       onChange={(e) => setForm({ ...form, type: e.target.value as "percentage" | "fixed" })}
@@ -344,8 +344,8 @@ export default function AdminCouponsPage() {
                     >
                       <SelectItem key="percentage" variant="bordered">Percentage (%)</SelectItem>
                       <SelectItem key="fixed" variant="bordered">Fixed Amount (₹)</SelectItem>
-                    </Select>
-                    <Input
+                    </FormSelect>
+                    <FormInput
                       label={form.type === "percentage" ? "Percentage Off" : "Amount Off (₹)"}
                       type="number"
                       value={String(form.value)}
@@ -354,7 +354,7 @@ export default function AdminCouponsPage() {
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input
+                    <FormInput
                       label="Min Purchase (₹)"
                       type="number"
                       value={String(form.minPurchase)}
@@ -363,7 +363,7 @@ export default function AdminCouponsPage() {
                       description="0 = no minimum"
                     />
                     {form.type === "percentage" && (
-                      <Input
+                      <FormInput
                         label="Max Discount (₹)"
                         type="number"
                         value={String(form.maxDiscount)}
@@ -375,7 +375,7 @@ export default function AdminCouponsPage() {
                   </div>
                   <Divider />
                   <div className="grid grid-cols-2 gap-4">
-                    <Select
+                    <FormSelect
                       label="Scope"
                       selectedKeys={[form.scope]}
                       onChange={(e) => setForm({ ...form, scope: e.target.value as "global" | "event" })}
@@ -383,9 +383,9 @@ export default function AdminCouponsPage() {
                     >
                       <SelectItem key="global" variant="bordered">All Events (Global)</SelectItem>
                       <SelectItem key="event" variant="bordered">Specific Event</SelectItem>
-                    </Select>
+                    </FormSelect>
                     {form.scope === "event" && (
-                      <Select
+                      <FormSelect
                         label="Event"
                         selectedKeys={form.eventId ? [form.eventId] : []}
                         onChange={(e) => {
@@ -397,11 +397,11 @@ export default function AdminCouponsPage() {
                         {events.map((ev) => (
                           <SelectItem key={ev.$id} variant="bordered">{ev.title}</SelectItem>
                         ))}
-                      </Select>
+                      </FormSelect>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input
+                    <FormInput
                       label="Usage Limit"
                       type="number"
                       value={String(form.usageLimit)}
@@ -409,7 +409,7 @@ export default function AdminCouponsPage() {
                       variant="bordered"
                       description="0 = unlimited"
                     />
-                    <Input
+                    <FormInput
                       label="Per User Limit"
                       type="number"
                       value={String(form.perUserLimit)}
@@ -419,14 +419,14 @@ export default function AdminCouponsPage() {
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input
+                    <FormInput
                       label="Valid From"
                       type="datetime-local"
                       value={form.validFrom}
                       onChange={(e) => setForm({ ...form, validFrom: e.target.value })}
                       variant="bordered"
                     />
-                    <Input
+                    <FormInput
                       label="Valid Until"
                       type="datetime-local"
                       value={form.validUntil}

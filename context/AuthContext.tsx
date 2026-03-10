@@ -130,11 +130,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const session = await authService.login(email, password);
     // Sync session secret to our domain cookie so middleware can read it
     if (session?.secret) {
-      await fetch("/api/auth/session", {
+      const res = await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ secret: session.secret }),
       });
+      if (!res.ok) {
+        console.warn("Failed to sync session cookie — admin features may not work");
+      }
+    } else {
+      console.warn("No session secret returned — admin features may not work");
     }
     await checkUser();
   }, [checkUser]);
@@ -147,11 +152,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const session = await authService.createAccount(email, password, name);
     // Sync session secret to our domain cookie so middleware can read it
     if (session?.secret) {
-      await fetch("/api/auth/session", {
+      const res = await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ secret: session.secret }),
       });
+      if (!res.ok) {
+        console.warn("Failed to sync session cookie — admin features may not work");
+      }
+    } else {
+      console.warn("No session secret returned — admin features may not work");
     }
     await checkUser();
   }, [checkUser]);

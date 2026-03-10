@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Input, Textarea } from "@heroui/input";
+import { FormInput, FormTextarea, FormSelect, FormCheckbox } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
 import { Divider } from "@heroui/divider";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Select, SelectItem } from "@heroui/select";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import {
@@ -323,7 +323,7 @@ export default function AdminJudgingPage() {
       {/* Event Selector */}
       <Card className="mb-6 border-none shadow-md">
         <CardBody className="p-4">
-          <Select
+          <FormSelect
             label="Select Hackathon"
             placeholder="Choose a hackathon event..."
             selectedKeys={selectedEventId ? [selectedEventId] : []}
@@ -333,7 +333,7 @@ export default function AdminJudgingPage() {
             {events.map((ev) => (
               <SelectItem key={ev.$id} variant="bordered">{ev.title}</SelectItem>
             ))}
-          </Select>
+          </FormSelect>
         </CardBody>
       </Card>
 
@@ -562,15 +562,15 @@ export default function AdminJudgingPage() {
             <>
               <ModalHeader>{editingJudge ? "Edit Judge" : "Add Judge"}</ModalHeader>
               <ModalBody className="space-y-4">
-                <Input label="Name" value={judgeForm.name} onChange={(e) => setJudgeForm({ ...judgeForm, name: e.target.value })} isRequired variant="bordered" />
-                <Input label="Email" type="email" value={judgeForm.email} onChange={(e) => setJudgeForm({ ...judgeForm, email: e.target.value })} isRequired variant="bordered" />
+                <FormInput label="Name" value={judgeForm.name} onChange={(e) => setJudgeForm({ ...judgeForm, name: e.target.value })} isRequired variant="bordered" />
+                <FormInput label="Email" type="email" value={judgeForm.email} onChange={(e) => setJudgeForm({ ...judgeForm, email: e.target.value })} isRequired variant="bordered" />
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label="Organization" value={judgeForm.organization} onChange={(e) => setJudgeForm({ ...judgeForm, organization: e.target.value })} variant="bordered" />
-                  <Input label="Designation" value={judgeForm.designation} onChange={(e) => setJudgeForm({ ...judgeForm, designation: e.target.value })} variant="bordered" />
+                  <FormInput label="Organization" value={judgeForm.organization} onChange={(e) => setJudgeForm({ ...judgeForm, organization: e.target.value })} variant="bordered" />
+                  <FormInput label="Designation" value={judgeForm.designation} onChange={(e) => setJudgeForm({ ...judgeForm, designation: e.target.value })} variant="bordered" />
                 </div>
-                <Input label="Expertise" value={judgeForm.expertise} onChange={(e) => setJudgeForm({ ...judgeForm, expertise: e.target.value })} variant="bordered" placeholder="AI/ML, Web Dev, Design (comma-separated)" />
+                <FormInput label="Expertise" value={judgeForm.expertise} onChange={(e) => setJudgeForm({ ...judgeForm, expertise: e.target.value })} variant="bordered" placeholder="AI/ML, Web Dev, Design (comma-separated)" />
                 <div className="flex items-center gap-3">
-                  <input type="checkbox" checked={judgeForm.isLead} onChange={(e) => setJudgeForm({ ...judgeForm, isLead: e.target.checked })} id="isLead" />
+                  <FormInput type="checkbox" checked={judgeForm.isLead} onChange={(e) => setJudgeForm({ ...judgeForm, isLead: e.target.checked })} id="isLead" />
                   <label htmlFor="isLead" className="text-sm">Lead Judge (can finalize scores)</label>
                 </div>
               </ModalBody>
@@ -592,11 +592,11 @@ export default function AdminJudgingPage() {
             <>
               <ModalHeader>{editingCriteria ? "Edit Criteria" : "Add Judging Criteria"}</ModalHeader>
               <ModalBody className="space-y-4">
-                <Input label="Criteria Name" value={criteriaForm.name} onChange={(e) => setCriteriaForm({ ...criteriaForm, name: e.target.value })} isRequired variant="bordered" placeholder="e.g. Innovation, Technical Complexity" />
-                <Textarea label="Description" value={criteriaForm.description} onChange={(e) => setCriteriaForm({ ...criteriaForm, description: e.target.value })} variant="bordered" placeholder="What should judges evaluate for this criterion?" minRows={2} />
+                <FormInput label="Criteria Name" value={criteriaForm.name} onChange={(e) => setCriteriaForm({ ...criteriaForm, name: e.target.value })} isRequired variant="bordered" placeholder="e.g. Innovation, Technical Complexity" />
+                <FormTextarea label="Description" value={criteriaForm.description} onChange={(e) => setCriteriaForm({ ...criteriaForm, description: e.target.value })} variant="bordered" placeholder="What should judges evaluate for this criterion?" minRows={2} />
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label="Max Score" type="number" value={String(criteriaForm.maxScore)} onChange={(e) => setCriteriaForm({ ...criteriaForm, maxScore: Number(e.target.value) })} variant="bordered" />
-                  <Input label="Weight (0-1)" type="number" value={String(criteriaForm.weight)} onChange={(e) => setCriteriaForm({ ...criteriaForm, weight: Number(e.target.value) })} variant="bordered" description={`= ${(criteriaForm.weight * 100).toFixed(0)}%`} />
+                  <FormInput label="Max Score" type="number" value={String(criteriaForm.maxScore)} onChange={(e) => setCriteriaForm({ ...criteriaForm, maxScore: Number(e.target.value) })} variant="bordered" />
+                  <FormInput label="Weight (0-1)" type="number" value={String(criteriaForm.weight)} onChange={(e) => setCriteriaForm({ ...criteriaForm, weight: Number(e.target.value) })} variant="bordered" description={`= ${(criteriaForm.weight * 100).toFixed(0)}%`} />
                 </div>
               </ModalBody>
               <ModalFooter>

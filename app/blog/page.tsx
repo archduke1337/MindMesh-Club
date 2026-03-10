@@ -5,8 +5,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { FormInput, FormSelect } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Chip } from "@heroui/chip";
 import { Avatar } from "@heroui/avatar";
 import { Spinner } from "@heroui/spinner";
@@ -173,32 +173,25 @@ export default function BlogPage() {
         <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
           <CardBody className="p-3 sm:p-4 md:p-5 lg:p-6">
             <div className="flex flex-col gap-2 sm:gap-2.5 md:gap-3 lg:gap-4">
-              <Input
+              <FormInput
                 placeholder="Search blogs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 startContent={<SearchIcon className="w-3 sm:w-3.5 md:w-4 lg:w-4.5 h-3 sm:h-3.5 md:h-4 lg:h-4.5" />}
                 className="w-full"
                 size="lg"
-                classNames={{
-                  input: "text-xs sm:text-sm md:text-base",
-                }}
               />
-              <Select
+              <FormSelect
                 label="Category"
                 selectedKeys={[selectedCategory]}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 size="lg"
-                classNames={{
-                  label: "text-xs sm:text-sm",
-                  value: "text-xs sm:text-sm md:text-base",
-                }}
               >
                 <SelectItem key="all">All Categories</SelectItem>
                 {blogCategories.map((cat) => (
                   <SelectItem key={cat.value}>{cat.label}</SelectItem>
                 )) as any}
-              </Select>
+              </FormSelect>
             </div>
           </CardBody>
         </Card>

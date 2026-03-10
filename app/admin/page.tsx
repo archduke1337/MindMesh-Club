@@ -9,7 +9,6 @@ import { Spinner } from "@heroui/spinner";
 import { Divider } from "@heroui/divider";
 import NextLink from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
 import {
   LayoutDashboardIcon,
   NewspaperIcon,
@@ -151,7 +150,6 @@ const adminSections = [
 
 export default function AdminDashboardPage() {
   const { user, loading: authLoading, isAdmin } = useAuth();
-  const router = useRouter();
   const [stats, setStats] = useState<AdminStats>({
     blogs: { total: 0, pending: 0, approved: 0, rejected: 0 },
     gallery: { total: 0, pending: 0 },
@@ -187,18 +185,11 @@ export default function AdminDashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.push("/login");
-        return;
-      }
-      if (!isAdmin) {
-        router.push("/unauthorized");
-        return;
-      }
+    // Auth is handled by AdminAuthGuard in layout — just load stats
+    if (!authLoading && user && isAdmin) {
       fetchStats();
     }
-  }, [authLoading, user, isAdmin, router, fetchStats]);
+  }, [authLoading, user, isAdmin, fetchStats]);
 
   if (authLoading) {
     return (
@@ -210,8 +201,6 @@ export default function AdminDashboardPage() {
       </div>
     );
   }
-
-  if (!isAdmin) return null;
 
   return (
     <div className="max-w-7xl mx-auto py-6 md:py-10 px-4 sm:px-6 lg:px-8">

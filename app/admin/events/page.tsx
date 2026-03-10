@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input, Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { FormInput, FormTextarea, FormSelect } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Switch } from "@heroui/switch";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
@@ -578,7 +578,7 @@ export default function AdminEventsPage() {
 
       {/* Search & Filter Row */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <Input
+        <FormInput
           placeholder="Search events..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -920,7 +920,7 @@ export default function AdminEventsPage() {
                         <ImageIcon className="w-4 h-4 text-purple-600" />
                         Event Image URL *
                       </label>
-                      <Input
+                      <FormInput
                         placeholder="https://example.com/image.jpg"
                         value={formData.image}
                         onChange={(e) => handleInputChange("image", e.target.value)}
@@ -953,7 +953,7 @@ export default function AdminEventsPage() {
                       </div>
                     </div>
 
-                    <Input
+                    <FormInput
                       label="Event Title"
                       placeholder="Enter event title"
                       value={formData.title}
@@ -974,7 +974,7 @@ export default function AdminEventsPage() {
                       />
                     </div>
 
-                    <Select
+                    <FormSelect
                       label="Category"
                       placeholder="Select event category"
                       selectedKeys={[formData.category!]}
@@ -991,7 +991,7 @@ export default function AdminEventsPage() {
                       <SelectItem key="competition" variant="bordered">Competition</SelectItem>
                       <SelectItem key="bootcamp" variant="bordered">Bootcamp</SelectItem>
                       <SelectItem key="forum" variant="bordered">Forum</SelectItem>
-                    </Select>
+                    </FormSelect>
 
                     {/* Event Type (type-driven system) */}
                     <div className="space-y-2">
@@ -1036,7 +1036,7 @@ export default function AdminEventsPage() {
                 }>
                   <div className="space-y-4 md:space-y-6 pt-3 md:pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                      <Input
+                      <FormInput
                         label="Date"
                         type="date"
                         value={formData.date}
@@ -1046,7 +1046,7 @@ export default function AdminEventsPage() {
                           label: "font-semibold"
                         }} variant="bordered"
                       />
-                      <Input
+                      <FormInput
                         label="Time"
                         type="text"
                         placeholder="e.g., 09:00 AM - 06:00 PM"
@@ -1060,7 +1060,7 @@ export default function AdminEventsPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
+                      <FormInput
                         label="Venue"
                         placeholder="e.g., Grand Convention Center"
                         value={formData.venue}
@@ -1070,7 +1070,7 @@ export default function AdminEventsPage() {
                           label: "font-semibold"
                         }} variant="bordered"
                       />
-                      <Input
+                      <FormInput
                         label="Location"
                         placeholder="e.g., New York, NY"
                         value={formData.location}
@@ -1104,7 +1104,7 @@ export default function AdminEventsPage() {
                 }>
                   <div className="space-y-4 md:space-y-6 pt-3 md:pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-                      <Input
+                      <FormInput
                         label="Regular Price (₹)"
                         type="number"
                         placeholder="0"
@@ -1116,7 +1116,7 @@ export default function AdminEventsPage() {
                           label: "font-semibold"
                         }} variant="bordered"
                       />
-                      <Input
+                      <FormInput
                         label="Discount Price (₹)"
                         type="number"
                         placeholder="Optional"
@@ -1127,7 +1127,7 @@ export default function AdminEventsPage() {
                           label: "font-semibold"
                         }} variant="bordered"
                       />
-                      <Input
+                      <FormInput
                         label="Capacity"
                         type="number"
                         placeholder="50"
@@ -1197,7 +1197,7 @@ export default function AdminEventsPage() {
 
                       {formData.isRecurring && (
                         <div className="mt-3 md:mt-4 space-y-3">
-                          <Select
+                          <FormSelect
                             label="Repeat Pattern"
                             placeholder="Select a pattern"
                             selectedKeys={formData.recurringPattern ? [formData.recurringPattern] : []}
@@ -1210,7 +1210,7 @@ export default function AdminEventsPage() {
                             <SelectItem key="biweekly" variant="bordered">Every 2 Weeks</SelectItem>
                             <SelectItem key="monthly" variant="bordered">Every Month</SelectItem>
                             <SelectItem key="quarterly" variant="bordered">Every Quarter</SelectItem>
-                          </Select>
+                          </FormSelect>
                           <div className="p-3 bg-blue-100/50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
                             <p className="text-xs text-blue-700 dark:text-blue-300">
                               Recurring events will be automatically created based on the pattern. You can edit individual events later.
@@ -1222,7 +1222,7 @@ export default function AdminEventsPage() {
 
                     <hr className="my-2" />
 
-                    <Input
+                    <FormInput
                       label="Organizer Name"
                       placeholder="e.g., John Doe"
                       value={formData.organizerName}
@@ -1239,7 +1239,7 @@ export default function AdminEventsPage() {
                         <ImageIcon className="w-4 h-4 text-purple-600" />
                         Organizer Avatar URL *
                       </label>
-                      <Input
+                      <FormInput
                         placeholder="https://example.com/avatar.jpg"
                         value={formData.organizerAvatar}
                         onChange={(e) => handleInputChange("organizerAvatar", e.target.value)}
@@ -1272,7 +1272,7 @@ export default function AdminEventsPage() {
                         Event Tags
                       </label>
                       <div className="flex gap-2">
-                        <Input
+                        <FormInput
                           placeholder="Add a tag (e.g., AI, Networking)"
                           value={tagInput}
                           onChange={(e) => setTagInput(e.target.value)}
@@ -1416,7 +1416,7 @@ export default function AdminEventsPage() {
 
                 {/* QR Input */}
                 <div>
-                  <Input
+                  <FormInput
                     ref={checkinInputRef}
                     placeholder="Scan QR code here..."
                     value={checkinData}
@@ -1727,7 +1727,7 @@ export default function AdminEventsPage() {
                   <div className="p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg">
                     <p className="text-xs text-default-600 mb-2">Shareable Link:</p>
                     <div className="flex gap-2">
-                      <input
+                      <FormInput
                         type="text"
                         value={generateEventShareQRCodeUrl(qrEvent.$id!)}
                         readOnly

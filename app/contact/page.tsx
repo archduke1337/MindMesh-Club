@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Input, Textarea } from "@heroui/input";
+import { FormInput, FormTextarea } from "@/components/ui/form";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
 import { title, subtitle } from "@/components/Primitives";
@@ -163,67 +163,47 @@ export default function ContactPage() {
                 )}
 
                 <div className="grid sm:grid-cols-2 gap-3 md:gap-4">
-                  <Input
+                  <FormInput
                     isRequired
                     label="Name"
                     placeholder="Enter your name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    variant="bordered"
                     size="lg"
                     isDisabled={isSubmitting}
                     startContent={<UserIcon className="w-4 h-4 text-default-400" />}
-                    classNames={{
-                      input: "text-sm md:text-base",
-                      label: "text-xs md:text-small font-semibold"
-                    }}
                   />
-                  <Input
+                  <FormInput
                     isRequired
                     type="email"
                     label="Email"
                     placeholder="Enter your email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    variant="bordered"
                     size="lg"
                     isDisabled={isSubmitting}
                     startContent={<MailIcon className="w-4 h-4 text-default-400" />}
-                    classNames={{
-                      input: "text-sm md:text-base",
-                      label: "text-xs md:text-small font-semibold"
-                    }}
                   />
                 </div>
-                <Input
+                <FormInput
                   isRequired
                   label="Subject"
                   placeholder="What is this about?"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  variant="bordered"
                   size="lg"
                   isDisabled={isSubmitting}
                   startContent={<TagIcon className="w-4 h-4 text-default-400" />}
-                  classNames={{
-                    input: "text-sm md:text-base",
-                    label: "text-xs md:text-small font-semibold"
-                  }}
                 />
-                <Textarea
+                <FormTextarea
                   isRequired
                   label="Message"
                   placeholder="Tell us more..."
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  variant="bordered"
                   minRows={5}
                   size="lg"
                   isDisabled={isSubmitting}
-                  classNames={{
-                    input: "text-sm md:text-base",
-                    label: "text-xs md:text-small font-semibold"
-                  }}
                 />
                 <Button
                   type="submit"

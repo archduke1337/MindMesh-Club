@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Input, Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { FormInput, FormTextarea, FormSelect } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Switch } from "@heroui/switch";
 import { Spinner } from "@heroui/spinner";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
@@ -322,10 +322,10 @@ export default function AdminClubMembersPage() {
               </ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  <Input label="Name" value={form.name} isRequired variant="bordered"
+                  <FormInput label="Name" value={form.name} isRequired variant="bordered"
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                   />
-                  <Input label="Avatar URL" value={form.avatar} variant="bordered"
+                  <FormInput label="Avatar URL" value={form.avatar} variant="bordered"
                     onChange={(e) => setForm({ ...form, avatar: e.target.value })}
                     placeholder="https://example.com/avatar.jpg"
                     description="Leave empty for initials avatar"
@@ -337,39 +337,39 @@ export default function AdminClubMembersPage() {
                       />
                     </div>
                   )}
-                  <Input label="Designation" value={form.designation} isRequired variant="bordered"
+                  <FormInput label="Designation" value={form.designation} isRequired variant="bordered"
                     onChange={(e) => setForm({ ...form, designation: e.target.value })}
                     placeholder="e.g. President, Tech Lead"
                   />
                   <div className="grid grid-cols-2 gap-4">
-                    <Select label="Member Type" selectedKeys={[form.memberType]} variant="bordered"
+                    <FormSelect label="Member Type" selectedKeys={[form.memberType]} variant="bordered"
                       onChange={(e) => setForm({ ...form, memberType: e.target.value })}
                     >
                       {MEMBER_TYPES.map((t) => (
                         <SelectItem key={t} className="capitalize" variant="bordered">{t}</SelectItem>
                       ))}
-                    </Select>
-                    <Input label="Department" value={form.department} variant="bordered"
+                    </FormSelect>
+                    <FormInput label="Department" value={form.department} variant="bordered"
                       onChange={(e) => setForm({ ...form, department: e.target.value })}
                       placeholder="e.g. Technology"
                     />
                   </div>
-                  <Input label="Institution" value={form.institution} variant="bordered"
+                  <FormInput label="Institution" value={form.institution} variant="bordered"
                     onChange={(e) => setForm({ ...form, institution: e.target.value })}
                   />
-                  <Input label="Tagline" value={form.tagline} variant="bordered"
+                  <FormInput label="Tagline" value={form.tagline} variant="bordered"
                     onChange={(e) => setForm({ ...form, tagline: e.target.value })}
                     placeholder="Short one-liner"
                   />
-                  <Textarea label="Bio" value={form.bio} variant="bordered"
+                  <FormTextarea label="Bio" value={form.bio} variant="bordered"
                     onChange={(e) => setForm({ ...form, bio: e.target.value })}
                     minRows={2}
                   />
                   <div className="grid grid-cols-2 gap-4">
-                    <Input label="LinkedIn URL" value={form.linkedin} variant="bordered"
+                    <FormInput label="LinkedIn URL" value={form.linkedin} variant="bordered"
                       onChange={(e) => setForm({ ...form, linkedin: e.target.value })}
                     />
-                    <Input label="GitHub username" value={form.github} variant="bordered"
+                    <FormInput label="GitHub username" value={form.github} variant="bordered"
                       onChange={(e) => setForm({ ...form, github: e.target.value })}
                     />
                   </div>

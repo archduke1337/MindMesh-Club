@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Input, Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { FormInput, FormTextarea, FormSelect } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Switch } from "@heroui/switch";
 import { Spinner } from "@heroui/spinner";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
@@ -346,14 +346,14 @@ export default function AdminAnnouncementsPage() {
               <ModalHeader>{editingAnn ? "Edit Announcement" : "Create Announcement"}</ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  <Input
+                  <FormInput
                     label="Title"
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
                     isRequired
                     variant="bordered"
                   />
-                  <Textarea
+                  <FormTextarea
                     label="Content"
                     value={form.content}
                     onChange={(e) => setForm({ ...form, content: e.target.value })}
@@ -362,7 +362,7 @@ export default function AdminAnnouncementsPage() {
                     minRows={2}
                   />
                   <div className="grid grid-cols-2 gap-4">
-                    <Select
+                    <FormSelect
                       label="Type"
                       selectedKeys={[form.type]}
                       onChange={(e) => setForm({ ...form, type: e.target.value })}
@@ -371,8 +371,8 @@ export default function AdminAnnouncementsPage() {
                       {TYPE_OPTIONS.map((opt) => (
                         <SelectItem key={opt.value} variant="bordered">{opt.label}</SelectItem>
                       ))}
-                    </Select>
-                    <Select
+                    </FormSelect>
+                    <FormSelect
                       label="Priority"
                       selectedKeys={[form.priority]}
                       onChange={(e) => setForm({ ...form, priority: e.target.value })}
@@ -381,17 +381,17 @@ export default function AdminAnnouncementsPage() {
                       {PRIORITY_OPTIONS.map((opt) => (
                         <SelectItem key={opt.value} variant="bordered">{opt.label}</SelectItem>
                       ))}
-                    </Select>
+                    </FormSelect>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input
+                    <FormInput
                       label="Link (optional)"
                       value={form.link}
                       onChange={(e) => setForm({ ...form, link: e.target.value })}
                       variant="bordered"
                       placeholder="https://..."
                     />
-                    <Input
+                    <FormInput
                       label="Link Text (optional)"
                       value={form.linkText}
                       onChange={(e) => setForm({ ...form, linkText: e.target.value })}
@@ -399,7 +399,7 @@ export default function AdminAnnouncementsPage() {
                       placeholder="e.g. Register Now"
                     />
                   </div>
-                  <Input
+                  <FormInput
                     label="Expires At (optional)"
                     type="datetime-local"
                     value={form.expiresAt}

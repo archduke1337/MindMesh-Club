@@ -6,7 +6,8 @@ import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
 import { Divider } from "@heroui/divider";
-import { Select, SelectItem } from "@heroui/select";
+import { FormSelect } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -153,7 +154,7 @@ export default function AdminTeamsPage() {
       {/* Event Selector */}
       <Card className="mb-6 border-none shadow-md">
         <CardBody className="p-4">
-          <Select
+          <FormSelect
             label="Select Hackathon"
             placeholder="Choose a hackathon event..."
             selectedKeys={selectedEventId ? [selectedEventId] : []}
@@ -163,7 +164,7 @@ export default function AdminTeamsPage() {
             {events.map((ev) => (
               <SelectItem key={ev.$id} variant="bordered">{ev.title}</SelectItem>
             ))}
-          </Select>
+          </FormSelect>
         </CardBody>
       </Card>
 

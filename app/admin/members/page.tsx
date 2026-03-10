@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Input } from "@heroui/input";
+import { FormInput } from "@/components/ui/form";
 import { Spinner } from "@heroui/spinner";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { Divider } from "@heroui/divider";
@@ -174,7 +174,7 @@ export default function AdminMembersPage() {
         </div>
       </div>
 
-      <Input
+      <FormInput
         placeholder="Search by name, email, or college..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}

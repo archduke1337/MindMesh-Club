@@ -3,7 +3,7 @@
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Input } from "@heroui/input";
+import { FormInput } from "@/components/ui/form";
 import { Divider } from "@heroui/divider";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
@@ -92,15 +92,19 @@ export default function HackathonTeamsPage() {
         const teamRes = await fetch(
           `/api/hackathon/teams?eventId=${eventId}&userId=${user.$id}`
         );
-        const teamData = await teamRes.json();
-        if (teamData.team) {
-          setUserTeam(teamData.team);
-          // Load team members
-          const membersRes = await fetch(
-            `/api/hackathon/teams?inviteCode=${teamData.team.inviteCode}`
-          );
-          const membersData = await membersRes.json();
-          setTeamMembers(membersData.members || []);
+        if (teamRes.ok) {
+          const teamData = await teamRes.json();
+          if (teamData.team) {
+            setUserTeam(teamData.team);
+            // Load team members
+            const membersRes = await fetch(
+              `/api/hackathon/teams?inviteCode=${teamData.team.inviteCode}`
+            );
+            if (membersRes.ok) {
+              const membersData = await membersRes.json();
+              setTeamMembers(membersData.members || []);
+            }
+          }
         }
       }
 
@@ -108,8 +112,10 @@ export default function HackathonTeamsPage() {
       const allTeamsRes = await fetch(
         `/api/hackathon/teams?eventId=${eventId}`
       );
-      const allTeamsData = await allTeamsRes.json();
-      setAllTeams(allTeamsData.teams || []);
+      if (allTeamsRes.ok) {
+        const allTeamsData = await allTeamsRes.json();
+        setAllTeams(allTeamsData.teams || []);
+      }
     } catch (err) {
       console.error("Error loading hackathon data:", err);
     } finally {
@@ -138,13 +144,13 @@ export default function HackathonTeamsPage() {
           maxSize: parseInt(maxSize) || 5,
         }),
       });
-      const data = await res.json();
       if (res.ok) {
         createModal.onClose();
         setTeamName("");
         setTeamDesc("");
         await loadData();
       } else {
+        const data = await res.json().catch(() => ({}));
         alert(data.error || "Failed to create team");
       }
     } catch (err: any) {
@@ -170,12 +176,12 @@ export default function HackathonTeamsPage() {
           eventId,
         }),
       });
-      const data = await res.json();
       if (res.ok) {
         joinModal.onClose();
         setInviteCode("");
         await loadData();
       } else {
+        const data = await res.json().catch(() => ({}));
         setJoinError(data.error || "Failed to join team");
       }
     } catch (err: any) {
@@ -519,28 +525,25 @@ export default function HackathonTeamsPage() {
               </ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  <Input
+                  <FormInput
                     label="Team Name"
                     value={teamName}
                     onChange={(e) => setTeamName(e.target.value)}
                     isRequired
-                    variant="bordered"
                     placeholder="e.g. Code Warriors"
                     maxLength={50}
                   />
-                  <Input
+                  <FormInput
                     label="Description (optional)"
                     value={teamDesc}
                     onChange={(e) => setTeamDesc(e.target.value)}
-                    variant="bordered"
                     placeholder="Brief description of your team"
                   />
-                  <Input
+                  <FormInput
                     label="Max Team Size"
                     type="number"
                     value={maxSize}
                     onChange={(e) => setMaxSize(e.target.value)}
-                    variant="bordered"
                     min={2}
                     max={10}
                   />
@@ -574,14 +577,13 @@ export default function HackathonTeamsPage() {
                 </p>
               </ModalHeader>
               <ModalBody>
-                <Input
+                <FormInput
                   label="Invite Code"
                   value={inviteCode}
                   onChange={(e) => {
                     setInviteCode(e.target.value.toUpperCase());
                     setJoinError("");
                   }}
-                  variant="bordered"
                   placeholder="e.g. X7K3M2"
                   maxLength={6}
                   classNames={{

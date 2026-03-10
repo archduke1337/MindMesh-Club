@@ -2,12 +2,12 @@
 
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
+import { FormInput, FormTextarea, FormSelect } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
 import { Chip } from "@heroui/chip";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+
 import { Switch } from "@heroui/switch";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -580,7 +580,7 @@ export default function AdminProjectsPage() {
             <ModalBody className="p-6 gap-6">
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Input
+                  <FormInput
                     label="Project Title"
                     placeholder="Enter project title"
                     value={formData.title}
@@ -591,7 +591,7 @@ export default function AdminProjectsPage() {
                       label: "text-gray-700 dark:text-gray-300",
                     }}
                   />
-                  <Input
+                  <FormInput
                     label="Duration"
                     placeholder="3 months"
                     value={formData.duration}
@@ -604,7 +604,7 @@ export default function AdminProjectsPage() {
                   />
                 </div>
 
-                <Textarea
+                <FormTextarea
                   label="Description"
                   placeholder="Describe your project goals, features, and impact..."
                   value={formData.description}
@@ -617,7 +617,7 @@ export default function AdminProjectsPage() {
                   }}
                 />
 
-                <Input
+                <FormInput
                   label="Image URL"
                   placeholder="https://images.unsplash.com/photo-..."
                   value={formData.image}
@@ -632,7 +632,7 @@ export default function AdminProjectsPage() {
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Select
+                  <FormSelect
                     label="Category"
                     selectedKeys={[formData.category]}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -646,9 +646,9 @@ export default function AdminProjectsPage() {
                         {cat.label}
                       </SelectItem>
                     ))}
-                  </Select>
+                  </FormSelect>
 
-                  <Select
+                  <FormSelect
                     label="Status"
                     selectedKeys={[formData.status]}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -662,7 +662,7 @@ export default function AdminProjectsPage() {
                         {status.label}
                       </SelectItem>
                     ))}
-                  </Select>
+                  </FormSelect>
                 </div>
 
                 <div className="space-y-4">
@@ -671,7 +671,7 @@ export default function AdminProjectsPage() {
                       <label className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
                         Progress: {formData.progress}%
                       </label>
-                      <input
+                      <FormInput
                         type="range"
                         min="0"
                         max="100"
@@ -680,7 +680,7 @@ export default function AdminProjectsPage() {
                         className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                       />
                     </div>
-                    <Input
+                    <FormInput
                       type="number"
                       min="0"
                       max="100"
@@ -695,7 +695,7 @@ export default function AdminProjectsPage() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
-                    <Input
+                    <FormInput
                       label="Stars"
                       type="number"
                       min="0"
@@ -707,7 +707,7 @@ export default function AdminProjectsPage() {
                         label: "text-gray-700 dark:text-gray-300",
                       }}
                     />
-                    <Input
+                    <FormInput
                       label="Forks"
                       type="number"
                       min="0"
@@ -719,7 +719,7 @@ export default function AdminProjectsPage() {
                         label: "text-gray-700 dark:text-gray-300",
                       }}
                     />
-                    <Input
+                    <FormInput
                       label="Contributors"
                       type="number"
                       min="1"
@@ -734,7 +734,7 @@ export default function AdminProjectsPage() {
                   </div>
                 </div>
 
-                <Textarea
+                <FormTextarea
                   label="Technologies"
                   placeholder="React, Node.js, MongoDB, TypeScript..."
                   value={formData.technologies}
@@ -749,7 +749,7 @@ export default function AdminProjectsPage() {
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Input
+                  <FormInput
                     label="Demo URL"
                     placeholder="https://demo.example.com"
                     value={formData.demoUrl}
@@ -760,7 +760,7 @@ export default function AdminProjectsPage() {
                     }}
                   />
 
-                  <Input
+                  <FormInput
                     label="Repository URL"
                     placeholder="https://github.com/username/repo"
                     value={formData.repoUrl}
@@ -772,7 +772,7 @@ export default function AdminProjectsPage() {
                   />
                 </div>
 
-                <Textarea
+                <FormTextarea
                   label="Team Members"
                   placeholder="John Doe, Jane Smith, Alex Johnson..."
                   value={formData.teamMembers}

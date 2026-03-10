@@ -53,12 +53,11 @@ export async function GET(request: NextRequest) {
 
 // POST /api/members/profile — Create profile
 export async function POST(request: NextRequest) {
-  const { authenticated, user: authUser } = await verifyAuth(request);
-  if (!authenticated || !authUser) {
-    throw new ApiError(401, "Authentication required");
-  }
-
   try {
+    const { authenticated, user: authUser } = await verifyAuth(request);
+    if (!authenticated || !authUser) {
+      throw new ApiError(401, "Authentication required");
+    }
     const validated = await validateRequestBody(request, memberProfileSchema);
 
     // Use server-verified userId
@@ -144,14 +143,24 @@ export async function POST(request: NextRequest) {
 
 // PATCH /api/members/profile — Update profile
 export async function PATCH(request: NextRequest) {
-  const { authenticated, user: authUser } = await verifyAuth(request);
-  if (!authenticated || !authUser) {
-    throw new ApiError(401, "Authentication required");
-  }
-  
   try {
+    const { authenticated, user: authUser } = await verifyAuth(request);
+    if (!authenticated || !authUser) {
+      throw new ApiError(401, "Authentication required");
+    }
+
     const body = await validateRequestBody(request, updateProfileSchema);
     const { profileId, ...updateData } = body;
+
+    // Verify the profile belongs to the authenticated user (access control)
+    const doc = await adminDb.getDocument(
+      DATABASE_ID,
+      COLLECTIONS.MEMBER_PROFILES,
+      profileId
+    );
+    if (doc.userId !== authUser.$id) {
+      throw new ApiError(403, "You can only update your own profile");
+    }
 
     const profile = await adminDb.updateDocument(
       DATABASE_ID,

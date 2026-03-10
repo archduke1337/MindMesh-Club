@@ -5,9 +5,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { FormInput, FormTextarea, FormSelect } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
 import { blogService, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
@@ -226,7 +225,7 @@ export default function EditBlogPage() {
               <div className="space-y-3">
                 <label className="text-sm font-semibold">Cover Image *</label>
                 <div className="border-2 border-dashed border-default-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
-                  <Input
+                  <FormInput
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
@@ -250,7 +249,7 @@ export default function EditBlogPage() {
               </div>
 
               {/* Title */}
-              <Input
+              <FormInput
                 label="Blog Title *"
                 placeholder="Enter your blog title"
                 value={formData.title}
@@ -259,7 +258,7 @@ export default function EditBlogPage() {
               />
 
               {/* Category */}
-              <Select
+              <FormSelect
                 label="Category *"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -270,29 +269,29 @@ export default function EditBlogPage() {
                     {cat.label}
                   </SelectItem>
                 ))}
-              </Select>
+              </FormSelect>
 
               {/* Excerpt */}
-              <Textarea
+              <FormTextarea
                 label="Excerpt"
                 placeholder="Brief summary of your blog (optional)"
                 value={formData.excerpt}
                 onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                rows={3}
+                minRows={3}
               />
 
               {/* Content */}
-              <Textarea
+              <FormTextarea
                 label="Blog Content *"
                 placeholder="Write your blog content here..."
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                rows={10}
+                minRows={10}
                 required
               />
 
               {/* Tags */}
-              <Input
+              <FormInput
                 label="Tags"
                 placeholder="Separate tags with commas (e.g., javascript, react, web)"
                 value={formData.tags}

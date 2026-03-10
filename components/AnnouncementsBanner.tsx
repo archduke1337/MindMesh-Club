@@ -60,6 +60,7 @@ export default function AnnouncementsBanner() {
   const fetchAnnouncements = async () => {
     try {
       const res = await fetch("/api/announcements");
+      if (!res.ok) return;
       const data = await res.json();
       setAnnouncements(data.announcements || []);
     } catch {

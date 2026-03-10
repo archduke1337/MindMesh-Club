@@ -6,8 +6,8 @@ import {Button} from "@heroui/button";
 import {Badge} from "@heroui/badge";
 import {Chip} from "@heroui/chip";
 import {Progress} from "@heroui/progress";
-import {Input} from "@heroui/input";
-import {Select, SelectItem} from "@heroui/select";
+import {FormInput, FormSelect} from "@/components/ui/form";
+import {SelectItem} from "@heroui/select";
 import {subtitle, title} from "@/components/Primitives";
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
@@ -200,11 +200,12 @@ export default function EventsPage() {
                 }),
             });
 
-            const result = await response.json();
-
             if (!response.ok) {
+                const result = await response.json().catch(() => ({}));
                 throw new Error(result.error || result.message || 'Registration failed');
             }
+
+            const result = await response.json();
 
             const ticketData = {
                 ticketId: result.ticketId,
@@ -332,38 +333,30 @@ export default function EventsPage() {
                         <CardBody className="p-3 sm:p-4 md:p-5 lg:p-6">
                             <div className="flex flex-col gap-2.5 sm:gap-3 md:gap-4">
                                 <div className="w-full">
-                                    <Input
+                                    <FormInput
                                         placeholder="Search events..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         startContent={<SearchIcon
                                             className="w-3.5 sm:w-4 md:w-4.5 h-3.5 sm:h-4 md:h-4.5 text-default-400"/>}
                                         size="lg"
-                                        classNames={{
-                                            input: "text-xs sm:text-sm md:text-base",
-                                            label: "text-xs sm:text-sm",
-                                        }}
                                     />
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 md:gap-4 w-full">
-                                    <Select
+                                    <FormSelect
                                         label="Sort by"
                                         selectedKeys={[sortBy]}
                                         onChange={(e) => setSortBy(e.target.value)}
                                         size="lg"
                                         className="flex-1"
-                                        classNames={{
-                                            label: "text-xs sm:text-sm",
-                                            value: "text-xs sm:text-sm md:text-base",
-                                        }}
                                     >
                                         <SelectItem key="date">Date</SelectItem>
                                         <SelectItem key="price">Price</SelectItem>
                                         <SelectItem key="popularity">Popularity</SelectItem>
-                                    </Select>
+                                    </FormSelect>
 
-                                    <Select
+                                    <FormSelect
                                         label="Category"
                                         selectedKeys={[selectedCategory]}
                                         onChange={(e) => setSelectedCategory(e.target.value)}
@@ -373,7 +366,7 @@ export default function EventsPage() {
                                         {categories.map(category => (
                                             <SelectItem key={category.key}>{category.label}</SelectItem>
                                         ))}
-                                    </Select>
+                                    </FormSelect>
                                 </div>
                             </div>
                         </CardBody>

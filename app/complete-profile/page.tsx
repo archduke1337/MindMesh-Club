@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
-import { Input, Textarea } from "@heroui/input";
 import { Button } from "@heroui/button";
-import { Select, SelectItem } from "@heroui/select";
+import { FormInput, FormTextarea, FormSelect } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { useAuth } from "@/context/AuthContext";
@@ -65,6 +65,7 @@ export default function CompleteProfilePage() {
     if (!user) return;
     try {
       const res = await fetch(`/api/members/profile?userId=${user.$id}`);
+      if (!res.ok) return;
       const data = await res.json();
       if (data.profile) {
         // Profile already exists, redirect to profile page
@@ -121,13 +122,13 @@ export default function CompleteProfilePage() {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
         setError(data.error || "Failed to create profile");
         setSubmitting(false);
         return;
       }
+      const data = await res.json();
 
       // Success — redirect to profile
       router.push("/profile?welcome=true");
@@ -200,39 +201,35 @@ export default function CompleteProfilePage() {
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
+                <FormInput
                   label="Full Name"
                   value={formData.name}
                   onChange={(e) => handleChange("name", e.target.value)}
                   isRequired
-                  variant="bordered"
                 />
-                <Input
+                <FormInput
                   label="Email"
                   value={formData.email}
                   onChange={(e) => handleChange("email", e.target.value)}
                   isRequired
                   isReadOnly
-                  variant="bordered"
                   description="From your account"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
+                <FormInput
                   label="Phone Number"
                   value={formData.phone}
                   onChange={(e) => handleChange("phone", e.target.value)}
                   isRequired
-                  variant="bordered"
                   placeholder="+91 98765 43210"
                 />
-                <Input
+                <FormInput
                   label="WhatsApp Number"
                   value={formData.whatsapp}
                   onChange={(e) => handleChange("whatsapp", e.target.value)}
                   isRequired
-                  variant="bordered"
                   placeholder="+91 98765 43210"
                 />
               </div>
@@ -244,51 +241,46 @@ export default function CompleteProfilePage() {
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
+                <FormInput
                   label="College / Institution"
                   value={formData.college}
                   onChange={(e) => handleChange("college", e.target.value)}
                   isRequired
-                  variant="bordered"
                 />
-                <Input
+                <FormInput
                   label="Program (e.g. B.Tech, MCA)"
                   value={formData.program}
                   onChange={(e) => handleChange("program", e.target.value)}
                   isRequired
-                  variant="bordered"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
+                <FormInput
                   label="Branch / Department"
                   value={formData.branch}
                   onChange={(e) => handleChange("branch", e.target.value)}
                   isRequired
-                  variant="bordered"
                   placeholder="e.g. Computer Science"
                 />
-                <Select
+                <FormSelect
                   label="Year"
                   selectedKeys={formData.year ? [formData.year] : []}
                   onChange={(e) => handleChange("year", e.target.value)}
                   isRequired
-                  variant="bordered"
                 >
                   {YEAR_OPTIONS.map((opt) => (
                     <SelectItem key={opt.value}>
                       {opt.label}
                     </SelectItem>
                   ))}
-                </Select>
+                </FormSelect>
               </div>
 
-              <Input
+              <FormInput
                 label="Roll Number (optional)"
                 value={formData.rollNumber}
                 onChange={(e) => handleChange("rollNumber", e.target.value)}
-                variant="bordered"
               />
             </div>
           )}
@@ -299,28 +291,25 @@ export default function CompleteProfilePage() {
                 About You
               </h3>
 
-              <Textarea
+              <FormTextarea
                 label="Bio"
                 value={formData.bio}
                 onChange={(e) => handleChange("bio", e.target.value)}
-                variant="bordered"
                 placeholder="Tell us about yourself, your interests, what you're working on..."
                 minRows={3}
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
+                <FormInput
                   label="Skills (comma-separated)"
                   value={formData.skills}
                   onChange={(e) => handleChange("skills", e.target.value)}
-                  variant="bordered"
                   placeholder="React, Python, UI/UX..."
                 />
-                <Input
+                <FormInput
                   label="Interests (comma-separated)"
                   value={formData.interests}
                   onChange={(e) => handleChange("interests", e.target.value)}
-                  variant="bordered"
                   placeholder="AI, Web Dev, Blockchain..."
                 />
               </div>
@@ -332,21 +321,19 @@ export default function CompleteProfilePage() {
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
+                <FormInput
                   label="LinkedIn"
                   value={formData.linkedin}
                   onChange={(e) => handleChange("linkedin", e.target.value)}
-                  variant="bordered"
                   placeholder="https://linkedin.com/in/..."
                   startContent={
                     <span className="text-default-400 text-sm">🔗</span>
                   }
                 />
-                <Input
+                <FormInput
                   label="GitHub Username"
                   value={formData.github}
                   onChange={(e) => handleChange("github", e.target.value)}
-                  variant="bordered"
                   placeholder="username"
                   startContent={
                     <span className="text-default-400 text-sm">🐙</span>
@@ -355,18 +342,16 @@ export default function CompleteProfilePage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
+                <FormInput
                   label="Twitter/X Handle"
                   value={formData.twitter}
                   onChange={(e) => handleChange("twitter", e.target.value)}
-                  variant="bordered"
                   placeholder="@handle"
                 />
-                <Input
+                <FormInput
                   label="Portfolio URL"
                   value={formData.portfolio}
                   onChange={(e) => handleChange("portfolio", e.target.value)}
-                  variant="bordered"
                   placeholder="https://..."
                 />
               </div>
