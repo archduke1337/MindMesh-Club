@@ -2,7 +2,6 @@
 "use client";
 
 import { Input, type InputProps } from "@heroui/input";
-import { forwardRef } from "react";
 import { FORM_DEFAULTS } from "./defaults";
 
 export type FormInputProps = InputProps;
@@ -14,18 +13,12 @@ export type FormInputProps = InputProps;
  * Accepts all HeroUI InputProps. Override any default by passing
  * the prop explicitly (e.g. `variant="flat"`).
  */
-export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
-  (props, ref) => {
-    const { classNames, ...rest } = props;
-    return (
-      <Input
-        {...FORM_DEFAULTS}
-        classNames={{ ...FORM_DEFAULTS.classNames, ...classNames }}
-        ref={ref}
-        {...rest}
-      />
-    );
-  }
-);
-
-FormInput.displayName = "FormInput";
+export function FormInput({ classNames, ...rest }: FormInputProps) {
+  return (
+    <Input
+      {...FORM_DEFAULTS}
+      classNames={{ ...FORM_DEFAULTS.classNames, ...classNames }}
+      {...rest}
+    />
+  );
+}

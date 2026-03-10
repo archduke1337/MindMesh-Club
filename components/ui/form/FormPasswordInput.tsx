@@ -1,14 +1,14 @@
 // components/ui/form/FormPasswordInput.tsx
 "use client";
 
-import { useState, forwardRef } from "react";
+import { useState } from "react";
 import { Input, type InputProps } from "@heroui/input";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { FORM_DEFAULTS } from "./defaults";
 
 export interface FormPasswordInputProps
   extends Omit<InputProps, "type" | "endContent"> {
-  /** Override the visibility‐toggle icons. */
+  /** Override the visibility-toggle icons. */
   showIcon?: React.ReactNode;
   hideIcon?: React.ReactNode;
 }
@@ -17,10 +17,12 @@ export interface FormPasswordInputProps
  * Password input with built-in show/hide toggle.
  * Wraps HeroUI Input with all standard form defaults.
  */
-export const FormPasswordInput = forwardRef<
-  HTMLInputElement,
-  FormPasswordInputProps
->(({ showIcon, hideIcon, classNames, ...rest }, ref) => {
+export function FormPasswordInput({
+  showIcon,
+  hideIcon,
+  classNames,
+  ...rest
+}: FormPasswordInputProps) {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -41,10 +43,7 @@ export const FormPasswordInput = forwardRef<
             : (showIcon ?? <EyeIcon className="w-4 h-4 text-default-400" />)}
         </button>
       }
-      ref={ref}
       {...rest}
     />
   );
-});
-
-FormPasswordInput.displayName = "FormPasswordInput";
+}
