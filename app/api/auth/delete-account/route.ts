@@ -5,9 +5,21 @@ export async function DELETE(request: NextRequest) {
   try {
     const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
     const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-    const cookieHeader = request.headers.get("cookie");
 
-    if (!endpoint || !projectId || !cookieHeader) {
+    if (!endpoint || !projectId) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    // Build the cookie header — prefer our httpOnly appwrite-session cookie
+    const sessionSecret = request.cookies.get("appwrite-session")?.value;
+    const cookieHeader = sessionSecret
+      ? `a_session_${projectId}=${sessionSecret}`
+      : request.headers.get("cookie");
+
+    if (!cookieHeader) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
         { status: 401 }
@@ -66,13 +78,22 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
         message: "Account deleted successfully",
       },
       { status: 200 }
     );
+    // Clear the appwrite-session cookie
+    response.cookies.set("appwrite-session", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 0,
+    });
+    return response;
   } catch (error: unknown) {
     console.error("Error deleting account:", getErrorMessage(error));
     

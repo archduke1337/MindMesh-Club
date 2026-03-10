@@ -38,8 +38,7 @@ export default function AdminPageWrapper({
         return;
       }
 
-      // Check admin status using unified isAdmin from AuthContext
-      // (checks both Appwrite labels and email-based config)
+      // Check admin status using isAdmin from AuthContext (Appwrite labels)
       if (!isAdminUser) {
         setError("You do not have permission to access this page.");
         setTimeout(() => router.push("/"), 3000);

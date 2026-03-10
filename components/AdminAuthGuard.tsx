@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 /**
  * Shared auth guard for all admin routes.
  * Redirects unauthenticated users to /login and non-admins to /unauthorized.
- * Uses the unified isAdmin from AuthContext (checks both labels and email).
+ * Uses isAdmin from AuthContext (checks Appwrite labels).
  */
 export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading, isAdmin } = useAuth();

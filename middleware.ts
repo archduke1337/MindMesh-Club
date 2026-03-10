@@ -6,36 +6,50 @@
  *   /api/admin/*  — requires valid Appwrite session + admin label
  *   /admin/*      — redirects unauthenticated / non-admin users
  *
- * Security Features:
- *   - Session validation
- *   - Admin authorization
- *   - CSRF protection for state-changing operations
- *
- * Public routes are excluded via the `matcher` config below.
+ * Security:
+ *   - Session validation against Appwrite
+ *   - Admin authorization via Appwrite labels
+ *   - Origin-based CSRF protection for state-changing requests
  */
 import { NextRequest, NextResponse } from "next/server";
 
 // ── CSRF Protection ─────────────────────────────────────
 
 /**
- * Simple CSRF token validation.
- * For production, consider using @edge-csrf/nextjs package.
+ * Origin-based CSRF protection.
+ * Rejects state-changing requests whose Origin/Referer doesn't match the host.
  */
-function validateCSRFToken(request: NextRequest): boolean {
-  // Skip CSRF for GET, HEAD, OPTIONS
-  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+function validateOrigin(request: NextRequest): boolean {
+  // Safe methods don't need CSRF protection
+  if (["GET", "HEAD", "OPTIONS"].includes(request.method)) {
     return true;
   }
 
-  // Check for CSRF token in header
-  const csrfToken = request.headers.get('x-csrf-token');
-  const csrfCookie = request.cookies.get('csrf-token')?.value;
+  const origin = request.headers.get("origin");
+  const host = request.headers.get("host");
 
-  // For now, allow requests without CSRF (to not break existing functionality)
-  // TODO: Enforce CSRF protection after implementing token generation
-  // return csrfToken === csrfCookie && csrfToken !== undefined;
-  
-  return true; // Temporarily allow all requests
+  // If no origin header (e.g. same-origin requests from some browsers), check referer
+  if (!origin) {
+    const referer = request.headers.get("referer");
+    if (!referer) {
+      // No origin or referer — allow for now (API clients, curl, etc.)
+      // API key-based routes have their own auth; cookie-based routes have sameSite=strict
+      return true;
+    }
+    try {
+      const refererHost = new URL(referer).host;
+      return refererHost === host;
+    } catch {
+      return false;
+    }
+  }
+
+  try {
+    const originHost = new URL(origin).host;
+    return originHost === host;
+  } catch {
+    return false;
+  }
 }
 
 // ── Helpers ─────────────────────────────────────────────
@@ -76,10 +90,10 @@ function isAdmin(user: any): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // ── CSRF Protection ────────────────────────────────
-  if (!validateCSRFToken(request)) {
+  // ── CSRF Protection (origin-based) ─────────────────
+  if (!validateOrigin(request)) {
     return NextResponse.json(
-      { error: "Invalid CSRF token" },
+      { error: "Forbidden — cross-origin request rejected" },
       { status: 403 }
     );
   }
@@ -99,13 +113,9 @@ export async function middleware(request: NextRequest) {
         { status: 403 }
       );
     }
-    // Attach user info as request header so route handlers don't need to re-verify
-    const res = NextResponse.next();
-    res.headers.set("x-user-id", user.$id);
-    res.headers.set("x-user-email", user.email);
-    res.headers.set("x-user-name", user.name || "");
-    res.headers.set("x-user-is-admin", "true");
-    return res;
+    // Middleware verified admin — API routes re-verify via verifyAdminAuth()
+    // No user info headers are set (defense-in-depth: don't trust headers)
+    return NextResponse.next();
   }
 
   // ── Admin pages (/admin/*) ─────────────────────────

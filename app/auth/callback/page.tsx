@@ -1,59 +1,61 @@
 // app/auth/callback/page.tsx
 "use client";
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useSearchParams } from "next/navigation";
 import { account } from "@/lib/appwrite";
 
 function AuthCallbackContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading } = useAuth();
-  const [sessionCreated, setSessionCreated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function handleOAuthCallback() {
-      // With Appwrite SDK v22+, createOAuth2Token returns userId and secret
-      // in the callback URL that must be exchanged for a session
       const userId = searchParams.get("userId");
       const secret = searchParams.get("secret");
 
-      if (userId && secret && !sessionCreated) {
-        try {
-          const session = await account.createSession(userId, secret);
-          // Sync session secret to our domain cookie so middleware can read it
-          if (session?.secret) {
-            await fetch("/api/auth/session", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ secret: session.secret }),
-            });
-          }
-          setSessionCreated(true);
-          // Reload to update auth context with the new session
-          window.location.href = "/";
-          return;
-        } catch (err: any) {
-          console.error("Failed to create session from OAuth token:", err);
-          setError(err.message || "Authentication failed");
-          setTimeout(() => router.push("/login"), 2000);
-          return;
-        }
+      if (!userId || !secret) {
+        // No token params — likely a stale navigation
+        window.location.href = "/login";
+        return;
       }
 
-      // Fallback: If no token params, check if user is already logged in
-      if (!loading) {
-        if (user) {
-          router.push("/");
-        } else if (!userId && !secret) {
-          router.push("/login");
+      try {
+        // Exchange the single-use OAuth token for a session
+        const session = await account.createSession(userId, secret);
+
+        // Sync session secret to our httpOnly cookie
+        if (session?.secret) {
+          const res = await fetch("/api/auth/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ secret: session.secret }),
+          });
+          if (!res.ok) {
+            throw new Error("Failed to sync session cookie");
+          }
         }
+
+        // Full reload to pick up the new session in AuthContext
+        window.location.href = "/";
+      } catch (err: unknown) {
+        if (cancelled) return;
+        const message =
+          err instanceof Error ? err.message : "Authentication failed";
+        console.error("OAuth callback error:", message);
+        setError(message);
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
       }
     }
 
     handleOAuthCallback();
-  }, [user, loading, router, searchParams, sessionCreated]);
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
 
   if (error) {
     return (
@@ -61,7 +63,9 @@ function AuthCallbackContent() {
         <div className="text-center">
           <p className="text-danger text-lg">Authentication failed</p>
           <p className="mt-2 text-default-500">{error}</p>
-          <p className="mt-2 text-sm text-default-400">Redirecting to login...</p>
+          <p className="mt-2 text-sm text-default-400">
+            Redirecting to login...
+          </p>
         </div>
       </div>
     );
