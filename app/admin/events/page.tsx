@@ -984,13 +984,13 @@ export default function AdminEventsPage() {
                         label: "font-semibold"
                       }} variant="bordered"
                     >
-                      <SelectItem key="conference" variant="bordered">Conference</SelectItem>
-                      <SelectItem key="workshop" variant="bordered">Workshop</SelectItem>
-                      <SelectItem key="hackathon" variant="bordered">Hackathon</SelectItem>
-                      <SelectItem key="masterclass" variant="bordered">Masterclass</SelectItem>
-                      <SelectItem key="competition" variant="bordered">Competition</SelectItem>
-                      <SelectItem key="bootcamp" variant="bordered">Bootcamp</SelectItem>
-                      <SelectItem key="forum" variant="bordered">Forum</SelectItem>
+                      <SelectItem key="conference">Conference</SelectItem>
+                      <SelectItem key="workshop">Workshop</SelectItem>
+                      <SelectItem key="hackathon">Hackathon</SelectItem>
+                      <SelectItem key="masterclass">Masterclass</SelectItem>
+                      <SelectItem key="competition">Competition</SelectItem>
+                      <SelectItem key="bootcamp">Bootcamp</SelectItem>
+                      <SelectItem key="forum">Forum</SelectItem>
                     </FormSelect>
 
                     {/* Event Type (type-driven system) */}
@@ -1206,10 +1206,10 @@ export default function AdminEventsPage() {
                               label: "font-semibold text-sm"
                             }} variant="bordered"
                           >
-                            <SelectItem key="weekly" variant="bordered">Every Week</SelectItem>
-                            <SelectItem key="biweekly" variant="bordered">Every 2 Weeks</SelectItem>
-                            <SelectItem key="monthly" variant="bordered">Every Month</SelectItem>
-                            <SelectItem key="quarterly" variant="bordered">Every Quarter</SelectItem>
+                            <SelectItem key="weekly">Every Week</SelectItem>
+                            <SelectItem key="biweekly">Every 2 Weeks</SelectItem>
+                            <SelectItem key="monthly">Every Month</SelectItem>
+                            <SelectItem key="quarterly">Every Quarter</SelectItem>
                           </FormSelect>
                           <div className="p-3 bg-blue-100/50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
                             <p className="text-xs text-blue-700 dark:text-blue-300">

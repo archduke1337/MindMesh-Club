@@ -388,7 +388,7 @@ export default function AdminGalleryPage() {
                       onChange={(e) => setFormData({ ...formData, category: e.target.value as GalleryCategory })}
                     >
                       {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.key} variant="bordered">{cat.label}</SelectItem>
+                        <SelectItem key={cat.key}>{cat.label}</SelectItem>
                       ))}
                     </FormSelect>
                     <FormInput label="Date" type="date" value={formData.date} variant="bordered"

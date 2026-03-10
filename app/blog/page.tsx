@@ -53,8 +53,9 @@ export default function BlogPage() {
       }
       
       const result = await response.json();
-      setBlogs(result.data || []);
-      setFilteredBlogs(result.data || []);
+      const blogList = Array.isArray(result.data) ? result.data : (result.data?.blogs || []);
+      setBlogs(blogList);
+      setFilteredBlogs(blogList);
     } catch (err) {
       console.error("Error loading blogs:", err);
       setError("Failed to load blogs. Please try again later.");
@@ -278,7 +279,7 @@ export default function BlogPage() {
                     </div>
                   </CardBody>
 
-                  <CardFooter className="px-3 sm:px-4 md:px-5 lg:px-6 pb-3 sm:pb-4 md:pb-5 lg:pb-6 pt-0 flex flex-col gap-2 sm:flex-row justify-between gap-2 sm:gap-3 lg:gap-4">
+                  <CardFooter className="px-3 sm:px-4 md:px-5 lg:px-6 pb-3 sm:pb-4 md:pb-5 lg:pb-6 pt-0 flex flex-col gap-2 sm:flex-row justify-between sm:gap-3 lg:gap-4">
                     {/* Author */}
                     <div className="flex items-center gap-2 min-w-0">
                       <Avatar

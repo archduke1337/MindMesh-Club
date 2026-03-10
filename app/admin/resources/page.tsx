@@ -423,20 +423,20 @@ export default function AdminResourcesPage() {
               <FormSelect label="Type" selectedKeys={[formData.type]}
                 onChange={(e) => setFormData(p => ({ ...p, type: e.target.value as ResourceType }))} variant="bordered"
               >
-                {RESOURCE_TYPES.map((t) => <SelectItem key={t.key} variant="bordered">{t.label}</SelectItem>)}
+                {RESOURCE_TYPES.map((t) => <SelectItem key={t.key}>{t.label}</SelectItem>)}
               </FormSelect>
 
               <FormSelect label="Difficulty" selectedKeys={[formData.difficulty]}
                 onChange={(e) => setFormData(p => ({ ...p, difficulty: e.target.value as Difficulty }))} variant="bordered"
               >
-                {DIFFICULTIES.map((d) => <SelectItem key={d.key} variant="bordered">{d.label}</SelectItem>)}
+                {DIFFICULTIES.map((d) => <SelectItem key={d.key}>{d.label}</SelectItem>)}
               </FormSelect>
             </div>
 
             <FormSelect label="Category" selectedKeys={[formData.category]}
               onChange={(e) => setFormData(p => ({ ...p, category: e.target.value }))} variant="bordered"
             >
-              {CATEGORIES.map((c) => <SelectItem key={c} variant="bordered">{c}</SelectItem>)}
+              {CATEGORIES.map((c) => <SelectItem key={c}>{c}</SelectItem>)}
             </FormSelect>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -253,7 +253,7 @@ export default function EditBlogPage() {
                 label="Blog Title *"
                 placeholder="Enter your blog title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, title: e.target.value })}
                 required
               />
 
@@ -261,7 +261,7 @@ export default function EditBlogPage() {
               <FormSelect
                 label="Category *"
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, category: e.target.value })}
                 required
               >
                 {blogCategories.map((cat) => (
@@ -276,7 +276,7 @@ export default function EditBlogPage() {
                 label="Excerpt"
                 placeholder="Brief summary of your blog (optional)"
                 value={formData.excerpt}
-                onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, excerpt: e.target.value })}
                 minRows={3}
               />
 
@@ -285,7 +285,7 @@ export default function EditBlogPage() {
                 label="Blog Content *"
                 placeholder="Write your blog content here..."
                 value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, content: e.target.value })}
                 minRows={10}
                 required
               />
@@ -295,7 +295,7 @@ export default function EditBlogPage() {
                 label="Tags"
                 placeholder="Separate tags with commas (e.g., javascript, react, web)"
                 value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, tags: e.target.value })}
               />
 
               {/* Read Time */}

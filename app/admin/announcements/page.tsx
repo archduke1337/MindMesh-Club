@@ -369,7 +369,7 @@ export default function AdminAnnouncementsPage() {
                       variant="bordered"
                     >
                       {TYPE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} variant="bordered">{opt.label}</SelectItem>
+                        <SelectItem key={opt.value}>{opt.label}</SelectItem>
                       ))}
                     </FormSelect>
                     <FormSelect
@@ -379,7 +379,7 @@ export default function AdminAnnouncementsPage() {
                       variant="bordered"
                     >
                       {PRIORITY_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} variant="bordered">{opt.label}</SelectItem>
+                        <SelectItem key={opt.value}>{opt.label}</SelectItem>
                       ))}
                     </FormSelect>
                   </div>

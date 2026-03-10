@@ -153,7 +153,7 @@ export default function AdminSubmissionsPage() {
             variant="bordered"
           >
             {events.map((ev) => (
-              <SelectItem key={ev.$id} variant="bordered">{ev.title}</SelectItem>
+              <SelectItem key={ev.$id}>{ev.title}</SelectItem>
             ))}
           </FormSelect>
         </CardBody>

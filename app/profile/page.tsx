@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Avatar } from "@heroui/avatar";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
+import { FormInput } from "@/components/ui/form";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { useAuth } from "@/context/AuthContext";
@@ -347,8 +347,7 @@ export default function ProfilePage() {
           <CardBody className="px-6 pb-6 space-y-4">
             {isEditing ? (
               <form onSubmit={handleUpdateProfile} className="space-y-4">
-                <Input
-                  variant="bordered"
+                <FormInput
                   label="Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -358,8 +357,7 @@ export default function ProfilePage() {
                   isInvalid={!!validationErrors.name}
                   errorMessage={validationErrors.name}
                 />
-                <Input
-                  variant="bordered"
+                <FormInput
                   label="Phone"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}

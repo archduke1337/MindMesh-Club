@@ -346,7 +346,7 @@ export default function AdminClubMembersPage() {
                       onChange={(e) => setForm({ ...form, memberType: e.target.value })}
                     >
                       {MEMBER_TYPES.map((t) => (
-                        <SelectItem key={t} className="capitalize" variant="bordered">{t}</SelectItem>
+                        <SelectItem key={t} className="capitalize">{t}</SelectItem>
                       ))}
                     </FormSelect>
                     <FormInput label="Department" value={form.department} variant="bordered"

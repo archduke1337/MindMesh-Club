@@ -2,22 +2,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
-import { Input } from "@heroui/input";
+import { FormInput, FormPasswordInput, ErrorMessage } from "@/components/ui/form";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
 import NextLink from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { registerSchema } from "@/lib/validation/schemas";
 import { z } from "zod";
-import { EyeIcon, EyeOffIcon, MailIcon, LockIcon, UserIcon } from "lucide-react";
+import { MailIcon, LockIcon, UserIcon } from "lucide-react";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
@@ -87,8 +85,7 @@ export default function RegisterPage() {
         </CardHeader>
         <CardBody className="p-6 md:p-8 gap-4 md:gap-5">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Input
-              variant="bordered"
+            <FormInput
               label="Name"
               placeholder="Enter your name"
               type="text"
@@ -98,15 +95,10 @@ export default function RegisterPage() {
               isDisabled={loading}
               size="lg"
               startContent={<UserIcon className="w-4 h-4 text-default-400 flex-shrink-0" />}
-              classNames={{
-                input: "text-sm md:text-base",
-                label: "text-xs md:text-small"
-              }}
               isInvalid={!!validationErrors.name}
               errorMessage={validationErrors.name}
             />
-            <Input
-              variant="bordered"
+            <FormInput
               label="Email"
               placeholder="Enter your email"
               type="email"
@@ -116,62 +108,34 @@ export default function RegisterPage() {
               isDisabled={loading}
               size="lg"
               startContent={<MailIcon className="w-4 h-4 text-default-400 flex-shrink-0" />}
-              classNames={{
-                input: "text-sm md:text-base",
-                label: "text-xs md:text-small"
-              }}
               isInvalid={!!validationErrors.email}
               errorMessage={validationErrors.email}
             />
-            <Input
-              variant="bordered"
+            <FormPasswordInput
               label="Password"
               placeholder="Create a password (min 8 characters)"
-              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               isDisabled={loading}
               size="lg"
               startContent={<LockIcon className="w-4 h-4 text-default-400 flex-shrink-0" />}
-              endContent={
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="focus:outline-none" tabIndex={-1}>
-                  {showPassword ? <EyeOffIcon className="w-4 h-4 text-default-400" /> : <EyeIcon className="w-4 h-4 text-default-400" />}
-                </button>
-              }
-              classNames={{
-                input: "text-sm md:text-base",
-                label: "text-xs md:text-small"
-              }}
               isInvalid={!!validationErrors.password}
               errorMessage={validationErrors.password}
             />
-            <Input
-              variant="bordered"
+            <FormPasswordInput
               label="Confirm Password"
               placeholder="Confirm your password"
-              type={showConfirmPassword ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               isDisabled={loading}
               size="lg"
               startContent={<LockIcon className="w-4 h-4 text-default-400 flex-shrink-0" />}
-              endContent={
-                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="focus:outline-none" tabIndex={-1}>
-                  {showConfirmPassword ? <EyeOffIcon className="w-4 h-4 text-default-400" /> : <EyeIcon className="w-4 h-4 text-default-400" />}
-                </button>
-              }
-              classNames={{
-                input: "text-sm md:text-base",
-                label: "text-xs md:text-small"
-              }}
               isInvalid={!!validationErrors.confirmPassword}
               errorMessage={validationErrors.confirmPassword}
             />
-            {error && (
-              <div className="text-danger text-xs sm:text-small bg-danger/10 p-2 md:p-3 rounded">{error}</div>
-            )}
+            <ErrorMessage message={error} />
             <Button
               type="submit"
               isLoading={loading}

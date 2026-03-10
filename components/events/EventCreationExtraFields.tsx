@@ -7,8 +7,8 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { Input, Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { FormInput, FormTextarea, FormSelect, FormCheckbox } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Chip } from "@heroui/chip";
 import { EventType } from "@/lib/events/types";
 import { getExtraEventFields } from "@/lib/events/registry";
@@ -52,7 +52,7 @@ export default function EventCreationExtraFields({
             case "url":
             case "number":
               return (
-                <Input
+                <FormInput
                   key={field.name}
                   label={field.label}
                   placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
@@ -72,7 +72,7 @@ export default function EventCreationExtraFields({
 
             case "textarea":
               return (
-                <Textarea
+                <FormTextarea
                   key={field.name}
                   label={field.label}
                   placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
@@ -87,7 +87,7 @@ export default function EventCreationExtraFields({
 
             case "select":
               return (
-                <Select
+                <FormSelect
                   key={field.name}
                   label={field.label}
                   placeholder={`Select ${field.label.toLowerCase()}`}
@@ -103,12 +103,12 @@ export default function EventCreationExtraFields({
                   {(field.options || []).map((opt) => (
                     <SelectItem key={opt.value}>{opt.label}</SelectItem>
                   ))}
-                </Select>
+                </FormSelect>
               );
 
             case "multiselect":
               return (
-                <Select
+                <FormSelect
                   key={field.name}
                   label={field.label}
                   placeholder={`Select ${field.label.toLowerCase()}`}
@@ -126,28 +126,23 @@ export default function EventCreationExtraFields({
                   {(field.options || []).map((opt) => (
                     <SelectItem key={opt.value}>{opt.label}</SelectItem>
                   ))}
-                </Select>
+                </FormSelect>
               );
 
             case "checkbox":
               return (
-                <label
+                <FormCheckbox
                   key={field.name}
-                  className="flex items-center gap-2 cursor-pointer py-2"
+                  isSelected={!!value}
+                  onValueChange={(v) => onChange(field.name, v)}
                 >
-                  <input
-                    type="checkbox"
-                    checked={!!value}
-                    onChange={(e) => onChange(field.name, e.target.checked)}
-                    className="w-4 h-4 rounded"
-                  />
-                  <span className="text-sm">{field.label}</span>
-                </label>
+                  {field.label}
+                </FormCheckbox>
               );
 
             case "date":
               return (
-                <Input
+                <FormInput
                   key={field.name}
                   label={field.label}
                   type="date"

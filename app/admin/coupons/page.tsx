@@ -342,8 +342,8 @@ export default function AdminCouponsPage() {
                       onChange={(e) => setForm({ ...form, type: e.target.value as "percentage" | "fixed" })}
                       variant="bordered"
                     >
-                      <SelectItem key="percentage" variant="bordered">Percentage (%)</SelectItem>
-                      <SelectItem key="fixed" variant="bordered">Fixed Amount (₹)</SelectItem>
+                      <SelectItem key="percentage">Percentage (%)</SelectItem>
+                      <SelectItem key="fixed">Fixed Amount (₹)</SelectItem>
                     </FormSelect>
                     <FormInput
                       label={form.type === "percentage" ? "Percentage Off" : "Amount Off (₹)"}
@@ -381,8 +381,8 @@ export default function AdminCouponsPage() {
                       onChange={(e) => setForm({ ...form, scope: e.target.value as "global" | "event" })}
                       variant="bordered"
                     >
-                      <SelectItem key="global" variant="bordered">All Events (Global)</SelectItem>
-                      <SelectItem key="event" variant="bordered">Specific Event</SelectItem>
+                      <SelectItem key="global">All Events (Global)</SelectItem>
+                      <SelectItem key="event">Specific Event</SelectItem>
                     </FormSelect>
                     {form.scope === "event" && (
                       <FormSelect
@@ -395,7 +395,7 @@ export default function AdminCouponsPage() {
                         variant="bordered"
                       >
                         {events.map((ev) => (
-                          <SelectItem key={ev.$id} variant="bordered">{ev.title}</SelectItem>
+                          <SelectItem key={ev.$id}>{ev.title}</SelectItem>
                         ))}
                       </FormSelect>
                     )}

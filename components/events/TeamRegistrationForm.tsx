@@ -8,7 +8,7 @@
 "use client";
 
 import { useState } from "react";
-import { Input } from "@heroui/input";
+import { FormInput } from "@/components/ui/form";
 import { Button } from "@heroui/button";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Card, CardBody } from "@heroui/card";
@@ -95,7 +95,7 @@ export default function TeamRegistrationForm({
               </p>
             </div>
 
-            <Input
+            <FormInput
               label="Team Name"
               placeholder="Enter your team name"
               value={teamName}
@@ -108,7 +108,7 @@ export default function TeamRegistrationForm({
             {config.registration.extraFields
               .filter((f) => f.name !== "teamName" && f.name !== "inviteCode")
               .map((field) => (
-                <Input
+                <FormInput
                   key={field.name}
                   label={field.label}
                   placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
@@ -141,7 +141,7 @@ export default function TeamRegistrationForm({
               </p>
             </div>
 
-            <Input
+            <FormInput
               label="Invite Code"
               placeholder="e.g., AB12CD"
               value={inviteCode}

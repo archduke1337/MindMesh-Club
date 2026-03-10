@@ -642,7 +642,7 @@ export default function AdminProjectsPage() {
                     }}
                   >
                     {categories.map((cat) => (
-                      <SelectItem key={cat.key} textValue={cat.label} variant="bordered">
+                      <SelectItem key={cat.key} textValue={cat.label}>
                         {cat.label}
                       </SelectItem>
                     ))}
@@ -658,7 +658,7 @@ export default function AdminProjectsPage() {
                     }}
                   >
                     {statuses.map((status) => (
-                      <SelectItem key={status.key} textValue={status.label} variant="bordered">
+                      <SelectItem key={status.key} textValue={status.label}>
                         {status.label}
                       </SelectItem>
                     ))}

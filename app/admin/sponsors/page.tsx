@@ -4,8 +4,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input, Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { FormInput, FormTextarea, FormSelect } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Switch } from "@heroui/switch";
 import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
@@ -252,21 +252,21 @@ export default function AdminSponsorsPage() {
               <ModalBody>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <Input label="Company Name" value={formData.name} isRequired variant="bordered"
+                    <FormInput label="Company Name" value={formData.name} isRequired variant="bordered"
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     />
-                    <Select label="Tier" selectedKeys={[formData.tier]} variant="bordered"
+                    <FormSelect label="Tier" selectedKeys={[formData.tier]} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
                     >
-                      <SelectItem key="platinum" variant="bordered">Platinum Partner</SelectItem>
-                      <SelectItem key="gold" variant="bordered">Gold Sponsor</SelectItem>
-                      <SelectItem key="silver" variant="bordered">Silver Sponsor</SelectItem>
-                      <SelectItem key="bronze" variant="bordered">Bronze Sponsor</SelectItem>
-                      <SelectItem key="partner" variant="bordered">Community Partner</SelectItem>
-                    </Select>
+                      <SelectItem key="platinum">Platinum Partner</SelectItem>
+                      <SelectItem key="gold">Gold Sponsor</SelectItem>
+                      <SelectItem key="silver">Silver Sponsor</SelectItem>
+                      <SelectItem key="bronze">Bronze Sponsor</SelectItem>
+                      <SelectItem key="partner">Community Partner</SelectItem>
+                    </FormSelect>
                   </div>
 
-                  <Input label="Logo URL" value={formData.logo} isRequired variant="bordered"
+                  <FormInput label="Logo URL" value={formData.logo} isRequired variant="bordered"
                     onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
                     description="Direct link to logo image (PNG, JPG, SVG)"
                   />
@@ -280,36 +280,36 @@ export default function AdminSponsorsPage() {
                     </div>
                   )}
 
-                  <Input label="Website URL" value={formData.website} isRequired variant="bordered"
+                  <FormInput label="Website URL" value={formData.website} isRequired variant="bordered"
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                   />
 
                   <div className="grid grid-cols-2 gap-4">
-                    <Select label="Category" selectedKeys={formData.category ? [formData.category] : []} variant="bordered"
+                    <FormSelect label="Category" selectedKeys={formData.category ? [formData.category] : []} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     >
-                      <SelectItem key="tech" variant="bordered">Technology</SelectItem>
-                      <SelectItem key="education" variant="bordered">Education</SelectItem>
-                      <SelectItem key="finance" variant="bordered">Finance</SelectItem>
-                      <SelectItem key="healthcare" variant="bordered">Healthcare</SelectItem>
-                      <SelectItem key="other" variant="bordered">Other</SelectItem>
-                    </Select>
-                    <Input type="number" label="Display Order" value={String(formData.displayOrder)} variant="bordered"
+                      <SelectItem key="tech">Technology</SelectItem>
+                      <SelectItem key="education">Education</SelectItem>
+                      <SelectItem key="finance">Finance</SelectItem>
+                      <SelectItem key="healthcare">Healthcare</SelectItem>
+                      <SelectItem key="other">Other</SelectItem>
+                    </FormSelect>
+                    <FormInput type="number" label="Display Order" value={String(formData.displayOrder)} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
                       description="Lower = first"
                     />
                   </div>
 
-                  <Textarea label="Description" value={formData.description || ""} variant="bordered"
+                  <FormTextarea label="Description" value={formData.description || ""} variant="bordered"
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     minRows={2}
                   />
 
                   <div className="grid grid-cols-2 gap-4">
-                    <Input type="date" label="Start Date" value={formData.startDate} variant="bordered"
+                    <FormInput type="date" label="Start Date" value={formData.startDate} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                     />
-                    <Input type="date" label="End Date (optional)" value={formData.endDate || ""} variant="bordered"
+                    <FormInput type="date" label="End Date (optional)" value={formData.endDate || ""} variant="bordered"
                       onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                     />
                   </div>

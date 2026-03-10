@@ -7,8 +7,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Input, Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { FormInput, FormTextarea, FormSelect, FormCheckbox } from "@/components/ui/form";
+import { SelectItem } from "@heroui/select";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
@@ -148,7 +148,7 @@ function renderField(
     case "url":
     case "number":
       return (
-        <Input
+        <FormInput
           key={key}
           label={field.label}
           placeholder={field.placeholder}
@@ -164,7 +164,7 @@ function renderField(
 
     case "textarea":
       return (
-        <Textarea
+        <FormTextarea
           key={key}
           label={field.label}
           placeholder={field.placeholder}
@@ -180,7 +180,7 @@ function renderField(
 
     case "select":
       return (
-        <Select
+        <FormSelect
           key={key}
           label={field.label}
           placeholder={field.placeholder || `Select ${field.label}`}
@@ -197,12 +197,12 @@ function renderField(
           {(field.options || []).map((opt) => (
             <SelectItem key={opt.value}>{opt.label}</SelectItem>
           ))}
-        </Select>
+        </FormSelect>
       );
 
     case "multiselect":
       return (
-        <Select
+        <FormSelect
           key={key}
           label={field.label}
           placeholder={field.placeholder || `Select ${field.label}`}
@@ -219,21 +219,18 @@ function renderField(
           {(field.options || []).map((opt) => (
             <SelectItem key={opt.value}>{opt.label}</SelectItem>
           ))}
-        </Select>
+        </FormSelect>
       );
 
     case "checkbox":
       return (
         <div key={key}>
-          <label className="flex items-center gap-2 cursor-pointer py-2">
-            <input
-              type="checkbox"
-              checked={(value as boolean) || false}
-              onChange={(e) => onChange(key, e.target.checked)}
-              className="w-4 h-4 rounded"
-            />
-            <span className="text-sm">{field.label}</span>
-          </label>
+          <FormCheckbox
+            isSelected={(value as boolean) || false}
+            onValueChange={(v) => onChange(key, v)}
+          >
+            {field.label}
+          </FormCheckbox>
           {field.helpText && (
             <p className="text-xs text-default-400 ml-7">{field.helpText}</p>
           )}
@@ -242,7 +239,7 @@ function renderField(
 
     case "date":
       return (
-        <Input
+        <FormInput
           key={key}
           label={field.label}
           type="date"

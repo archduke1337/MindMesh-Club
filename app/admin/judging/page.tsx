@@ -331,7 +331,7 @@ export default function AdminJudgingPage() {
             variant="bordered"
           >
             {events.map((ev) => (
-              <SelectItem key={ev.$id} variant="bordered">{ev.title}</SelectItem>
+              <SelectItem key={ev.$id}>{ev.title}</SelectItem>
             ))}
           </FormSelect>
         </CardBody>
@@ -570,8 +570,9 @@ export default function AdminJudgingPage() {
                 </div>
                 <FormInput label="Expertise" value={judgeForm.expertise} onChange={(e) => setJudgeForm({ ...judgeForm, expertise: e.target.value })} variant="bordered" placeholder="AI/ML, Web Dev, Design (comma-separated)" />
                 <div className="flex items-center gap-3">
-                  <FormInput type="checkbox" checked={judgeForm.isLead} onChange={(e) => setJudgeForm({ ...judgeForm, isLead: e.target.checked })} id="isLead" />
-                  <label htmlFor="isLead" className="text-sm">Lead Judge (can finalize scores)</label>
+                  <FormCheckbox isSelected={judgeForm.isLead} onValueChange={(v) => setJudgeForm({ ...judgeForm, isLead: v })}>
+                    Lead Judge (can finalize scores)
+                  </FormCheckbox>
                 </div>
               </ModalBody>
               <ModalFooter>

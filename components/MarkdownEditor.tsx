@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Textarea } from "@heroui/input";
+import { FormTextarea } from "@/components/ui/form";
 import { Card, CardBody } from "@heroui/card";
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { PenLine, Eye } from 'lucide-react';
@@ -60,7 +60,7 @@ export function MarkdownEditor({
             </div>
 
             {activeTab === "write" ? (
-                <Textarea
+                <FormTextarea
                     placeholder={placeholder}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
