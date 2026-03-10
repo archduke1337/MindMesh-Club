@@ -2,7 +2,7 @@
 "use client";
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Models } from "appwrite";
-import { authService } from "@/lib/appwrite";
+import { authService, client } from "@/lib/appwrite/client";
 
 interface MemberProfile {
   $id: string;
@@ -105,7 +105,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const checkUser = useCallback(async () => {
     try {
-      const currentUser = await authService.getCurrentUser();
+      // First try the client SDK (works if session was set via client.setSession())
+      let currentUser = await authService.getCurrentUser();
+
+      // If that fails, check via our server-side session cookie
+      if (!currentUser) {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            currentUser = data.user;
+          }
+        }
+      }
+
       setUser(currentUser);
       if (currentUser) {
         await fetchProfile(currentUser.$id);
@@ -127,19 +140,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [checkUser]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const session = await authService.login(email, password);
-    // Sync session secret to our domain cookie so middleware can read it
-    if (session?.secret) {
-      const res = await fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ secret: session.secret }),
-      });
-      if (!res.ok) {
-        console.warn("Failed to sync session cookie — admin features may not work");
-      }
-    } else {
-      console.warn("No session secret returned — admin features may not work");
+    // Create session server-side so we get the secret (client SDK doesn't return it)
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Login failed");
+    }
+    const { secret } = await res.json();
+    // Set the session on the client SDK so account.get() works
+    if (secret) {
+      client.setSession(secret);
     }
     await checkUser();
   }, [checkUser]);
@@ -149,19 +163,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     password: string,
     name: string
   ) => {
-    const session = await authService.createAccount(email, password, name);
-    // Sync session secret to our domain cookie so middleware can read it
-    if (session?.secret) {
-      const res = await fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ secret: session.secret }),
-      });
-      if (!res.ok) {
-        console.warn("Failed to sync session cookie — admin features may not work");
-      }
-    } else {
-      console.warn("No session secret returned — admin features may not work");
+    // Create account + session server-side so we get the secret
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, name }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Registration failed");
+    }
+    const { secret } = await res.json();
+    // Set the session on the client SDK so account.get() works
+    if (secret) {
+      client.setSession(secret);
     }
     await checkUser();
   }, [checkUser]);
@@ -175,7 +190,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const logout = useCallback(async () => {
-    await authService.logout();
+    // Try client SDK logout (may fail if session was created server-side only)
+    await authService.logout().catch(() => {});
     // Clear session cookie from our domain
     await fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
     setUser(null);

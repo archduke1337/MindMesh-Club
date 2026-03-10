@@ -2,7 +2,6 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { account } from "@/lib/appwrite";
 
 function AuthCallbackContent() {
   const searchParams = useSearchParams();
@@ -22,19 +21,16 @@ function AuthCallbackContent() {
       }
 
       try {
-        // Exchange the single-use OAuth token for a session
-        const session = await account.createSession(userId, secret);
+        // Exchange the OAuth token for a session server-side (returns secret)
+        const res = await fetch("/api/auth/oauth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, secret }),
+        });
 
-        // Sync session secret to our httpOnly cookie
-        if (session?.secret) {
-          const res = await fetch("/api/auth/session", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ secret: session.secret }),
-          });
-          if (!res.ok) {
-            throw new Error("Failed to sync session cookie");
-          }
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to create session");
         }
 
         // Full reload to pick up the new session in AuthContext

@@ -5,17 +5,9 @@
 //   "@/lib/appwrite/client"  — browser / "use client"
 //   "@/lib/appwrite/server"  — API routes / server components
 // ──────────────────────────────────────────────────────
-import { Client, Account, Databases, Storage, ID, OAuthProvider } from "appwrite";
 
-const client = new Client()
-  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
-
-export const account = new Account(client);
-export const storage = new Storage(client);
-export const databases = new Databases(client);
-
-// ── Deprecated admin helpers — use @/lib/appwrite/server instead ──
+// Re-export the SINGLE client-side instances so all code shares the same session
+export { client, account, databases, storage, ID, authService } from "@/lib/appwrite/client";
 
 /**
  * @deprecated Use `adminDb` from `@/lib/appwrite/server` instead.
@@ -42,8 +34,3 @@ export const createAdminStorage = () => {
  * Kept for backward compat only.
  */
 export { DATABASE_ID, COLLECTION_IDS, BUCKET_IDS } from "@/lib/types/appwrite";
-
-export { ID };
-
-// Re-export authService from the new client module
-export { authService } from "@/lib/appwrite/client";

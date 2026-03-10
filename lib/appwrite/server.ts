@@ -9,7 +9,7 @@
  * This replaces all the duplicated `adminFetch` / `getHeaders` / `getEndpoint`
  * boilerplate that was copy-pasted across ~20 API routes.
  */
-import { Client, Databases, Storage, Users, ID, Query } from "node-appwrite";
+import { Client, Account, Databases, Storage, Users, ID, Query } from "node-appwrite";
 import {
   APPWRITE_ENDPOINT,
   APPWRITE_PROJECT_ID,
@@ -40,6 +40,9 @@ export const adminDb = new Databases(adminClient);
 
 /** Storage service — use for file uploads / deletes */
 export const adminStorage = new Storage(adminClient);
+
+/** Account service — use for server-side session creation (login/register) */
+export const adminAccount = new Account(adminClient);
 
 /** Users service — use for managing user accounts / labels */
 export const adminUsers = new Users(adminClient);
