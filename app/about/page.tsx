@@ -1,7 +1,7 @@
 import { Card, CardBody } from "@heroui/card";
 import { Avatar, AvatarGroup } from "@heroui/avatar";
 import { Chip } from "@heroui/chip";
-import { title, subtitle } from "@/components/primitives";
+import { title, subtitle } from "@/components/Primitives";
 
 export default function AboutPage() {
   const stats = [

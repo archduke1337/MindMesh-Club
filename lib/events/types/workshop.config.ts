@@ -1,0 +1,195 @@
+// lib/events/types/workshop.config.ts
+import { EventTypeConfig, DETAIL_SECTIONS, ADMIN_TABS } from "../types";
+
+export const workshopConfig: EventTypeConfig = {
+  type: "workshop",
+  label: "Workshop",
+  description: "Hands-on instructor-led skill-building session. Covers coding, hardware, design, cloud, security, and more. Strict seat limits based on lab/equipment availability.",
+  icon: "Wrench",
+  color: "from-blue-500 to-cyan-500",
+
+  capacityModel: "per-person",
+  defaultCapacity: 40,
+
+  registration: {
+    model: "individual",
+    requiresApproval: false,
+    allowTeams: false,
+    extraFields: [
+      {
+        name: "hasLaptop",
+        label: "Will you bring a laptop?",
+        type: "checkbox",
+        required: false,
+        helpText: "Required for hands-on sessions",
+      },
+      {
+        name: "prerequisitesMet",
+        label: "I meet the prerequisites listed below",
+        type: "checkbox",
+        required: true,
+        helpText: "You must have the required background knowledge",
+      },
+      {
+        name: "dietaryRestrictions",
+        label: "Dietary Restrictions",
+        type: "text",
+        required: false,
+        placeholder: "Vegetarian, Vegan, etc.",
+        helpText: "For refreshments/lunch if applicable",
+      },
+    ],
+  },
+
+  ticket: {
+    template: "individual",
+    fields: ["name", "seatNumber", "materialsLink", "venue", "schedule", "prerequisites"],
+    hasQRCode: true,
+    hasCheckIn: true,
+    checkInModel: "individual",
+  },
+
+  pricing: {
+    model: "per-person",
+    defaultFree: false,
+    supportsEarlyBird: true,
+    supportsCoupons: true,
+    supportsInstallments: false,
+  },
+
+  features: {
+    teams: false,
+    rounds: false,
+    submissions: false,
+    judging: false,
+    leaderboard: false,
+    materials: true,
+    speakers: true,    // instructor
+    schedule: true,
+    certificates: true,
+    streaming: false,
+    qna: false,
+    attendance: true,
+    mentors: false,
+    prizes: false,
+    subEvents: false,
+    problemStatements: false,
+    voting: false,
+    forum: false,
+  },
+
+  detailSections: [
+    DETAIL_SECTIONS.OVERVIEW,
+    DETAIL_SECTIONS.SPEAKERS,    // "Instructor" section
+    DETAIL_SECTIONS.SCHEDULE,
+    DETAIL_SECTIONS.MATERIALS,
+    DETAIL_SECTIONS.REGISTRATION,
+    DETAIL_SECTIONS.VENUE,
+    DETAIL_SECTIONS.FAQ,
+    DETAIL_SECTIONS.CONTACT,
+  ],
+
+  adminTabs: [
+    ADMIN_TABS.OVERVIEW,
+    ADMIN_TABS.REGISTRATIONS,
+    ADMIN_TABS.CHECK_IN,
+    ADMIN_TABS.ATTENDANCE,
+    ADMIN_TABS.SPEAKERS,
+    ADMIN_TABS.MATERIALS,
+    ADMIN_TABS.CERTIFICATES,
+    ADMIN_TABS.FEEDBACK,
+    ADMIN_TABS.ANALYTICS,
+    ADMIN_TABS.EXPORT,
+    ADMIN_TABS.SETTINGS,
+  ],
+
+  postEvent: {
+    hasResults: false,
+    hasCertificates: true,
+    hasFeedback: true,
+    hasGallery: true,
+    hasRecording: false,
+    hasResourceSharing: true,
+  },
+
+  extraEventFields: [
+    {
+      name: "workshopTopic",
+      label: "Workshop Topic",
+      type: "select",
+      required: true,
+      options: [
+        { value: "web-development", label: "Web Development" },
+        { value: "mobile-development", label: "Mobile App Development" },
+        { value: "python", label: "Python Programming" },
+        { value: "machine-learning", label: "Machine Learning / AI" },
+        { value: "data-science", label: "Data Science" },
+        { value: "cloud-computing", label: "Cloud Computing (AWS/Azure/GCP)" },
+        { value: "devops", label: "DevOps / CI/CD" },
+        { value: "cybersecurity", label: "Cybersecurity / Ethical Hacking" },
+        { value: "blockchain", label: "Blockchain / Web3" },
+        { value: "ui-ux", label: "UI/UX Design" },
+        { value: "arduino", label: "Arduino / Embedded Systems" },
+        { value: "raspberry-pi", label: "Raspberry Pi / IoT" },
+        { value: "robotics", label: "Robotics" },
+        { value: "game-development", label: "Game Development" },
+        { value: "3d-printing", label: "3D Printing" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    {
+      name: "difficultyLevel",
+      label: "Difficulty Level",
+      type: "select",
+      required: true,
+      options: [
+        { value: "beginner", label: "Beginner (No prior experience needed)" },
+        { value: "intermediate", label: "Intermediate (Some experience required)" },
+        { value: "advanced", label: "Advanced (Strong background required)" },
+      ],
+    },
+    {
+      name: "prerequisites",
+      label: "Prerequisites",
+      type: "textarea",
+      required: false,
+      placeholder: "e.g., Basic Python knowledge, Laptop with VS Code installed",
+      helpText: "What participants need to know or bring",
+    },
+    {
+      name: "softwareRequired",
+      label: "Software to Install Beforehand",
+      type: "textarea",
+      required: false,
+      placeholder: "e.g., Node.js v18+, Python 3.10+, Arduino IDE",
+    },
+    {
+      name: "materialsProvided",
+      label: "Materials Provided",
+      type: "textarea",
+      required: false,
+      placeholder: "e.g., Arduino kit, breadboard, starter code repo",
+      helpText: "What the club will provide",
+    },
+    {
+      name: "instructorName",
+      label: "Instructor Name",
+      type: "text",
+      required: true,
+      placeholder: "e.g., Prof. Sharma",
+    },
+    {
+      name: "instructorBio",
+      label: "Instructor Bio",
+      type: "textarea",
+      required: false,
+      placeholder: "Brief background of the instructor",
+    },
+    {
+      name: "hasRefreshments",
+      label: "Refreshments Included",
+      type: "checkbox",
+      required: false,
+    },
+  ],
+};

@@ -9,6 +9,10 @@ import { z } from "zod";
 const createFeedbackSchema = z.object({
   eventId: z.string().min(1, "Event ID is required"),
   rating: z.number().int().min(1, "Rating must be at least 1").max(5, "Rating must be at most 5"),
+  contentRating: z.number().int().min(1).max(5).optional(),
+  organizationRating: z.number().int().min(1).max(5).optional(),
+  venueRating: z.number().int().min(1).max(5).optional(),
+  wouldRecommend: z.boolean().optional(),
   feedback: z.string().min(10, "Feedback must be at least 10 characters").max(2000, "Feedback too long"),
   suggestions: z.string().max(2000, "Suggestions too long").optional(),
   category: z.string().default("general"),
@@ -65,14 +69,15 @@ export async function POST(request: NextRequest) {
       eventId: data.eventId,
       userId: verifiedUserId,
       userName: verifiedUserName,
-      userEmail: verifiedUserEmail,
-      rating: data.rating,
-      feedback: data.feedback,
-      suggestions: data.suggestions || null,
-      category: data.category,
+      overallRating: data.rating,
+      contentRating: data.contentRating ?? null,
+      organizationRating: data.organizationRating ?? null,
+      venueRating: data.venueRating ?? null,
+      highlights: data.feedback,
+      improvements: data.suggestions || null,
+      wouldRecommend: data.wouldRecommend ?? null,
       isAnonymous: data.isAnonymous,
-      isResolved: false,
-      adminResponse: null,
+      isPublic: false,
     });
 
     return successResponse({ feedback: doc, message: "Feedback submitted successfully" }, 201);

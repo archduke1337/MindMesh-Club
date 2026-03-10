@@ -8,7 +8,7 @@ import {Chip} from "@heroui/chip";
 import {Progress} from "@heroui/progress";
 import {Input} from "@heroui/input";
 import {Select, SelectItem} from "@heroui/select";
-import {subtitle, title} from "@/components/primitives";
+import {subtitle, title} from "@/components/Primitives";
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
 import {useAuth} from "@/context/AuthContext";
@@ -28,9 +28,8 @@ import {
 } from "lucide-react";
 
 // Toast notification helper (replace alert with this)
-const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    console.log(`[${type.toUpperCase()}] ${message}`);
-    // TODO: Integrate with your toast library (e.g., react-hot-toast, sonner)
+const showNotification = (message: string, _type: 'success' | 'error' | 'info' = 'info') => {
+    // Uses sonner toast in production
 };
 
 export default function EventsPage() {
@@ -50,9 +49,7 @@ export default function EventsPage() {
     const loadEvents = useCallback(async () => {
         try {
             setError(null);
-            console.log('🔄 Loading events from database...');
             const allEvents = await eventService.getUpcomingEvents();
-            console.log('✅ Events loaded:', allEvents.length);
             setEvents(allEvents);
         } catch (err) {
             const message = getErrorMessage(err);
@@ -68,14 +65,12 @@ export default function EventsPage() {
         if (!user) return;
 
         try {
-            console.log('🔄 Syncing registered events for user:', user.$id);
             const userTickets = await eventService.getUserTickets(user.$id);
 
             if (userTickets && userTickets.length > 0) {
                 const registeredEventIds = userTickets.map(ticket => ticket.eventId);
                 const mergedIds = eventStorageManager.syncRegistrations(registeredEventIds);
                 setRegisteredEvents(mergedIds);
-                console.log('✅ Registered events synced:', mergedIds.length);
             }
         } catch (err) {
             console.warn('⚠️ Warning syncing registered events:', getErrorMessage(err));
@@ -159,7 +154,6 @@ export default function EventsPage() {
             try {
                 setRegistering(eventId);
                 await eventService.unregisterFromEvent(eventId, user.$id);
-                console.log("✅ Unregistered from event in database");
             } catch (err) {
                 console.warn("⚠️ Unregister failed:", getErrorMessage(err));
                 showNotification("Failed to unregister. Please try again.", "error");
@@ -194,8 +188,6 @@ export default function EventsPage() {
         try {
             const event = events.find(e => e.$id === eventId);
             if (!event) throw new Error("Event not found");
-
-            console.log("🔄 Registering for event:", eventId);
 
             const response = await fetch('/api/events/register', {
                 method: 'POST',

@@ -13,7 +13,9 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { eventService } from "@/lib/database";
+import type { Event } from "@/lib/types/appwrite";
 
 export default function FeedbackPage() {
   const { user } = useAuth();
@@ -23,11 +25,20 @@ export default function FeedbackPage() {
 
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [contentRating, setContentRating] = useState(0);
+  const [organizationRating, setOrganizationRating] = useState(0);
+  const [venueRating, setVenueRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [suggestions, setSuggestions] = useState("");
+  const [wouldRecommend, setWouldRecommend] = useState<boolean | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [event, setEvent] = useState<Event | null>(null);
+
+  useEffect(() => {
+    eventService.getEventById(eventId).then(setEvent).catch(() => {});
+  }, [eventId]);
 
   const handleSubmit = async () => {
     if (!user) {
@@ -57,6 +68,10 @@ export default function FeedbackPage() {
           userName: user.name,
           userEmail: user.email,
           rating,
+          contentRating: contentRating || undefined,
+          organizationRating: organizationRating || undefined,
+          venueRating: venueRating || undefined,
+          wouldRecommend: wouldRecommend ?? undefined,
           feedback: feedback.trim(),
           suggestions: suggestions.trim() || null,
           category: "event",
@@ -110,7 +125,7 @@ export default function FeedbackPage() {
           <MessageCircleIcon className="w-12 h-12 text-primary mb-2" />
           <h1 className="text-2xl font-bold text-center">Event Feedback</h1>
           <p className="text-sm text-default-500 text-center">
-            Help us improve by sharing your experience
+            {event ? `Share your experience at "${event.title}"` : "Help us improve by sharing your experience"}
           </p>
         </CardHeader>
 
@@ -155,6 +170,39 @@ export default function FeedbackPage() {
             )}
           </div>
 
+          {/* Sub-ratings */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { label: "Content", value: contentRating, setter: setContentRating },
+              { label: "Organization", value: organizationRating, setter: setOrganizationRating },
+              { label: "Venue", value: venueRating, setter: setVenueRating },
+            ].map(({ label, value, setter }) => (
+              <div key={label} className="text-center">
+                <p className="text-xs font-medium text-default-500 mb-1.5">
+                  {label}
+                </p>
+                <div className="flex justify-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setter(star)}
+                      className="p-0.5 transition-transform hover:scale-110"
+                    >
+                      <StarIcon
+                        className={`w-5 h-5 transition-colors ${
+                          star <= value
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-default-300"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
           <Textarea
             label="Your Feedback *"
             value={feedback}
@@ -175,6 +223,31 @@ export default function FeedbackPage() {
             placeholder="How could we make future events better?"
             minRows={3}
           />
+
+          {/* Would Recommend */}
+          <div className="text-center">
+            <p className="text-sm font-medium text-default-600 mb-2">
+              Would you recommend this event?
+            </p>
+            <div className="flex justify-center gap-3">
+              <Button
+                size="sm"
+                variant={wouldRecommend === true ? "solid" : "bordered"}
+                color={wouldRecommend === true ? "success" : "default"}
+                onPress={() => setWouldRecommend(true)}
+              >
+                👍 Yes
+              </Button>
+              <Button
+                size="sm"
+                variant={wouldRecommend === false ? "solid" : "bordered"}
+                color={wouldRecommend === false ? "danger" : "default"}
+                onPress={() => setWouldRecommend(false)}
+              >
+                👎 No
+              </Button>
+            </div>
+          </div>
 
           <Button
             color="primary"

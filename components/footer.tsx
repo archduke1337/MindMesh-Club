@@ -3,7 +3,7 @@
 
 import { Link } from "@heroui/link";
 import { Divider } from "@heroui/divider";
-import { FooterSponsors } from "./footer-sponsors";
+import { FooterSponsors } from "./FooterSponsors";
 
 const socialLinks = [
   {

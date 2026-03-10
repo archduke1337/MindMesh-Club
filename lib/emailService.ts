@@ -50,8 +50,6 @@ const sendEmailWithEmailJS = async (
   try {
     const formattedDate = formatEventDate(eventDate);
     
-    console.log('📧 Sending email with EmailJS...');
-    
     const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
       method: "POST",
       headers: {
@@ -78,15 +76,14 @@ const sendEmailWithEmailJS = async (
     });
 
     if (response.ok) {
-      console.log('✅ Email sent successfully!');
       return true;
     } else {
       const errorText = await response.text();
-      console.error('❌ EmailJS Error Response:', errorText);
+      console.error('EmailJS Error Response:', errorText);
       return false;
     }
   } catch (error) {
-    console.error('❌ EmailJS Network Error:', error);
+    console.error('EmailJS Network Error:', error);
     return false;
   }
 };
@@ -113,8 +110,6 @@ export const sendRegistrationEmail = async (
     const qrCodeUrl = generateQRCode(ticketId, userName, eventData.title);
     const actualPrice = eventData.discountPrice || eventData.price;
 
-    console.log('📧 Starting email registration process...');
-
     // Send the email
     const sent = await sendEmailWithEmailJS(
       userEmail,
@@ -131,9 +126,9 @@ export const sendRegistrationEmail = async (
     );
 
     if (sent) {
-      console.log('✅ Registration email sent successfully!');
+      // Email sent successfully
     } else {
-      console.warn('⚠️ Email failed to send, but ticket was generated');
+      console.warn('Email failed to send, but ticket was generated');
     }
 
     return {
@@ -141,7 +136,7 @@ export const sendRegistrationEmail = async (
       ticketId: ticketId,
     };
   } catch (error) {
-    console.error('❌ Unexpected error in sendRegistrationEmail:', error);
+    console.error('Unexpected error in sendRegistrationEmail:', error);
     // Still generate and return a ticket ID even if email fails
     return {
       success: false,

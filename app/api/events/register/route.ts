@@ -1,49 +1,41 @@
 // app/api/events/register/route.ts
-// Server-side endpoint for atomic event registration to prevent race conditions
-import { NextRequest, NextResponse } from 'next/server';
+// Server-side endpoint for type-driven event registration.
+// Delegates to the registration orchestrator based on event type.
+import { NextRequest } from 'next/server';
 import { sendRegistrationEmail } from '@/lib/emailService';
-import { registrationSchema } from '@/lib/validation/schemas';
 import { verifyAuth } from '@/lib/apiAuth';
 import { handleApiError, ApiError, successResponse } from '@/lib/apiErrorHandler';
-import { adminDb, DATABASE_ID, COLLECTIONS, ID, Query } from '@/lib/appwrite/server';
+import { adminDb, DATABASE_ID, COLLECTIONS, Query } from '@/lib/appwrite/server';
+import { registerForEvent, cancelRegistration } from '@/lib/events/registration/orchestrator';
+import { isValidEventType } from '@/lib/events/registry';
+import { z } from 'zod';
 
-interface EventDocument {
-  $id: string;
-  title: string;
-  date: string;
-  time: string;
-  venue: string;
-  location: string;
-  image: string;
-  organizerName: string;
-  price: number;
-  discountPrice: number;
-  capacity: number;
-  registered: number;
-  [key: string]: unknown;
+// Legacy type mapping for backward compatibility
+const LEGACY_TYPE_MAP: Record<string, string> = {
+  seminar: "talk",
+  conference: "talk",
+  meetup: "social",
+};
+
+function resolveEventType(raw: string): string {
+  return LEGACY_TYPE_MAP[raw] || raw;
 }
 
-interface RegisterRequestBody {
-  eventId: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-}
-
-interface RegisterResponseBody {
-  success: boolean;
-  message: string;
-  ticketId?: string;
-  error?: string;
-}
+const registerBodySchema = z.object({
+  eventId: z.string().min(1),
+  // Optional: allow client to specify mode for team/dual
+  mode: z.enum(["create", "join", "exhibitor", "visitor"]).optional(),
+  teamName: z.string().optional(),
+  inviteCode: z.string().optional(),
+  tier: z.string().optional(),
+  extraFields: z.record(z.unknown()).optional(),
+});
 
 /**
  * POST /api/events/register
- * 
- * Atomically registers a user for an event on the server side.
- * This prevents race conditions that could occur with client-side registration.
- * 
- * Uses admin credentials to bypass user permissions and ensure registration succeeds.
+ *
+ * Type-driven registration. Resolves the event type,
+ * then delegates to the correct registration handler.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -53,147 +45,198 @@ export async function POST(request: NextRequest) {
       throw new ApiError(401, "Authentication required");
     }
 
-    const body: RegisterRequestBody = await request.json();
-
-    // Validate input with Zod
-    registrationSchema.parse(body);
+    const raw = await request.json();
+    const body = registerBodySchema.parse(raw);
 
     const { eventId } = body;
-    // Use server-verified user identity instead of trusting request body
     const userId = authUser.$id;
-    const userName = authUser.name || body.userName;
+    const userName = authUser.name || "";
     const userEmail = authUser.email;
 
-    console.log(`[API] Registering user ${userId} for event ${eventId}`);
-
-    // Check if already registered
-    try {
-      const existingRegistrations = await adminDb.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.REGISTRATIONS,
-        [
-          Query.equal("eventId", eventId),
-          Query.equal("userId", userId),
-          Query.limit(1),
-        ]
-      );
-
-      if (existingRegistrations.documents.length > 0) {
-        const existingRegistration = existingRegistrations.documents[0];
-        console.log(`[API] Found existing registration: ${existingRegistration.$id}`);
-        return successResponse({
-          message: 'Already registered for this event',
-          ticketId: existingRegistration.$id,
-        });
-      }
-    } catch (listError) {
-      console.error('[API] Error checking existing registrations:', listError);
-    }
-
-    // Get event to check capacity
-    let event: EventDocument;
+    // Fetch the event
+    let event: Record<string, unknown>;
     try {
       event = await adminDb.getDocument(
         DATABASE_ID,
         COLLECTIONS.EVENTS,
         eventId
-      ) as unknown as EventDocument;
-    } catch (getError) {
-      console.error('[API] Error fetching event:', getError);
-      throw new ApiError(404, 'Event not found');
+      ) as unknown as Record<string, unknown>;
+    } catch {
+      throw new ApiError(404, "Event not found");
     }
 
-    if (event.capacity && event.registered >= event.capacity) {
-      throw new ApiError(409, 'Event is full');
+    // Resolve event type (handle legacy types)
+    const rawType = String(event.eventType || "");
+    const eventType = resolveEventType(rawType);
+
+    if (!isValidEventType(eventType)) {
+      throw new ApiError(400, `Unsupported event type: ${rawType}`);
     }
 
-    // Create registration document with QR code data
-    let registration: { $id: string; [key: string]: unknown };
-    try {
-      const ticketDocId = ID.unique();
-      const eventTitle = event.title;
-      const ticketQRData = `TICKET|${ticketDocId}|${userName}|${eventTitle}`;
+    // Build EventContext for the orchestrator
+    const eventContext: import("@/lib/events/registration/types").EventContext = {
+      eventId,
+      eventType: eventType as import("@/lib/events/types").EventType,
+      title: String(event.title || ""),
+      capacity: Number(event.capacity || 0),
+      registered: Number(event.registered || 0),
+      startDate: String(event.date || ""),
+      endDate: String(event.endDate || event.date || ""),
+      venue: String(event.venue || ""),
+      isOnline: Boolean(event.isOnline),
+      status: String(event.status || "upcoming"),
+      extraData: event as Record<string, unknown>,
+    };
 
-      registration = await adminDb.createDocument(
-        DATABASE_ID,
-        COLLECTIONS.REGISTRATIONS,
-        ticketDocId,
-        {
-          eventId,
-          userId,
-          userName,
-          userEmail,
-          registeredAt: new Date().toISOString(),
-          ticketQRData,
-        } as Record<string, unknown>
-      );
-    } catch (createError) {
-      console.error('[API] Error creating registration:', createError);
-      throw new ApiError(500, 'Failed to create registration');
+    // Build the registration input based on the model
+    const registrationInput: Record<string, unknown> = {
+      eventId,
+      userId,
+      userName,
+      userEmail,
+      ...body.extraFields,
+    };
+
+    // Add model-specific fields
+    if (body.mode === "create" && body.teamName) {
+      registrationInput.teamName = body.teamName;
+    }
+    if (body.mode === "join" && body.inviteCode) {
+      registrationInput.inviteCode = body.inviteCode;
+    }
+    if (body.tier) {
+      registrationInput.tier = body.tier;
+    }
+    if (body.mode === "exhibitor" || body.mode === "visitor") {
+      registrationInput.role = body.mode;
     }
 
-    const ticketId = registration.$id || '';
+    // Delegate to the orchestrator
+    const result = await registerForEvent(registrationInput as any, eventContext);
 
-    if (!ticketId) {
-      throw new Error('Registration created but no ticket ID returned');
-    }
+    if (!result.success) {
+      const statusMap: Record<string, number> = {
+        already_registered: 200,
+        event_full: 409,
+      };
+      // Use message for error detail
+      const errorKey = result.message?.includes("already") ? "already_registered" : "";
+      const status = statusMap[errorKey] || 400;
 
-    console.log(`[API] Registration successful: ${ticketId}`);
-
-    // Update event registered count atomically with retry to prevent race conditions
-    try {
-      const MAX_RETRIES = 3;
-      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        try {
-          const freshEvent = await adminDb.getDocument(
-            DATABASE_ID,
-            COLLECTIONS.EVENTS,
-            eventId
-          );
-          const currentCount = freshEvent.registered || 0;
-
-          await adminDb.updateDocument(
-            DATABASE_ID,
-            COLLECTIONS.EVENTS,
-            eventId,
-            { registered: currentCount + 1 }
-          );
-          console.log(`[API] Updated event registered count to ${currentCount + 1}`);
-          break;
-        } catch (retryError) {
-          if (attempt === MAX_RETRIES - 1) throw retryError;
-          // Brief delay before retry to reduce contention
-          await new Promise(r => setTimeout(r, 100 * (attempt + 1)));
-        }
+      if (errorKey === "already_registered") {
+        return successResponse({
+          message: "Already registered for this event",
+          ticketId: result.ticketId,
+        });
       }
-    } catch (updateError) {
-      console.warn(`[API] Warning: failed to update event registered count:`, updateError);
+
+      throw new ApiError(status, result.message || "Registration failed");
     }
 
-    // Try to send email in the background (don't block if it fails)
+    // Send confirmation email (background, non-blocking)
     try {
-      await sendRegistrationEmail(userEmail, userName, ticketId, {
-        title: event.title,
-        date: event.date,
-        time: event.time,
-        venue: event.venue,
-        location: event.location,
-        image: event.image,
-        organizerName: event.organizerName,
-        price: event.price,
-        discountPrice: event.discountPrice,
+      await sendRegistrationEmail(userEmail, userName, result.ticketId || "", {
+        title: String(event.title || ""),
+        date: String(event.date || ""),
+        time: String(event.time || ""),
+        venue: String(event.venue || ""),
+        location: String(event.location || ""),
+        image: String(event.image || ""),
+        organizerName: String(event.organizerName || ""),
+        price: Number(event.price || 0),
+        discountPrice: Number(event.discountPrice || 0),
       });
-      console.log(`[API] Email sent to ${userEmail}`);
     } catch (emailError) {
       console.warn(`[API] Failed to send registration email: ${emailError}`);
-      // Don't fail the entire request if email fails
     }
 
     return successResponse({
-      message: 'Registration successful',
-      ticketId,
+      message: result.status === "waitlisted"
+        ? "Application submitted — pending approval"
+        : result.status === "pending_payment"
+          ? "Registration pending payment"
+          : "Registration successful",
+      ticketId: result.ticketId,
+      status: result.status,
+      teamId: result.teamId,
+      inviteCode: result.inviteCode,
     });
   } catch (error) {
     return handleApiError(error, "POST /api/events/register");
+  }
+}
+
+/**
+ * DELETE /api/events/register
+ *
+ * Cancel a registration. Delegates to the orchestrator.
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const { authenticated, user: authUser } = await verifyAuth(request);
+    if (!authenticated || !authUser) {
+      throw new ApiError(401, "Authentication required");
+    }
+
+    const { searchParams } = new URL(request.url);
+    const eventId = searchParams.get("eventId");
+
+    if (!eventId) {
+      throw new ApiError(400, "eventId is required");
+    }
+
+    // Fetch event to get type
+    let event: Record<string, unknown>;
+    try {
+      event = await adminDb.getDocument(
+        DATABASE_ID,
+        COLLECTIONS.EVENTS,
+        eventId
+      ) as unknown as Record<string, unknown>;
+    } catch {
+      throw new ApiError(404, "Event not found");
+    }
+
+    const rawType = String(event.eventType || "");
+    const eventType = resolveEventType(rawType);
+
+    if (!isValidEventType(eventType)) {
+      throw new ApiError(400, `Unsupported event type: ${rawType}`);
+    }
+
+    // Build EventContext for cancel
+    const eventContext: import("@/lib/events/registration/types").EventContext = {
+      eventId,
+      eventType: eventType as import("@/lib/events/types").EventType,
+      title: String(event.title || ""),
+      capacity: Number(event.capacity || 0),
+      registered: Number(event.registered || 0),
+      startDate: String(event.date || ""),
+      endDate: String(event.endDate || event.date || ""),
+      venue: String(event.venue || ""),
+      isOnline: Boolean(event.isOnline),
+      status: String(event.status || "upcoming"),
+      extraData: event as Record<string, unknown>,
+    };
+
+    // Find user's registration for this event
+    const regs = await adminDb.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.REGISTRATIONS,
+      [
+        Query.equal("eventId", eventId),
+        Query.equal("userId", authUser.$id),
+      ]
+    );
+
+    if (regs.total === 0) {
+      throw new ApiError(404, "No registration found");
+    }
+
+    await cancelRegistration(regs.documents[0].$id, eventContext);
+
+    return successResponse({ message: "Registration cancelled" });
+  } catch (error) {
+    return handleApiError(error, "DELETE /api/events/register");
   }
 }

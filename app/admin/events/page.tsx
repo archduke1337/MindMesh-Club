@@ -20,6 +20,8 @@ import { calculateEventMetrics, getCapacityAlertMessage, estimateFutureRegistrat
 import { generateEventQRCodeUrl, generateEventShareQRCodeUrl } from "@/lib/eventQRCode";
 import { downloadEventStatsCSV, downloadRegistrationList } from "@/lib/eventExport";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { EventTypeSelector } from "@/components/events";
+import type { EventType } from "@/lib/events/types";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon, AlertCircle, XIcon, QrCode, Download, Share2, RefreshCw, ArrowLeftIcon, SearchIcon, LightbulbIcon, InfoIcon, CheckCircleIcon } from "lucide-react";
 
 export default function AdminEventsPage() {
@@ -82,7 +84,8 @@ export default function AdminEventsPage() {
     status: "upcoming",
     isRecurring: false,
     recurringPattern: undefined,
-    parentEventId: undefined
+    parentEventId: undefined,
+    eventType: "workshop" as EventType,
   });
   const [tagInput, setTagInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -137,7 +140,6 @@ export default function AdminEventsPage() {
               registered: registrationCount
             });
             totalSynced++;
-            console.log(`✅ Synced ${event.title}: ${registrationCount} registrations`);
           }
         } catch (err) {
           console.warn(`⚠️ Failed to sync ${event.title}:`, err);
@@ -310,9 +312,7 @@ export default function AdminEventsPage() {
       const data = checkinData.trim();
       if (!data) return;
 
-      console.log('🔍 Scanned QR data:', data);
       const parsed = parseCheckInQR(data);
-      console.log('📋 Parsed QR:', parsed);
 
       if (!parsed) {
         console.warn('❌ Failed to parse QR code');
@@ -331,7 +331,6 @@ export default function AdminEventsPage() {
 
       // Find registration by ticket ID (registration document ID)
       const registration = registrations.find(r => r.$id === parsed.ticketId);
-      console.log('🎫 Found registration:', registration);
 
       if (!registration) {
         console.warn('❌ Registration not found for ticket:', parsed.ticketId);
@@ -380,13 +379,10 @@ export default function AdminEventsPage() {
         status,
       };
 
-      console.log('✅ Check-in record:', record);
       setCheckinRecords([record, ...checkinRecords]);
       if (status === 'duplicate') {
-        console.warn('⚠️ Duplicate scan detected');
         setCheckinStats(prev => ({ ...prev, duplicates: prev.duplicates + 1 }));
       } else if (status === 'success') {
-        console.log('✓ Successful check-in');
         setCheckinStats(prev => ({ ...prev, successful: prev.successful + 1 }));
       } else {
         setCheckinStats(prev => ({ ...prev, errors: prev.errors + 1 }));
@@ -755,6 +751,11 @@ export default function AdminEventsPage() {
                               </p>
                               <p className="text-xs md:text-sm text-default-500 truncate capitalize">
                                 {event.category}
+                                {(event as unknown as Record<string, unknown>).eventType ? (
+                                  <span className="ml-1.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                                    {String((event as unknown as Record<string, unknown>).eventType)}
+                                  </span>
+                                ) : null}
                               </p>
                               <p className="text-xs text-default-400 md:hidden">
                                 {new Date(event.date).toLocaleDateString()}
@@ -991,6 +992,15 @@ export default function AdminEventsPage() {
                       <SelectItem key="bootcamp" variant="bordered">Bootcamp</SelectItem>
                       <SelectItem key="forum" variant="bordered">Forum</SelectItem>
                     </Select>
+
+                    {/* Event Type (type-driven system) */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold">Event Type</label>
+                      <EventTypeSelector
+                        selectedType={((formData as Record<string, unknown>).eventType as EventType) || null}
+                        onSelect={(type: EventType) => handleInputChange("eventType", type)}
+                      />
+                    </div>
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
                       <Switch

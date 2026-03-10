@@ -35,13 +35,20 @@ export const BUCKET_IDS = BUCKETS;
 // ═══════════════════════════════════════════
 export type EventType =
   | "hackathon"
-  | "seminar"
-  | "conference"
-  | "workshop"
-  | "meetup"
-  | "webinar"
   | "competition"
-  | "bootcamp";
+  | "workshop"
+  | "talk"
+  | "bootcamp"
+  | "exhibition"
+  | "social"
+  | "fest"
+  | "webinar"
+  | "drive"
+  | "challenge"
+  // Legacy types (mapped to new equivalents at runtime)
+  | "seminar"     // → talk
+  | "conference"  // → talk
+  | "meetup";     // → social
 
 export type EventStatus =
   | "draft"
@@ -122,7 +129,7 @@ export interface EventTypeDoc extends AppwriteDocument {
 // ═══════════════════════════════════════════
 // 3. REGISTRATIONS
 // ═══════════════════════════════════════════
-export type RegistrationStatus = "confirmed" | "waitlisted" | "cancelled" | "checked_in";
+export type RegistrationStatus = "confirmed" | "waitlisted" | "cancelled" | "checked_in" | "pending_payment" | "approved" | "rejected";
 export type RegistrationSource = "website" | "admin" | "import";
 
 export interface Registration extends AppwriteDocument {
@@ -139,6 +146,10 @@ export interface Registration extends AppwriteDocument {
   teamId: string | null;
   checkInTime: string | null;
   source: RegistrationSource;
+
+  // Type-driven fields
+  registrationModel: string | null;
+  extraFields: string | null;  // JSON-stringified Record<string, unknown>
 }
 
 // ═══════════════════════════════════════════

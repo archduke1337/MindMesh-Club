@@ -6,7 +6,7 @@ import { Badge } from "@heroui/badge";
 import { Chip } from "@heroui/chip";
 import { Avatar } from "@heroui/avatar";
 import { Progress } from "@heroui/progress";
-import { title, subtitle } from "@/components/primitives";
+import { title, subtitle } from "@/components/Primitives";
 import { useState, useEffect } from "react";
 import { projectService, Project } from "@/lib/database";
 import {

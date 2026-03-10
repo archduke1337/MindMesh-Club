@@ -99,9 +99,8 @@ export default function EventDetailPage() {
       try {
         // Unregister from database to sync with admin panel
         await eventService.unregisterFromEvent(eventId, user.$id);
-        console.log("✅ Unregistered from event in database");
       } catch (error) {
-        console.warn("⚠️ Warning: Could not unregister from database, but removing from local storage:", error);
+        console.warn("Could not unregister from database:", error);
         // Continue with local cleanup even if DB fails
       }
 

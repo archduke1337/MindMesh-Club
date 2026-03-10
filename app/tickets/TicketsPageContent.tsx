@@ -6,7 +6,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
-import { title, subtitle } from "@/components/primitives";
+import { title, subtitle } from "@/components/Primitives";
 import { useAuth } from "@/context/AuthContext";
 import { eventService } from "@/lib/database";
 // jsPDF and html2canvas are dynamically imported when needed to reduce initial bundle size

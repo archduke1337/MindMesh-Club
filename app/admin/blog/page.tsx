@@ -112,7 +112,6 @@ export default function AdminBlogsPage() {
 
     setProcessingBlog(blogId);
     try {
-      console.log("[Admin] Sending approve request with email:", user.email);
       const res = await fetch(`/api/blog/${blogId}/approve`, {
         method: "POST",
         headers: { 
@@ -157,7 +156,6 @@ export default function AdminBlogsPage() {
 
     setProcessingBlog(rejectingBlog.$id!);
     try {
-      console.log("[Admin] Sending reject request with email:", user.email);
       const res = await fetch(`/api/blog/${rejectingBlog.$id}/reject`, {
         method: "POST",
         headers: { 
@@ -191,7 +189,6 @@ export default function AdminBlogsPage() {
     }
 
     try {
-      console.log("[Admin] Sending delete request with email:", user.email);
       const res = await fetch(`/api/blog/${blogId}`, { 
         method: "DELETE", 
         credentials: "same-origin",
@@ -214,7 +211,6 @@ export default function AdminBlogsPage() {
     }
 
     try {
-      console.log("[Admin] Sending featured toggle request with email:", user.email);
       const res = await fetch(`/api/blog/${blog.$id}/featured`, {
         method: "POST",
         credentials: "same-origin",

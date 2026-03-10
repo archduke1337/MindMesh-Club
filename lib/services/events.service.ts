@@ -184,58 +184,52 @@ export const eventService = {
   },
 
   // ── REGISTRATION METHODS ──
+  // All registration now goes through the server-side API to prevent race conditions
+  // and to leverage the type-driven orchestrator.
 
-  async registerForEvent(eventId: string, userId: string, userName: string, userEmail: string) {
+  async registerForEvent(
+    eventId: string,
+    userId: string,
+    userName: string,
+    userEmail: string,
+    options?: {
+      mode?: "create" | "join" | "exhibitor" | "visitor";
+      teamName?: string;
+      inviteCode?: string;
+      tier?: string;
+      extraFields?: Record<string, unknown>;
+    }
+  ) {
     try {
-      // Check if already registered
-      const existing = await databases.listDocuments(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, [
-        Query.equal("eventId", eventId), Query.equal("userId", userId), Query.limit(1),
-      ]);
-      if (existing.documents.length > 0) throw new Error("Already registered for this event");
-
-      // Get current event data
-      const event = await this.getById(eventId);
-      
-      // Check capacity BEFORE creating registration
-      if (event.capacity && (event as any).registered >= event.capacity) {
-        throw new Error("Event is full");
-      }
-
-      // Create registration with unique ticket ID
-      const ticketId = ID.unique();
-      const ticketQRData = `TICKET|${ticketId}|${userName}|${event.title}`;
-      
-      const registration = await databases.createDocument(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, ticketId, {
-        eventId, userId, userName, userEmail, 
-        registeredAt: new Date().toISOString(), 
-        ticketQRData,
-        status: "confirmed"
+      const response = await fetch("/api/events/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          eventId,
+          ...options,
+        }),
       });
 
-      // Increment registered count
-      // Note: This still has a race condition. For production, implement one of:
-      // 1. Appwrite Function with database transaction
-      // 2. Optimistic locking with version field
-      // 3. Queue-based registration processing
-      try {
-        const currentEvent = await this.getById(eventId);
-        const newCount = ((currentEvent as any).registered || 0) + 1;
-        
-        // Double-check capacity hasn't been exceeded
-        if (event.capacity && newCount > event.capacity) {
-          // Rollback registration
-          await databases.deleteDocument(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, ticketId);
-          throw new Error("Event became full during registration");
-        }
-        
-        await this.updateEvent(eventId, { registered: newCount } as any);
-      } catch (updateError) {
-        // If update fails, log but keep registration valid
-        // Admin can manually sync counts later
-        console.error("Failed to update registration count:", getErrorMessage(updateError));
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "Registration failed");
       }
 
-      return registration as unknown as Registration;
+      // Return a Registration-like object for backward compatibility
+      return {
+        $id: data.data?.ticketId || data.ticketId || "",
+        eventId,
+        userId,
+        userName,
+        userEmail,
+        registeredAt: new Date().toISOString(),
+        status: data.data?.status || "confirmed",
+        ticketQRData: null,
+        teamId: data.data?.teamId || null,
+        inviteCode: data.data?.inviteCode || null,
+      } as unknown as Registration;
     } catch (error) {
       console.error("Error registering for event:", getErrorMessage(error));
       throw error;
@@ -244,13 +238,19 @@ export const eventService = {
 
   async unregisterFromEvent(eventId: string, userId: string) {
     try {
-      const regs = await databases.listDocuments(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, [
-        Query.equal("eventId", eventId), Query.equal("userId", userId), Query.limit(1),
-      ]);
-      if (regs.documents.length === 0) throw new Error("Registration not found");
-      await databases.deleteDocument(DATABASE_ID, COLLECTION_IDS.REGISTRATIONS, regs.documents[0].$id);
-      const event = await this.getById(eventId);
-      await this.updateEvent(eventId, { registered: Math.max(0, ((event as any).registered || 1) - 1) } as any);
+      const response = await fetch(
+        `/api/events/register?eventId=${encodeURIComponent(eventId)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || data.message || "Failed to cancel registration");
+      }
+
       return true;
     } catch (error) {
       console.error("Error unregistering:", getErrorMessage(error));

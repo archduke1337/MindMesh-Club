@@ -10,8 +10,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 import AnnouncementsBanner from "@/components/AnnouncementsBanner";
 
 export const metadata: Metadata = {

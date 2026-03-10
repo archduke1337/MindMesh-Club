@@ -24,10 +24,9 @@ import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
 import { siteConfig } from "@/config/site";
-import { ThemeSwitch } from "@/components/theme-switch";
-import { Logo } from "@/components/icons";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { Logo } from "@/components/Icons";
 import { useAuth } from "@/context/AuthContext";
-import { isUserAdminByEmail } from "@/lib/adminConfig";
 import {
   ShieldIcon,
   UserIcon,
@@ -72,9 +71,7 @@ export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  const isAdmin = !loading && user && (
-    isUserAdminByEmail(user.email) || user.labels?.includes("admin")
-  );
+  const isAdmin = !loading && user && user.labels?.includes("admin");
 
   const primaryItems = siteConfig.navItems.filter((item) =>
     PRIMARY_NAV.includes(item.href)
