@@ -574,7 +574,7 @@ export default function AdminBlogsPage() {
               placeholder="E.g., Content doesn't meet quality standards, inappropriate content, etc."
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              rows={4} variant="bordered"
+              minRows={4}
             />
           </ModalBody>
           <ModalFooter>

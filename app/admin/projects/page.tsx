@@ -675,7 +675,7 @@ export default function AdminProjectsPage() {
                         type="range"
                         min="0"
                         max="100"
-                        value={formData.progress}
+                        value={String(formData.progress)}
                         onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })}
                         className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                       />
